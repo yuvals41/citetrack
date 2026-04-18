@@ -43,6 +43,15 @@
   --color-popover: #ffffff;
   --color-popover-foreground: #0a0a0a;
 
+  --color-sidebar: #fafafa;
+  --color-sidebar-foreground: #0a0a0a;
+  --color-sidebar-primary: #0a0a0a;
+  --color-sidebar-primary-foreground: #fafafa;
+  --color-sidebar-accent: #f4f4f5;
+  --color-sidebar-accent-foreground: #0a0a0a;
+  --color-sidebar-border: #e4e4e7;
+  --color-sidebar-ring: #0a0a0a;
+
   --radius-sm: 0.25rem;
   --radius: 0.5rem;
   --radius-lg: 0.75rem;
@@ -84,5 +93,14 @@
 
     --color-popover: #0f0f0f;
     --color-popover-foreground: #fafafa;
+
+    --color-sidebar: #0f0f0f;
+    --color-sidebar-foreground: #fafafa;
+    --color-sidebar-primary: #fafafa;
+    --color-sidebar-primary-foreground: #0a0a0a;
+    --color-sidebar-accent: #1a1a1a;
+    --color-sidebar-accent-foreground: #fafafa;
+    --color-sidebar-border: #27272a;
+    --color-sidebar-ring: #fafafa;
   }
 }
