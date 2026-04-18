@@ -1,0 +1,40 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@citetrack/api",
+  "sourceRoot": "apps/api/ai_visibility",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run uvicorn ai_visibility.api.app:app --reload --port 8000",
+        "cwd": "apps/api"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run pytest",
+        "cwd": "apps/api"
+      },
+      "cache": true
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run ruff check .",
+        "cwd": "apps/api"
+      },
+      "cache": true
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run mypy ai_visibility",
+        "cwd": "apps/api"
+      },
+      "cache": true
+    }
+  },
+  "tags": ["scope:api", "type:app"]
+}

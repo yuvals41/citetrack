@@ -1,0 +1,48 @@
+from __future__ import annotations
+
+
+def generate_pixel_snippet(workspace_id: str, api_base_url: str = "") -> str:
+    base_url = api_base_url.rstrip("/")
+    script = (
+        "<script>(function(){"
+        f"var W='{workspace_id}';"
+        f"var A='{base_url}';"
+        "var E=A+'/api/v1/pixel/event';"
+        "var S='aivis_session_id';"
+        "function U(){try{return new URL(window.location.href)}catch(e){return null}}"
+        "function Q(k){var u=U();return u?u.searchParams.get(k):null}"
+        "function I(){"
+        "try{"
+        "var v=sessionStorage.getItem(S);"
+        "if(v)return v;"
+        "v=(window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():('sid-'+Date.now()+'-'+Math.random().toString(16).slice(2));"
+        "sessionStorage.setItem(S,v);"
+        "return v"
+        "}catch(e){return 'sid-'+Date.now()+'-'+Math.random().toString(16).slice(2)}"
+        "}"
+        "function D(){"
+        "var r=(document.referrer||'').toLowerCase();"
+        "if(r.indexOf('chatgpt.com')>-1||r.indexOf('chat.openai.com')>-1)return 'chatgpt';"
+        "if(r.indexOf('perplexity.ai')>-1)return 'perplexity';"
+        "if(r.indexOf('claude.ai')>-1)return 'claude';"
+        "if(r.indexOf('gemini.google.com')>-1||r.indexOf('bard.google.com')>-1)return 'gemini';"
+        "if(r.indexOf('grok.x.ai')>-1||r.indexOf('x.com/i/grok')>-1)return 'grok';"
+        "if(r.indexOf('bing.com/chat')>-1||r.indexOf('copilot.microsoft.com')>-1)return 'copilot';"
+        "var us=(Q('utm_source')||'').toLowerCase();"
+        "var um=(Q('utm_medium')||'').toLowerCase();"
+        "if(us==='ai'||um==='ai')return 'ai_utm';"
+        "return ''"
+        "}"
+        "function P(p){"
+        "var b=JSON.stringify(p);"
+        "try{"
+        "if(navigator.sendBeacon){navigator.sendBeacon(E,new Blob([b],{type:'application/json'}));return}"
+        "}catch(e){}"
+        "try{fetch(E,{method:'POST',headers:{'Content-Type':'application/json'},body:b,keepalive:true})}catch(e){}"
+        "}"
+        "var src=D();"
+        "if(src){P({workspace_id:W,source:src,referrer:document.referrer||'',page_url:window.location.href,timestamp:new Date().toISOString(),session_id:I(),event_type:'visit'})}"
+        "window.aiVisTrackConversion=function(value,currency){P({workspace_id:W,source:src||'ai_utm',referrer:document.referrer||'',page_url:window.location.href,timestamp:new Date().toISOString(),session_id:I(),event_type:'conversion',conversion_value:typeof value==='number'?value:null,conversion_currency:currency||'USD'})};"
+        "})();</script>"
+    )
+    return script

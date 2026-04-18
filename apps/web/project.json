@@ -1,0 +1,48 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@citetrack/web",
+  "sourceRoot": "apps/web/src",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bun run dev",
+        "cwd": "apps/web"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bun run build",
+        "cwd": "apps/web"
+      },
+      "cache": true,
+      "outputs": ["{projectRoot}/dist", "{projectRoot}/.output"]
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bun run preview",
+        "cwd": "apps/web"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bun run test",
+        "cwd": "apps/web"
+      },
+      "cache": true
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bun run typecheck",
+        "cwd": "apps/web"
+      },
+      "cache": true
+    }
+  },
+  "tags": ["scope:web", "type:app"]
+}

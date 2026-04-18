@@ -1,0 +1,14 @@
+{
+  "id": "finding_001",
+  "workspace_slug": "acme-dental",
+  "finding_type": "visibility_gap",
+  "reason_code": "LOW_BRAND_POSITION",
+  "confidence": 0.86,
+  "evidence_refs": [
+    "obs_001",
+    "citation_001"
+  ],
+  "created_at": "2026-03-14T10:02:00Z",
+  "rule_version": "rules_v3",
+  "applicability_context": "grounded_search"
+}

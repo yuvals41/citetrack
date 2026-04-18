@@ -1,0 +1,57 @@
+# Citetrack AI
+
+> Track how AI cites your brand across ChatGPT, Claude, Perplexity, Gemini, Grok, and AI Overviews.
+
+## Monorepo Structure
+
+```
+citetrack/
+├── apps/
+│   ├── web/          # TanStack Start frontend (React)
+│   ├── api/          # Python FastAPI backend
+│   └── worker/       # ARQ background workers
+├── packages/
+│   ├── ui/           # Shared UI components (Shadcn-based)
+│   ├── types/        # Shared TypeScript types
+│   ├── config/       # Shared configs
+│   └── api-client/   # Typed API client for frontend
+├── prisma/           # Database schema (Prisma)
+└── tools/            # Build scripts, tooling
+```
+
+## Tech Stack
+
+- **Monorepo:** NX + Bun workspaces (+ UV for Python)
+- **Frontend:** TanStack Start + Tailwind + Shadcn/ui
+- **Auth:** Clerk
+- **Backend:** Python 3.11+ / FastAPI
+- **Database:** Prisma + PostgreSQL
+- **Workers:** ARQ + Redis
+- **Payments:** Lemon Squeezy
+- **Linting:** Biome (JS/TS), Ruff (Python)
+- **Deployment:** Vercel (web) + Fly.io/Railway (api)
+
+## Getting Started
+
+```bash
+# Install dependencies
+bun install
+uv sync
+
+# Development
+bun dev
+
+# Build all
+bun run build
+
+# Test all
+bun run test
+```
+
+## Environment Variables
+
+See `.env.example` in each app for required environment variables.
+
+## License
+
+Proprietary. © 2026 Citetrack AI.

@@ -1,0 +1,180 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      additional_contexts:
+        prisma-client: ../stanley/repos/prisma/dist/client-python
+      args:
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN:-}
+        BUILD_DATE: ${BUILD_DATE:-}
+        VCS_REF: ${VCS_REF:-local}
+    image: ai-visibility:local
+    container_name: ai-visibility-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://ai_visibility:ai_visibility@postgres:5432/ai_visibility_db}
+      PROVIDERS: ${PROVIDERS:-openai,anthropic}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DB_PATH: ${DB_PATH:-/app/data/ai_visibility.db}
+    ports:
+      - "8002:8000"
+    volumes:
+      - app_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - ai_visibility_net
+    profiles:
+      - api
+
+  postgres:
+    image: postgres:18
+    container_name: ai-visibility-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ai_visibility}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ai_visibility}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_visibility_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ai_visibility} -d ${POSTGRES_DB:-ai_visibility_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - ai_visibility_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: ai-visibility-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - ai_visibility_net
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN:-}
+        BUILD_DATE: ${BUILD_DATE:-}
+        VCS_REF: ${VCS_REF:-local}
+    image: ai-visibility:local
+    container_name: ai-visibility-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://ai_visibility:ai_visibility@postgres:5432/ai_visibility_db}
+      REDIS_URL: redis://redis:6379
+      PROVIDERS: ${PROVIDERS:-openai,anthropic}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DB_PATH: ${DB_PATH:-/app/data/ai_visibility.db}
+    command: ["arq", "ai_visibility.worker.WorkerSettings"]
+    restart: unless-stopped
+    networks:
+      - ai_visibility_net
+
+  reflex:
+    build:
+      context: .
+      dockerfile: Dockerfile.reflex
+      additional_contexts:
+        prisma-client: ../stanley/repos/prisma/dist/client-python
+      args:
+        CODEARTIFACT_AUTH_TOKEN: ${CODEARTIFACT_AUTH_TOKEN:-}
+    image: ai-visibility-reflex:local
+    container_name: ai-visibility-reflex
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://ai_visibility:ai_visibility@postgres:5432/ai_visibility_db
+      REFLEX_REDIS_URL: redis://redis:6379
+      PROVIDERS: ${PROVIDERS:-openai,anthropic}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+    ports:
+      - "${REFLEX_PORT:-3000}:3000"
+      - "${REFLEX_BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./ai_visibility:/app/ai_visibility
+      - ./rxconfig.py:/app/rxconfig.py
+      - ./docker/entrypoint-reflex.sh:/entrypoint.sh
+      - ../stanley/repos/prisma/dist/client-python:/stanley/repos/prisma/dist/client-python:ro
+      - reflex_venv:/app/.venv
+      - reflex_web:/app/.web
+      - app_data:/app/data
+    restart: unless-stopped
+    networks:
+      - ai_visibility_net
+
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: ai-visibility:dev
+    container_name: ai-visibility-app-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://ai_visibility:ai_visibility@postgres:5432/ai_visibility_db}
+      PROVIDERS: ${PROVIDERS:-openai,anthropic}
+      LOG_LEVEL: DEBUG
+      DB_PATH: ${DB_PATH:-/app/data/ai_visibility.db}
+      UV_INDEX_SOLARAAI_USERNAME: aws
+      UV_INDEX_SOLARAAI_PASSWORD: ${CODEARTIFACT_AUTH_TOKEN:-}
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./:/app
+      - ../stanley/repos/prisma/dist/client-python:/stanley/repos/prisma/dist/client-python:ro
+      - app_data:/app/data
+      - dev_venv:/app/.venv
+    restart: unless-stopped
+    networks:
+      - ai_visibility_net
+    profiles:
+      - dev
+
+volumes:
+  app_data:
+  postgres_data:
+  redis_data:
+  dev_venv:
+  reflex_venv:
+  reflex_web:
+
+networks:
+  ai_visibility_net:
+    driver: bridge

@@ -1,0 +1,8 @@
+{
+  "id": "obs_001",
+  "prompt_execution_id": "prompt_exec_001",
+  "brand_mentioned": true,
+  "brand_position": 1,
+  "response_excerpt": "Acme Dental is one of the top clinics in Berlin.",
+  "strategy_version": "strategy_v2"
+}

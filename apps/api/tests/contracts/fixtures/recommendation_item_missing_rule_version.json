@@ -1,0 +1,14 @@
+{
+  "id": "rec_001",
+  "workspace_slug": "acme-dental",
+  "finding_id": "finding_001",
+  "code": "ADD_LOCAL_PROOF",
+  "reason": "Brand mention appears without supporting local proof in most responses.",
+  "evidence_refs": [
+    "obs_001",
+    "finding_001"
+  ],
+  "impact": "high",
+  "next_step": "Add one prompt that asks for location-specific proof and citations.",
+  "confidence": 0.79
+}

@@ -1,0 +1,9 @@
+{
+  "id": "prompt_exec_001",
+  "scan_execution_id": "exec_001",
+  "prompt_id": "prompt_local_services",
+  "prompt_text": "Who are the top dental clinics in Berlin?",
+  "raw_response": "Acme Dental is highly rated in Berlin.",
+  "executed_at": "2026-03-14T10:01:10Z",
+  "parser_version": "parser_v2"
+}
