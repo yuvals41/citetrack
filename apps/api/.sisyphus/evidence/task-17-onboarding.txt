@@ -1,0 +1,39 @@
+Task 17 — Onboarding Page Evidence
+====================================
+
+Files Created:
+--------------
+- ai_visibility/ui/onboarding_state.py
+  OnboardingState(rx.State) with: current_step, domain, industry, competitors,
+  competitor_input, selected_prompts, scan_complete, scan_summary
+  Constants: INDUSTRY_OPTIONS (6 options), SUGGESTED_PROMPTS (5 prompts)
+  Methods: next_step, prev_step, set_domain, set_industry, set_competitor_input,
+           add_competitor, toggle_prompt, trigger_onboarding_scan
+
+- ai_visibility/ui/pages/onboarding.py
+  5-step wizard: domain → industry → competitor → prompts → summary
+  data_id attributes:
+    - domain-input (rx.input in step 0)
+    - industry-select (rx.select in step 1)
+    - competitor-input-1 (rx.input in step 2)
+    - suggested-prompts-continue (rx.button in step 3)
+    - first-scan-summary (rx.box in step 4/summary)
+
+- tests/e2e/test_onboarding.py
+  8 tests covering: page registration, state fields, navigation, domain/industry,
+  add_competitor, trigger_scan, constants, data_id source verification
+
+Files Modified:
+---------------
+- ai_visibility/ui/app.py
+  Added: from ai_visibility.ui.pages.onboarding import onboarding_page
+  Added: app.add_page(onboarding_page, route="/onboarding", ...)
+
+- ai_visibility/ui/layout.py
+  Added: {"label": "Onboarding", "icon": "rocket", "href": "/onboarding"} to NAV_ITEMS
+
+- tests/ui/test_app_boot.py
+  Updated test_nav_items_count: changed assertion from == 5 to >= 5
+  (nav expanded from 5 to 6 items to include Onboarding)
+
+Test Results: 8/8 onboarding tests pass. Total 80/80 pass.

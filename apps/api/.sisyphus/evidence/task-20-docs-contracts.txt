@@ -1,0 +1,36 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/yuval/Documents/solaraai/ai-visibility/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/yuval/Documents/solaraai/ai-visibility
+configfile: pyproject.toml
+plugins: cov-7.0.0, asyncio-1.3.0, anyio-4.12.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 25 items
+
+tests/contracts/test_docs_contracts.py::test_report_mentions_hybrid_provider_stack PASSED [  4%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_dataforseo_llm_scraper PASSED [  8%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_anthropic_web_search PASSED [ 12%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_perplexity_sonar PASSED [ 16%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_evidence_pipeline PASSED [ 20%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_scan_job PASSED [ 24%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_observation PASSED [ 28%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_diagnostic_finding PASSED [ 32%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_recommendation_item PASSED [ 36%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_pg_partman PASSED [ 40%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_pg_cron PASSED [ 44%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_brin PASSED [ 48%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_materialized_views PASSED [ 52%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_postgresql PASSED [ 56%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_onboarding PASSED [ 60%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_snapshot_repository PASSED [ 64%]
+tests/contracts/test_docs_contracts.py::test_report_mentions_run_orchestrator PASSED [ 68%]
+tests/contracts/test_docs_contracts.py::test_report_has_implemented_architecture_section PASSED [ 72%]
+tests/contracts/test_docs_contracts.py::test_report_version_is_updated PASSED [ 76%]
+tests/contracts/test_docs_contracts.py::test_runbook_exists PASSED       [ 80%]
+tests/contracts/test_docs_contracts.py::test_runbook_has_health_check_command PASSED [ 84%]
+tests/contracts/test_docs_contracts.py::test_runbook_has_seed_demo_command PASSED [ 88%]
+tests/contracts/test_docs_contracts.py::test_runbook_has_scheduler_dry_run_command PASSED [ 92%]
+tests/contracts/test_docs_contracts.py::test_runbook_has_common_failure_modes PASSED [ 96%]
+tests/contracts/test_docs_contracts.py::test_runbook_has_release_verification PASSED [100%]
+
+============================== 25 passed in 0.04s ==============================

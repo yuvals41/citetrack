@@ -1,0 +1,12 @@
+{
+  "executed_jobs": 1,
+  "results": [
+    {
+      "schedule_id": "eec923ac-84df-429c-ad84-c84e9863e521",
+      "workspace_slug": "default",
+      "status": "dry_run",
+      "run_id": null,
+      "error_message": null
+    }
+  ]
+}

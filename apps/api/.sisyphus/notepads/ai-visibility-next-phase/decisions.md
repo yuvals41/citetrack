@@ -1,0 +1,1 @@
+- 2026-03-14: Recorded F1 re-audit verdict as APPROVE because the requested guardrails remained intact and the full pytest suite passed (512/512).

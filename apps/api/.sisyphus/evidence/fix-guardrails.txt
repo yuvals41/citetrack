@@ -1,0 +1,4 @@
+GUARDRAIL FIX EVIDENCE
+Grep for 'citations' table definition: no matches for `CREATE TABLE IF NOT EXISTS citations` in `ai_visibility/storage/schema.sql`
+Grep for 'partial' as status value: no matches for `"partial"|'partial'` in `ai_visibility/contracts/scan_contracts.py`, `ai_visibility/storage/schema.sql`, `ai_visibility/runs/orchestrator.py`
+Test suite: 512 passed, 0 failed (`uv run pytest tests/ -v --tb=short`)

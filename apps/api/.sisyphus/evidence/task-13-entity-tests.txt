@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/yuval/Documents/solaraai/ai-visibility/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/yuval/Documents/solaraai/ai-visibility
+configfile: pyproject.toml
+plugins: cov-7.0.0, asyncio-1.3.0, anyio-4.12.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 37 items / 32 deselected / 5 selected
+
+tests/recommendations/test_entity_diagnosis.py::test_entity_ingest_ambiguous_brand_for_local_and_non_local_brands PASSED [ 20%]
+tests/recommendations/test_entity_diagnosis.py::test_entity_ingest_kg_presence_missing PASSED [ 40%]
+tests/recommendations/test_entity_diagnosis.py::test_entity_non_local_brand_skips_local_penalties PASSED [ 60%]
+tests/recommendations/test_entity_diagnosis.py::test_entity_ingest_empty_payload PASSED [ 80%]
+tests/recommendations/test_entity_diagnosis.py::test_entity_ingest_unwraps_task_envelopes PASSED [100%]
+
+======================= 5 passed, 32 deselected in 2.31s =======================

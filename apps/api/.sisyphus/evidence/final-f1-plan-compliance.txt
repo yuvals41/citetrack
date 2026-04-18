@@ -1,0 +1,10 @@
+F1 PLAN COMPLIANCE AUDIT (Re-run)
+Guardrail fix 1 (no legacy citations table): PASS
+Guardrail fix 2 (no partial status): PASS  
+Evidence files present: PASS
+No TimescaleDB: PASS
+No auth/billing: PASS
+SnapshotRepository no live joins: PASS
+Test suite: 512 passed, 0 failed
+VERDICT: APPROVE
+Reasons: []

@@ -1,0 +1,13 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/yuval/Documents/solaraai/ai-visibility/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/yuval/Documents/solaraai/ai-visibility
+configfile: pyproject.toml
+plugins: cov-7.0.0, asyncio-1.3.0, anyio-4.12.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items / 3 deselected / 2 selected
+
+tests/runs/test_scan_strategy.py::test_cost_ceiling_validation PASSED    [ 50%]
+tests/runs/test_scan_strategy.py::test_disabled_provider_excluded PASSED [100%]
+
+======================= 2 passed, 3 deselected in 0.22s ========================

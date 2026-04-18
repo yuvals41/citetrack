@@ -1,0 +1,22 @@
+Task 19 - PostgreSQL maintenance and production readiness
+
+Files created:
+- ai_visibility/storage/maintenance.sql
+- ai_visibility/storage/maintenance.py
+- tests/storage/test_postgres_maintenance.py
+
+Key DDL decisions:
+- Kept all maintenance DDL in a separate `maintenance.sql` file so the SQLite-oriented `schema.sql` stays unchanged.
+- Used idempotent `SELECT ... WHERE NOT EXISTS (...)` patterns for `partman.create_parent(...)` and `cron.schedule(...)` so repeated runs do not duplicate partition configs or cron jobs.
+- Added BRIN indexes only for append-oriented time columns: `scan_jobs.created_at`, `scan_executions.created_at`, `prompt_executions.created_at`, and `observations.created_at`.
+- Added `public.mv_workspace_overview` as a workspace aggregate over `workspaces`, `metric_snapshots`, and `scan_jobs`, plus a unique index on `workspace_slug` so concurrent refresh is valid.
+
+How to apply in production:
+1. Install and enable `pg_partman` and `pg_cron` in the target PostgreSQL 18 cluster.
+2. Ensure the production tables referenced by partitioning and BRIN declarations expose the expected `created_at` columns before running this SQL.
+3. Apply `ai_visibility/storage/maintenance.sql` with a privileged PostgreSQL role.
+4. Verify the cron jobs `refresh-mv-workspace-overview-hourly` and `vacuum-scan-jobs-nightly` exist in `cron.job`.
+5. Use `ai_visibility.storage.maintenance.apply_matview_refresh(conn)` for on-demand refreshes and `get_matview_status(conn)` to inspect `pg_matviews` metadata.
+
+Verification:
+- `uv run pytest tests/storage -k "postgres" -v --tb=short` -> 6 passed, 46 deselected

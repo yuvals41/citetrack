@@ -1,0 +1,54 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/yuval/Documents/solaraai/ai-visibility/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/yuval/Documents/solaraai/ai-visibility
+configfile: pyproject.toml
+plugins: cov-7.0.0, asyncio-1.3.0, anyio-4.12.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 43 items
+
+tests/contracts/test_invalid_mentions.py::test_mention_rejects_invalid_mention_type PASSED [  2%]
+tests/contracts/test_invalid_mentions.py::test_citation_record_rejects_invalid_status PASSED [  4%]
+tests/contracts/test_invalid_mentions.py::test_run_rejects_invalid_status PASSED [  6%]
+tests/contracts/test_invalid_mentions.py::test_degraded_state_rejects_invalid_error_code PASSED [  9%]
+tests/contracts/test_invalid_mentions.py::test_mention_requires_citation PASSED [ 11%]
+tests/contracts/test_invalid_mentions.py::test_run_requires_workspace_id PASSED [ 13%]
+tests/contracts/test_invalid_mentions.py::test_run_requires_provider PASSED [ 16%]
+tests/contracts/test_invalid_mentions.py::test_run_requires_model PASSED [ 18%]
+tests/contracts/test_invalid_mentions.py::test_run_requires_prompt_version PASSED [ 20%]
+tests/contracts/test_invalid_mentions.py::test_run_requires_parser_version PASSED [ 23%]
+tests/contracts/test_invalid_mentions.py::test_run_requires_citations PASSED [ 25%]
+tests/contracts/test_invalid_mentions.py::test_workspace_create_requires_name PASSED [ 27%]
+tests/contracts/test_invalid_mentions.py::test_workspace_create_requires_slug PASSED [ 30%]
+tests/contracts/test_invalid_mentions.py::test_brand_requires_workspace_id PASSED [ 32%]
+tests/contracts/test_invalid_mentions.py::test_competitor_requires_workspace_id PASSED [ 34%]
+tests/contracts/test_invalid_mentions.py::test_metric_snapshot_requires_formula_version PASSED [ 37%]
+tests/contracts/test_models.py::test_workspace_create_minimal PASSED     [ 39%]
+tests/contracts/test_models.py::test_workspace_create_with_description PASSED [ 41%]
+tests/contracts/test_models.py::test_workspace_full_model PASSED         [ 44%]
+tests/contracts/test_models.py::test_brand_model PASSED                  [ 46%]
+tests/contracts/test_models.py::test_competitor_model PASSED             [ 48%]
+tests/contracts/test_models.py::test_prompt_model PASSED                 [ 51%]
+tests/contracts/test_models.py::test_prompt_version_model PASSED         [ 53%]
+tests/contracts/test_models.py::test_prompt_set_model PASSED             [ 55%]
+tests/contracts/test_models.py::test_citation_record_with_url PASSED     [ 58%]
+tests/contracts/test_models.py::test_citation_record_no_citation PASSED  [ 60%]
+tests/contracts/test_models.py::test_mention_type_enum PASSED            [ 62%]
+tests/contracts/test_models.py::test_mention_model PASSED                [ 65%]
+tests/contracts/test_models.py::test_run_status_enum PASSED              [ 67%]
+tests/contracts/test_models.py::test_run_result_model PASSED             [ 69%]
+tests/contracts/test_models.py::test_run_model PASSED                    [ 72%]
+tests/contracts/test_models.py::test_metric_snapshot_model PASSED        [ 74%]
+tests/contracts/test_models.py::test_competitor_comparison_model PASSED  [ 76%]
+tests/contracts/test_models.py::test_recommendation_model PASSED         [ 79%]
+tests/contracts/test_models.py::test_rule_trigger_model PASSED           [ 81%]
+tests/contracts/test_models.py::test_error_code_enum PASSED              [ 83%]
+tests/contracts/test_models.py::test_failed_provider_model PASSED        [ 86%]
+tests/contracts/test_models.py::test_degraded_state_model PASSED         [ 88%]
+tests/contracts/test_models.py::test_models_are_importable_from_package PASSED [ 90%]
+tests/contracts/test_scan_contracts.py::test_scan_job_contract PASSED    [ 93%]
+tests/contracts/test_scan_contracts.py::test_observation_contract PASSED [ 95%]
+tests/contracts/test_scan_contracts.py::test_recommendation_item_contract PASSED [ 97%]
+tests/contracts/test_scan_contracts.py::test_missing_version_metadata PASSED [100%]
+
+============================== 43 passed in 0.10s ==============================

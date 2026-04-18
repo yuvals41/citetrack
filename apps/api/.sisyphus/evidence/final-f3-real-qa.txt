@@ -1,0 +1,83 @@
+F3 REAL QA EXECUTION
+Step 1 (full tests): 512 passed
+Output:
+tests/ui/test_state_wired.py::test_dashboard_state_refresh_populates_visibility_score PASSED [ 98%]
+tests/ui/test_state_wired.py::test_citation_state_has_load_citations_method PASSED [ 98%]
+tests/ui/test_state_wired.py::test_citation_state_load_citations_populates_citations PASSED [ 99%]
+tests/ui/test_state_wired.py::test_citation_state_load_citations_empty_run PASSED [ 99%]
+tests/ui/test_state_wired.py::test_recommendation_state_exists PASSED    [ 99%]
+tests/ui/test_state_wired.py::test_recommendation_state_load_recommendations_populates PASSED [ 99%]
+tests/ui/test_state_wired.py::test_recommendation_state_unknown_workspace_returns_empty PASSED [ 99%]
+tests/ui/test_state_wired.py::test_recommendations_page_uses_recommendation_state PASSED [100%]
+
+============================= 512 passed in 52.26s =============================
+
+Step 2 (seed-demo): PASS - JSON output with no errors
+Output snippet:
+{
+  "status": "success",
+  "workspaces_created": 0,
+  "workspaces_skipped": 5,
+  "runs_created": 0,
+  "mentions_created": 0
+}
+
+Step 3 (CLI help): FAIL
+Output snippet:
+Unknown command: --help
+
+Step 4 (scheduler dry-run): PASS - dry-run schedule emitted
+Output snippet:
+{
+  "executed_jobs": 1,
+  "results": [
+    {
+      "schedule_id": "1f848d17-343b-43b5-b643-c8d83496b7c6",
+      "workspace_slug": "default",
+      "status": "dry_run",
+      "run_id": null,
+      "error_message": null
+    }
+  ]
+}
+
+Step 5 (E2E tests): 40 passed
+Output:
+tests/e2e/test_onboarding.py::test_onboarding_data_ids_in_source PASSED  [ 87%]
+tests/e2e/test_seeded_flow_regression.py::test_seeded_flow_seed_to_dashboard_snapshot PASSED [ 90%]
+tests/e2e/test_seeded_flow_regression.py::test_seeded_flow_scan_produces_diagnosis_and_recommendations PASSED [ 92%]
+tests/e2e/test_seeded_flow_regression.py::test_seeded_flow_full_pipeline_scan_to_api_snapshot PASSED [ 95%]
+tests/e2e/test_seeded_flow_regression.py::test_seeded_flow_completed_with_partial_failures_status_is_correct PASSED [ 97%]
+tests/e2e/test_seeded_flow_regression.py::test_seeded_flow_workspace_isolation_across_scans PASSED [100%]
+
+============================= 40 passed in 18.19s ==============================
+
+Step 6 (contract tests): 68 passed
+Output:
+tests/contracts/test_models.py::test_error_code_enum PASSED              [ 89%]
+tests/contracts/test_models.py::test_failed_provider_model PASSED        [ 91%]
+tests/contracts/test_models.py::test_degraded_state_model PASSED         [ 92%]
+tests/contracts/test_models.py::test_models_are_importable_from_package PASSED [ 94%]
+tests/contracts/test_scan_contracts.py::test_scan_job_contract PASSED    [ 95%]
+tests/contracts/test_scan_contracts.py::test_observation_contract PASSED [ 97%]
+tests/contracts/test_scan_contracts.py::test_recommendation_item_contract PASSED [ 98%]
+tests/contracts/test_scan_contracts.py::test_missing_version_metadata PASSED [100%]
+
+============================== 68 passed in 0.71s ==============================
+
+Step 7 (data-id attrs): 5 found
+Output snippet:
+162: data_id="hero-visibility-score",
+244: data_id="competitor-comparison-table",
+298: data_id="provider-breakdown",
+361: data_id="findings-section",
+408: data_id="priority-actions-list",
+
+Step 8 (onboarding): PASS
+Output snippet:
+15:from ai_visibility.ui.pages.onboarding import onboarding_page
+84:    onboarding_page,
+85:    route="/onboarding",
+ai_visibility/ui/pages/onboarding.py
+
+VERDICT: REJECT

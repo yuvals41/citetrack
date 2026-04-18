@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/yuval/Documents/solaraai/ai-visibility/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/yuval/Documents/solaraai/ai-visibility
+configfile: pyproject.toml
+plugins: cov-7.0.0, asyncio-1.3.0, anyio-4.12.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 44 items / 38 deselected / 6 selected
+
+tests/llm/test_anthropic_adapter.py::test_anthropic_execute_returns_adapter_result_with_citations PASSED [ 16%]
+tests/llm/test_anthropic_adapter.py::test_anthropic_no_text_content_raises_provider_error PASSED [ 33%]
+tests/llm/test_anthropic_adapter.py::test_anthropic_api_error_raises_provider_error PASSED [ 50%]
+tests/llm/test_anthropic_adapter.py::test_anthropic_web_search_without_urls_returns_empty_citations PASSED [ 66%]
+tests/llm/test_deep_gateway.py::test_llm_config_accepts_all_supported_providers[anthropic] PASSED [ 83%]
+tests/llm/test_gateway.py::test_gateway_default_models_for_openai_and_anthropic PASSED [100%]
+
+======================= 6 passed, 38 deselected in 1.89s =======================
