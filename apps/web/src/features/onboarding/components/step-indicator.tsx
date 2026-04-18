@@ -14,9 +14,9 @@ export function StepIndicator({ current, total }: StepIndicatorProps) {
             key={i}
             className={cn(
               "size-2 rounded-full",
-              i < current
+              i + 1 < current
                 ? "bg-foreground"
-                : i === current
+                : i + 1 === current
                   ? "bg-foreground ring-4 ring-foreground/10"
                   : "bg-muted",
             )}

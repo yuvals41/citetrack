@@ -12,6 +12,7 @@
     "./*": "./src/components/*.tsx",
     "./countries": "./src/components/countries.ts",
     "./select-types": "./src/components/select-types.ts",
+    "./tokens.css": "./src/components/tokens.css",
     "./animations.css": "./src/components/animations.css"
   },
   "dependencies": {

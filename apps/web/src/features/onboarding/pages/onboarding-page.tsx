@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@citetrack/ui/card";
 import { useState } from "react";
 import type { OnboardingData } from "../lib/schema";
-import { submitOnboarding } from "../lib/submit";
+import { submitOnboarding } from "#/features/onboarding/lib/submit";
 import { StepIndicator } from "../components/step-indicator";
 import { BrandStep } from "../steps/brand-step";
 import { CompetitorsStep } from "../steps/competitors-step";

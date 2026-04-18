@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from "@citetrack/ui/form";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod";
 import { onboardingSchema } from "../lib/schema";
 
 const brandStepSchema = onboardingSchema.shape.brand;
@@ -39,6 +39,7 @@ export function BrandStep({ onNext, initial }: BrandStepProps) {
         <form
           onSubmit={form.handleSubmit(onNext)}
           className="space-y-4"
+          noValidate
         >
           <FormField
             control={form.control}
@@ -60,7 +61,7 @@ export function BrandStep({ onNext, initial }: BrandStepProps) {
               <FormItem>
                 <FormLabel>Website</FormLabel>
                 <FormControl>
-                  <Input type="url" placeholder="example.com" {...field} />
+                  <Input type="text" placeholder="example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

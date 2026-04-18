@@ -1,3 +1,5 @@
+import { Alert } from "@citetrack/ui/alert";
+import { Card, CardContent } from "@citetrack/ui/card";
 import { SignIn } from "@clerk/tanstack-react-start";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
@@ -6,6 +8,8 @@ export const Route = createFileRoute("/sign-in/$")({
 });
 
 function SignInPage() {
+  const isClerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+
   return (
     <main className="min-h-screen bg-background px-4 py-12">
       <div className="flex min-h-[calc(100vh-6rem)] flex-col items-center justify-center gap-8">
@@ -18,7 +22,17 @@ function SignInPage() {
         </div>
 
         <div className="flex w-full max-w-md flex-col gap-4">
-          <SignIn signUpUrl="/sign-up" forceRedirectUrl="/dashboard" />
+          {isClerkConfigured ? (
+            <SignIn signUpUrl="/sign-up" forceRedirectUrl="/dashboard" />
+          ) : (
+            <Card>
+              <CardContent>
+                <Alert variant="info" className="mt-1">
+                  Authentication is unavailable until Clerk is configured in <code>apps/web/.env.local</code>.
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
 
           <p className="text-center text-sm text-muted-foreground">
             Forgot your password?{" "}

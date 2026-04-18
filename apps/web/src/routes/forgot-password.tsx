@@ -30,7 +30,17 @@ type ClerkErrorShape = {
 
 type FormSubmitEvent = Parameters<NonNullable<ComponentProps<"form">["onSubmit"]>>[0];
 
-function ForgotPasswordPage() {
+export function ForgotPasswordPage() {
+  const isClerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+
+  if (!isClerkConfigured) {
+    return <ForgotPasswordFallback />;
+  }
+
+  return <ForgotPasswordForm />;
+}
+
+function ForgotPasswordForm() {
   const navigate = useNavigate();
   const { fetchStatus, signIn } = useSignIn();
 
@@ -210,6 +220,75 @@ function ForgotPasswordPage() {
                   </Button>
                 </form>
               )}
+            </div>
+          </CardContent>
+
+          <CardFooter className="justify-center border-0 pt-0">
+            <p className="text-sm text-muted-foreground">
+              Remember your password?{" "}
+              <Link to="/sign-in/$" params={{ _splat: "" }} className="font-medium text-foreground hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
+    </main>
+  );
+}
+
+function ForgotPasswordFallback() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+
+  return (
+    <main className="min-h-screen bg-background px-4 py-12">
+      <div className="flex min-h-[calc(100vh-6rem)] flex-col items-center justify-center gap-8">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <img src="/logo192.png" alt="Citetrack logo" className="h-10 w-10" />
+          <div>
+            <p className="text-lg font-semibold text-foreground">Citetrack AI</p>
+            <p className="text-sm text-muted-foreground">Reset your password and get back to tracking</p>
+          </div>
+        </div>
+
+        <Card className="w-full max-w-md shadow-none">
+          <CardHeader>
+            <CardTitle>Forgot your password?</CardTitle>
+            <CardDescription>Enter the email tied to your Citetrack account.</CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <div className="space-y-4">
+              <Alert variant="info">
+                Clerk is not configured yet, so password reset is unavailable in this environment.
+              </Alert>
+              {message ? <Alert variant="info">{message}</Alert> : null}
+
+              <form
+                className="space-y-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setMessage(`Password reset will be available for ${email.trim() || "this account"} once Clerk is configured.`);
+                }}
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                  />
+                </div>
+
+                <Button type="submit" className="w-full">
+                  Send reset code
+                </Button>
+              </form>
             </div>
           </CardContent>
 

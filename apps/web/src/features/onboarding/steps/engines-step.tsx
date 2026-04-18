@@ -3,7 +3,7 @@ import { Button } from "@citetrack/ui/button";
 import { cn } from "@citetrack/ui/cn";
 import { ArrowLeft } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod";
 import { onboardingSchema } from "../lib/schema";
 
 const enginesStepSchema = z.object({

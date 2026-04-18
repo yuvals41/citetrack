@@ -11,7 +11,7 @@ import {
 } from "@citetrack/ui/form";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod";
 import { onboardingSchema } from "../lib/schema";
 
 const competitorsStepSchema = z.object({
