@@ -1,55 +1,121 @@
 # @citetrack/ui
 
-Shared UI primitives and utilities for Citetrack AI apps. Shadcn-style components and helper functions.
+Shared UI primitives for Citetrack AI. 48 Shadcn-based components ported from `@solaraai/ui`, rebranded with Citetrack monochrome tokens.
 
 ## Install
 
-Already installed as a workspace dependency. Nothing to do.
-
-```bash
-# In consumer app's package.json (auto-linked by Bun workspaces)
-"@citetrack/ui": "workspace:*"
-```
+Workspace-linked. Already installed in `apps/web`.
 
 ## Usage
 
 ```tsx
+import { Button } from "@citetrack/ui/button";
+import { Input } from "@citetrack/ui/input";
+import { Dialog } from "@citetrack/ui/dialog";
 import { cn } from "@citetrack/ui";
 
-<button className={cn("px-4 py-2", isActive && "bg-primary")} />
+<Button variant="default">Click me</Button>
+<Input placeholder="Search..." />
 ```
 
-## What's Here
+## Components (48)
 
-| Export | Purpose |
+**Forms & Inputs**
+
+| Export | From |
 |---|---|
-| `cn(...classes)` | Merge Tailwind classes with `clsx` + `twMerge` |
+| `Button` | `@citetrack/ui/button` |
+| `Input` | `@citetrack/ui/input` |
+| `Textarea` | `@citetrack/ui/textarea` |
+| `Checkbox` | `@citetrack/ui/checkbox` |
+| `RadioGroup` | `@citetrack/ui/radio-group` |
+| `Switch` | `@citetrack/ui/switch` |
+| `Label` | `@citetrack/ui/label` |
+| `Select` | `@citetrack/ui/select` |
+| `FloatingInput` | `@citetrack/ui/floating-input` |
+| `InputOTP` | `@citetrack/ui/input-otp` |
+| `PhoneInput` | `@citetrack/ui/phone-input` |
+| `ColorPicker` | `@citetrack/ui/color-picker` |
+| `Slider` | `@citetrack/ui/slider` |
+| `DatePicker` | `@citetrack/ui/date-picker` |
+| `DateTimePicker` | `@citetrack/ui/date-time-picker` |
+| `TimePicker` | `@citetrack/ui/time-picker` |
+| `Calendar` | `@citetrack/ui/calendar` |
+| `FileUpload` | `@citetrack/ui/file-upload` |
+| `ImageUpload` | `@citetrack/ui/image-upload` |
+| `VideoUpload` | `@citetrack/ui/video-upload` |
 
-## Roadmap
+**Feedback & Status**
 
-Shadcn primitives to add (copy from [ui.shadcn.com](https://ui.shadcn.com)):
+| Export | From |
+|---|---|
+| `Alert` | `@citetrack/ui/alert` |
+| `Badge` | `@citetrack/ui/badge` |
+| `Tag` | `@citetrack/ui/tag` |
+| `Progress` | `@citetrack/ui/progress` |
+| `Skeleton` | `@citetrack/ui/skeleton` |
+| `Loader` | `@citetrack/ui/loader` |
+| `FakeLoader` | `@citetrack/ui/fake-loader` |
+| `Toaster` (sonner) | `@citetrack/ui/toast` |
 
-- [ ] Button
-- [ ] Input
-- [ ] Dialog
-- [ ] Dropdown Menu
-- [ ] Toast
-- [ ] Card
-- [ ] Table
-- [ ] Skeleton
-- [ ] Select
-- [ ] Tooltip
+**Overlays**
 
-Each component lives in its own file under `src/components/` and is re-exported from `src/index.ts`.
+| Export | From |
+|---|---|
+| `Dialog` | `@citetrack/ui/dialog` |
+| `Drawer` | `@citetrack/ui/drawer` |
+| `Modal` | `@citetrack/ui/modal` |
+| `Overlay` | `@citetrack/ui/overlay` |
+| `Menu` | `@citetrack/ui/menu` |
+| `Tooltip` | `@citetrack/ui/tooltip` |
+| `InfoTooltip` | `@citetrack/ui/info-tooltip` |
+| `Collapsible` | `@citetrack/ui/collapsible` |
 
-## Adding a Component
+**Layout & Navigation**
 
-```bash
-# Copy from shadcn docs into packages/ui/src/components/
-# Add export to packages/ui/src/index.ts:
+| Export | From |
+|---|---|
+| `Tabs` | `@citetrack/ui/tabs` |
+| `Divider` | `@citetrack/ui/divider` |
+| `BackButton` | `@citetrack/ui/back-button` |
+| `CardStack` | `@citetrack/ui/card-stack` |
+| `Carousel` | `@citetrack/ui/carousel` |
+| `Avatar` | `@citetrack/ui/avatar` |
+| `MediaRenderer` | `@citetrack/ui/media-renderer` |
+| `ShineBorder` | `@citetrack/ui/shine-border` |
 
-export { Button } from "./components/button";
+**Utility**
+
+| Export | From |
+|---|---|
+| `cn()` | `@citetrack/ui` or `@citetrack/ui/cn` |
+| `COUNTRIES, resolveCountry` | `@citetrack/ui/countries` |
+
+**Styles (import in app CSS entry):**
+
+```css
+@import "@citetrack/ui/tokens.css";
+@import "@citetrack/ui/animations.css";
 ```
+
+## Components NOT Included
+
+Solara-specific components from `@solaraai/ui` that we intentionally did NOT port:
+
+- `credits-bar` — Solara's credit system
+- `notifications` panel — Solara-specific
+- `pricing-card`, `pricing-table` — Solara pricing
+- `integration-card` — Solara integrations
+- `sidebar` — Solara nav (rebuild for Citetrack)
+- `solara-logo` — their logo (we have our own)
+- `chat/` — Solara chat with assistant-ui
+- `content-calendar/` — Solara content calendar
+- `instagram-preview/`, `facebook-preview/`, `linkedin-preview/`, `tiktok-preview/` — social post mockups
+- `mobile/` — Solara mobile-specific flow
+
+## Brand Tokens
+
+See `src/components/tokens.css`. Citetrack is **monochrome black/white** — no purple/gradients/Solara colors. Always use semantic tokens (`bg-background`, `text-foreground`), never hardcoded Tailwind grays.
 
 ## Peer Dependencies
 
@@ -57,9 +123,6 @@ export { Button } from "./components/button";
 - `react-dom` ≥ 19
 - Tailwind CSS (configured in consumer app)
 
-## Why Not Use Shadcn CLI?
+## Source
 
-Shadcn CLI copies components into each consumer. We prefer shared workspace package because:
-1. Single source of truth across web / admin / future apps
-2. Single upgrade path
-3. Easier to enforce brand consistency
+Originally from `/home/yuval/Documents/solaraai/platform/packages/node/ui`. Ported April 2026.

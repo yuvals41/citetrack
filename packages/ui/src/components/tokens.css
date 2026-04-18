@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+
+  --color-primary: #0a0a0a;
+  --color-primary-foreground: #fafafa;
+  --color-primary-hover: #1f1f1f;
+
+  --color-secondary: #f4f4f5;
+  --color-secondary-foreground: #0a0a0a;
+  --color-secondary-hover: #e4e4e7;
+
+  --color-surface: #f4f4f5;
+  --color-surface-foreground: #0a0a0a;
+  --color-surface-hover: #e4e4e7;
+
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+
+  --color-accent: #f4f4f5;
+  --color-accent-foreground: #0a0a0a;
+
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #fafafa;
+  --color-destructive-hover: #b91c1c;
+
+  --color-success: #16a34a;
+  --color-success-foreground: #fafafa;
+
+  --color-warning: #ca8a04;
+  --color-warning-foreground: #0a0a0a;
+
+  --color-border: #e4e4e7;
+  --color-input: #e4e4e7;
+  --color-ring: #0a0a0a;
+  --color-ring-offset: #ffffff;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0a0a0a;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0a0a0a;
+
+  --radius-sm: 0.25rem;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0a0a0a;
+    --color-foreground: #fafafa;
+
+    --color-primary: #fafafa;
+    --color-primary-foreground: #0a0a0a;
+    --color-primary-hover: #e4e4e7;
+
+    --color-secondary: #1a1a1a;
+    --color-secondary-foreground: #fafafa;
+    --color-secondary-hover: #27272a;
+
+    --color-surface: #1a1a1a;
+    --color-surface-foreground: #fafafa;
+    --color-surface-hover: #27272a;
+
+    --color-muted: #1a1a1a;
+    --color-muted-foreground: #a1a1aa;
+
+    --color-accent: #1a1a1a;
+    --color-accent-foreground: #fafafa;
+
+    --color-border: #27272a;
+    --color-input: #27272a;
+    --color-ring: #fafafa;
+    --color-ring-offset: #0a0a0a;
+
+    --color-card: #0f0f0f;
+    --color-card-foreground: #fafafa;
+
+    --color-popover: #0f0f0f;
+    --color-popover-foreground: #fafafa;
+  }
+}
