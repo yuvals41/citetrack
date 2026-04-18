@@ -1,7 +1,8 @@
 from typing import TypeAlias
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
+from ai_visibility.api.auth import get_current_user_id
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
 from ai_visibility.metrics.snapshot import SnapshotRepository
 from ai_visibility.pixel.router import router as pixel_router
@@ -167,19 +168,27 @@ async def health() -> ApiPayload:
     return await _health_payload()
 
 
-async def list_workspaces() -> ApiPayload:
+async def list_workspaces(user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await _workspaces_payload()
 
 
-async def latest_run(workspace: str = "default") -> ApiPayload:
+async def latest_run(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await _latest_run_payload(workspace)
 
 
-async def list_runs(workspace: str = "default") -> ApiPayload:
+async def list_runs(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await _runs_payload(workspace)
 
 
-async def list_prompts() -> ApiPayload:
+async def list_prompts(user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     try:
         return _prompts_payload()
     except Exception as exc:
@@ -192,19 +201,27 @@ async def list_prompts() -> ApiPayload:
         )
 
 
-async def snapshot_overview(workspace: str = "default") -> ApiPayload:
+async def snapshot_overview(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await _snapshot_overview_payload(workspace)
 
 
-async def snapshot_trend(workspace: str = "default") -> ApiPayload:
+async def snapshot_trend(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await _snapshot_trend_payload(workspace)
 
 
-async def snapshot_findings(workspace: str = "default") -> ApiPayload:
+async def snapshot_findings(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await _snapshot_findings_payload(workspace)
 
 
-async def snapshot_actions(workspace: str = "default") -> ApiPayload:
+async def snapshot_actions(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await _snapshot_actions_payload(workspace)
 
 

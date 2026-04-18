@@ -4,9 +4,10 @@ import asyncio
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 
+from ai_visibility.api.auth import get_current_user_id
 from ai_visibility.pixel.events import PixelEvent
 from ai_visibility.pixel.events import VALID_EVENT_TYPES
 from ai_visibility.pixel.events import VALID_PIXEL_SOURCES
@@ -36,14 +37,18 @@ async def receive_pixel_event(request: Request) -> Response:
 
 
 @router.get("/snippet/{workspace_id}")
-async def get_snippet(workspace_id: str, request: Request) -> Response:
+async def get_snippet(workspace_id: str, request: Request, user_id: str = Depends(get_current_user_id)) -> Response:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     api_base_url = f"{request.url.scheme}://{request.url.netloc}"
     snippet = generate_pixel_snippet(workspace_id=workspace_id, api_base_url=api_base_url)
     return Response(content=snippet, media_type="application/javascript")
 
 
 @router.get("/stats/{workspace_id}")
-async def get_stats(workspace_id: str, days: int = 30) -> dict[str, Any]:
+async def get_stats(workspace_id: str, days: int = 30, user_id: str = Depends(get_current_user_id)) -> dict[str, Any]:
+    # TODO Phase 3d: scope query by user_id via workspace ownership.
+    _ = user_id
     return await get_pixel_stats(workspace_id=workspace_id, days=days)
 
 

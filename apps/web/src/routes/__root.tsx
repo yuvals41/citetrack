@@ -1,7 +1,9 @@
+import { ClerkProvider } from "@clerk/tanstack-react-start";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { ReactNode } from "react";
+import { clerkAppearance } from "../lib/clerk-appearance";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -22,13 +24,25 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  assertClerkConfiguredInProd(publishableKey);
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        {children}
+        {publishableKey ? (
+          <ClerkProvider publishableKey={publishableKey} appearance={clerkAppearance}>
+            {children}
+          </ClerkProvider>
+        ) : (
+          <>
+            {children}
+            <MissingClerkKeyBanner />
+          </>
+        )}
         <TanStackDevtools
           config={{ position: "bottom-right" }}
           plugins={[
@@ -41,5 +55,27 @@ function RootDocument({ children }: { children: ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+function assertClerkConfiguredInProd(publishableKey: string | undefined): void {
+  if (import.meta.env.PROD && !publishableKey) {
+    throw new Error(
+      "Missing VITE_CLERK_PUBLISHABLE_KEY in production build. " +
+        "Set it in your hosting provider's environment before deploying.",
+    );
+  }
+}
+
+function MissingClerkKeyBanner() {
+  return (
+    <div
+      role="alert"
+      className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-md bg-foreground px-4 py-2 text-xs text-background shadow-md"
+    >
+      <strong className="font-semibold">Dev: Clerk not configured.</strong>{" "}
+      Add <code>VITE_CLERK_PUBLISHABLE_KEY</code> to <code>apps/web/.env.local</code> to enable
+      auth.
+    </div>
   );
 }

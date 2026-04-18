@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+# pyright: reportMissingImports=false
+
 from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
 
-from ai_visibility.api import create_app
 from ai_visibility.api import routes as routes_module
 from ai_visibility.metrics.engine import TrendPoint, TrendSeries
 from ai_visibility.metrics.snapshot import ActionQueue, FindingsSummary, OverviewSnapshot
@@ -108,7 +109,10 @@ class _SnapshotRepoStub:
         )
 
 
-def test_snapshot_routes_return_precomputed_models(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_snapshot_routes_return_precomputed_models(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_client: TestClient,
+) -> None:
     async def _stub_repo() -> _SnapshotRepoStub:
         return _SnapshotRepoStub()
 
@@ -116,13 +120,10 @@ def test_snapshot_routes_return_precomputed_models(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(routes_module, "RunRepository", _ForbiddenRepository)
     monkeypatch.setattr(routes_module, "WorkspaceRepository", _ForbiddenRepository)
 
-    app = create_app()
-    client = TestClient(app)
-
-    overview = client.get("/api/v1/snapshot/overview?workspace=default")
-    trend = client.get("/api/v1/snapshot/trend?workspace=default")
-    findings = client.get("/api/v1/snapshot/findings?workspace=default")
-    actions = client.get("/api/v1/snapshot/actions?workspace=default")
+    overview = auth_client.get("/api/v1/snapshot/overview?workspace=default")
+    trend = auth_client.get("/api/v1/snapshot/trend?workspace=default")
+    findings = auth_client.get("/api/v1/snapshot/findings?workspace=default")
+    actions = auth_client.get("/api/v1/snapshot/actions?workspace=default")
 
     assert overview.status_code == 200
     assert overview.json()["workspace"] == "default"
@@ -143,3 +144,18 @@ def test_snapshot_routes_return_precomputed_models(monkeypatch: pytest.MonkeyPat
     assert actions.status_code == 200
     assert actions.json()["total_actions"] == 1
     assert actions.json()["items"][0]["action_id"] == "add_schema_markup"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/snapshot/overview?workspace=default",
+        "/api/v1/snapshot/trend?workspace=default",
+        "/api/v1/snapshot/findings?workspace=default",
+        "/api/v1/snapshot/actions?workspace=default",
+    ],
+)
+def test_snapshot_routes_require_auth(path: str, unauth_client: TestClient) -> None:
+    response = unauth_client.get(path)
+
+    assert response.status_code in {401, 403}

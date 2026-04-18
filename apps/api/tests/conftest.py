@@ -1,13 +1,22 @@
 """Pytest configuration and shared fixtures for ai-visibility tests."""
 
+# pyright: reportMissingImports=false
+
+import base64
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import jwt as pyjwt
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from fastapi.testclient import TestClient
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent
@@ -94,6 +103,11 @@ def _make_model_mock() -> MagicMock:
     return model
 
 
+def _base64url_uint(value: int) -> str:
+    raw = value.to_bytes((value.bit_length() + 7) // 8, byteorder="big")
+    return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+
+
 @pytest.fixture
 def mock_prisma() -> MagicMock:
     """Mock Prisma client with all ai-visibility models (async CRUD methods)."""
@@ -129,7 +143,100 @@ def patch_get_prisma(mock_prisma: MagicMock):
 
     with (
         patch("ai_visibility.storage.prisma_connection.get_prisma", new=_fake_get_prisma),
+        patch("ai_visibility.api.routes.get_prisma", new=_fake_get_prisma),
+        patch("ai_visibility.pixel.events.get_prisma", new=_fake_get_prisma),
         patch("ai_visibility.runs.orchestrator.get_prisma", new=_fake_get_prisma),
         patch("ai_visibility.cli.get_prisma", new=_fake_get_prisma),
     ):
         yield mock_prisma
+
+
+@pytest.fixture(scope="session")
+def rsa_key_pair() -> dict[str, object]:
+    """Generate an RSA key pair once per session for signing test JWTs."""
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("utf-8")
+
+    public_numbers = private_key.public_key().public_numbers()
+    jwk = {
+        "kty": "RSA",
+        "use": "sig",
+        "alg": "RS256",
+        "kid": "test-kid-1",
+        "n": _base64url_uint(public_numbers.n),
+        "e": _base64url_uint(public_numbers.e),
+    }
+    return {
+        "private_key": private_key,
+        "private_pem": private_pem,
+        "jwks": {"keys": [jwk]},
+    }
+
+
+@pytest.fixture
+def clerk_test_token(rsa_key_pair: dict[str, object]) -> str:
+    """Produce a valid Clerk-shaped JWT signed with the test RSA key."""
+    now = int(time.time())
+    payload = {
+        "sub": "user_test_abc123",
+        "iss": "https://test.clerk.accounts.dev",
+        "azp": "http://localhost:3000",
+        "sid": "sess_test_xyz",
+        "exp": now + 60,
+        "nbf": now - 10,
+        "iat": now,
+    }
+    private_pem = str(rsa_key_pair["private_pem"])
+    return pyjwt.encode(payload, private_pem, algorithm="RS256", headers={"kid": "test-kid-1"})
+
+
+@pytest.fixture
+def mock_jwks_response(rsa_key_pair: dict[str, object]) -> dict[str, object]:
+    """Return the JWKS payload used by Clerk auth tests."""
+    return cast(dict[str, object], rsa_key_pair["jwks"])
+
+
+@pytest.fixture
+def mock_jwks(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_jwks_response: dict[str, object],
+):
+    """Patch Clerk auth settings and JWKS cache to use local test keys."""
+    from ai_visibility.api import auth as auth_module
+
+    monkeypatch.setenv("CLERK_JWKS_URL", "https://test.clerk.accounts.dev/.well-known/jwks.json")
+    monkeypatch.setenv("CLERK_JWT_ISSUER", "https://test.clerk.accounts.dev")
+    monkeypatch.setenv("CLERK_AUTHORIZED_PARTIES", "http://localhost:3000")
+
+    auth_module.CLERK_JWKS_URL = "https://test.clerk.accounts.dev/.well-known/jwks.json"
+    auth_module.CLERK_JWT_ISSUER = "https://test.clerk.accounts.dev"
+    auth_module.CLERK_AUTHORIZED_PARTIES = ["http://localhost:3000"]
+    auth_module._jwks_cache = mock_jwks_response
+    auth_module._jwks_fetched_at = time.time()
+
+    yield
+
+    auth_module._jwks_cache = {}
+    auth_module._jwks_fetched_at = 0.0
+
+
+@pytest.fixture
+def auth_client(clerk_test_token: str, mock_jwks, patch_get_prisma) -> TestClient:
+    _ = patch_get_prisma
+    from ai_visibility.api import create_app
+
+    client = TestClient(create_app())
+    client.headers.update({"Authorization": f"Bearer {clerk_test_token}"})
+    return client
+
+
+@pytest.fixture
+def unauth_client(patch_get_prisma) -> TestClient:
+    _ = patch_get_prisma
+    from ai_visibility.api import create_app
+
+    return TestClient(create_app())
