@@ -1045,18 +1045,27 @@ Migrated from ai-visibility but not cleaned up:
 
 ### 🟡 Documentation claims not yet real
 
-This `AGENTS.md` describes many patterns as if they exist. As of Week 1:
+This `AGENTS.md` describes many patterns as if they exist. Progress tracker:
 
-- No `src/features/` folder in `apps/web`
-- No Shadcn primitives in `@citetrack/ui`
-- No Clerk integration (only the package is installed)
-- No `createRootRouteWithContext` with queryClient in `src/router.tsx`
-- No Lemon Squeezy integration
-- No Sentry / Plausible
-- No GitHub Actions
-- No lefthook / pre-commit
+**Done (as of auth+dashboard+onboarding workstream):**
+- ✅ `src/features/` folder in `apps/web` (dashboard + onboarding)
+- ✅ Shadcn primitives in `@citetrack/ui` (57 primitives: 48 ported + 9 added)
+- ✅ Clerk integration — end-to-end (frontend ClerkProvider + auth routes + FastAPI JWT verifier + 43 backend + 69 frontend + 6 E2E tests)
+- ✅ `QueryClientProvider` in `src/routes/__root.tsx` (module-level singleton, not `createRootRouteWithContext`)
+- ✅ Auth pages: `/sign-in/$`, `/sign-up/$`, `/forgot-password` (with Clerk-less fallback)
+- ✅ Onboarding wizard: 4-step flow with Zod + react-hook-form
+- ✅ Dashboard shell: Multica-style sidebar + 48px page header
+- ✅ Dashboard page: 4 KPI cards + trend chart + findings + actions (real API wiring)
 
-All labeled as TARGET PATTERN in the sections where they appear. Don't trust examples without first checking the file.
+**Still pending:**
+- ❌ Lemon Squeezy integration
+- ❌ Sentry / Plausible
+- ❌ GitHub Actions
+- ❌ lefthook / pre-commit
+- ❌ Registered sub-routes for `/dashboard/brands`, `/dashboard/competitors`, etc. (sidebar nav items currently use `<a href>` because the routes don't exist yet)
+- ❌ Clerk dashboard setup (keys not yet created — see `docs/CLERK_SETUP.md`)
+
+All pending items labeled as TARGET PATTERN in the sections where they appear. Don't trust examples without first checking the file.
 
 ### 🟡 Test running without API keys
 
