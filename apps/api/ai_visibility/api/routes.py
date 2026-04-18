@@ -1,8 +1,12 @@
-from typing import TypeAlias
+# pyright: reportAny=false, reportUnknownMemberType=false, reportCallInDefaultInitializer=false, reportAttributeAccessIssue=false
+
+from typing import Annotated, TypeAlias
 
 from fastapi import Depends, FastAPI
 
 from ai_visibility.api.auth import get_current_user_id
+from ai_visibility.api.onboarding_routes import router as onboarding_router
+from ai_visibility.api.user_routes import router as user_router
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
 from ai_visibility.metrics.snapshot import SnapshotRepository
 from ai_visibility.pixel.router import router as pixel_router
@@ -12,6 +16,7 @@ from ai_visibility.storage.repositories.run_repo import RunRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 
 ApiPayload: TypeAlias = dict[str, object]
+CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 
 
 async def _health_payload() -> ApiPayload:
@@ -168,25 +173,25 @@ async def health() -> ApiPayload:
     return await _health_payload()
 
 
-async def list_workspaces(user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def list_workspaces(user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     return await _workspaces_payload()
 
 
-async def latest_run(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def latest_run(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     return await _latest_run_payload(workspace)
 
 
-async def list_runs(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def list_runs(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     return await _runs_payload(workspace)
 
 
-async def list_prompts(user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def list_prompts(user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     try:
@@ -201,25 +206,25 @@ async def list_prompts(user_id: str = Depends(get_current_user_id)) -> ApiPayloa
         )
 
 
-async def snapshot_overview(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def snapshot_overview(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     return await _snapshot_overview_payload(workspace)
 
 
-async def snapshot_trend(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def snapshot_trend(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     return await _snapshot_trend_payload(workspace)
 
 
-async def snapshot_findings(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def snapshot_findings(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     return await _snapshot_findings_payload(workspace)
 
 
-async def snapshot_actions(workspace: str = "default", user_id: str = Depends(get_current_user_id)) -> ApiPayload:
+async def snapshot_actions(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
     # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     return await _snapshot_actions_payload(workspace)
@@ -252,6 +257,8 @@ def create_app() -> FastAPI:
     app.add_api_route("/api/v1/snapshot/trend", endpoint=snapshot_trend, methods=["GET"])
     app.add_api_route("/api/v1/snapshot/findings", endpoint=snapshot_findings, methods=["GET"])
     app.add_api_route("/api/v1/snapshot/actions", endpoint=snapshot_actions, methods=["GET"])
+    app.include_router(user_router, prefix="/api/v1")
+    app.include_router(onboarding_router, prefix="/api/v1")
     app.include_router(pixel_router)
 
     return app

@@ -7,7 +7,15 @@
     "baseUrl": ".",
     "paths": {
       "#/*": ["./src/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@citetrack/ui": ["../../packages/ui/src/index.ts"],
+      "@citetrack/ui/*": ["../../packages/ui/src/components/*"],
+      "@citetrack/types": ["../../packages/types/src/index.ts"],
+      "@citetrack/types/*": ["../../packages/types/src/*"],
+      "@citetrack/config": ["../../packages/config/src/index.ts"],
+      "@citetrack/config/*": ["../../packages/config/src/*"],
+      "@citetrack/api-client": ["../../packages/api-client/src/index.ts"],
+      "@citetrack/api-client/*": ["../../packages/api-client/src/*"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],

@@ -1,5 +1,26 @@
 import { API_BASE_URL } from "@citetrack/config";
 import type { ScanRun, VisibilityScore, Workspace } from "@citetrack/types";
+import type {
+  ActionsResult,
+  FindingsResult,
+  OverviewSnapshotResult,
+  TrendResult,
+} from "./types.js";
+
+export type { ActionsResult, FindingsResult, OverviewSnapshotResult, TrendResult };
+export type {
+  ActionItem,
+  ActionQueue,
+  DegradedInfo,
+  DegradedResponse,
+  Finding,
+  FindingsSummary,
+  OverviewSnapshot,
+  TrendPoint,
+  TrendResponse,
+  TrendSeries,
+} from "./types.js";
+export { isDegraded } from "./types.js";
 
 type RequestOptions = {
   baseUrl?: string;
@@ -36,3 +57,31 @@ export const citetrackApi = {
 };
 
 export type CitetrackApi = typeof citetrackApi;
+
+export interface CitetrackClientOptions {
+  baseUrl?: string;
+  getToken: () => Promise<string | null>;
+}
+
+export function createCitetrackClient({ baseUrl = "http://localhost:8000", getToken }: CitetrackClientOptions) {
+  async function authedFetch<T>(path: string): Promise<T> {
+    const token = await getToken();
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${baseUrl}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+    return res.json() as Promise<T>;
+  }
+
+  return {
+    getSnapshotOverview: (workspace = "default") =>
+      authedFetch<OverviewSnapshotResult>(`/api/v1/snapshot/overview?workspace=${workspace}`),
+    getSnapshotTrend: (workspace = "default") =>
+      authedFetch<TrendResult>(`/api/v1/snapshot/trend?workspace=${workspace}`),
+    getSnapshotFindings: (workspace = "default") =>
+      authedFetch<FindingsResult>(`/api/v1/snapshot/findings?workspace=${workspace}`),
+    getSnapshotActions: (workspace = "default") =>
+      authedFetch<ActionsResult>(`/api/v1/snapshot/actions?workspace=${workspace}`),
+  };
+}

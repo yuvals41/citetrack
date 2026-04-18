@@ -2,9 +2,12 @@ import { ClerkProvider } from "@clerk/tanstack-react-start";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { clerkAppearance } from "../lib/clerk-appearance";
 import appCss from "../styles.css?url";
+
+const queryClient = new QueryClient();
 
 export const Route = createRootRoute({
   head: () => ({
@@ -33,16 +36,18 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        {publishableKey ? (
-          <ClerkProvider publishableKey={publishableKey} appearance={clerkAppearance}>
-            {children}
-          </ClerkProvider>
-        ) : (
-          <>
-            {children}
-            <MissingClerkKeyBanner />
-          </>
-        )}
+        <QueryClientProvider client={queryClient}>
+          {publishableKey ? (
+            <ClerkProvider publishableKey={publishableKey} appearance={clerkAppearance}>
+              {children}
+            </ClerkProvider>
+          ) : (
+            <>
+              {children}
+              <MissingClerkKeyBanner />
+            </>
+          )}
+        </QueryClientProvider>
         <TanStackDevtools
           config={{ position: "bottom-right" }}
           plugins={[

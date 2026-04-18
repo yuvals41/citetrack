@@ -1,9 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { OnboardingPage } from "#/features/onboarding/pages/onboarding-page";
+import { PageHeader } from "#/features/dashboard/components/page-header";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
-  component: OnboardingPlaceholder,
+  component: Page,
 });
 
-function OnboardingPlaceholder() {
-  return <main className="px-6 py-10 text-sm text-muted-foreground">Onboarding coming soon.</main>;
+function Page() {
+  return (
+    <>
+      <PageHeader title="Welcome" />
+      <OnboardingPage />
+    </>
+  );
 }
