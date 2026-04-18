@@ -6,6 +6,90 @@
 
 ---
 
+## Quick Orientation
+
+**You are working on Citetrack AI** — a stealth-brand SaaS built in a monorepo.
+
+```
+  GitHub:    https://github.com/yuvals41/citetrack
+  Local:     /home/yuval/Documents/solaraai/citetrack
+  Brand:     Citetrack AI — citetrack.ai (monochrome black/white logo)
+  Owner:     Yuval Strutti (solo founder, side project separate from Solara AI)
+  Status:    Week 1 scaffold — most patterns below are TARGET, not yet implemented
+```
+
+**Commands that work RIGHT NOW:**
+
+```bash
+bun install                         # Install Node deps (apps + packages)
+uv sync                             # Install Python deps (apps/api)
+bunx nx dev @citetrack/web          # Frontend dev server → :3000 (scaffold)
+bunx nx dev @citetrack/api          # Backend dev server → :8000 (migrated code)
+bunx nx show projects               # List all NX projects
+bun run lint                        # Biome lint
+bun run typecheck                   # TypeScript check
+bun run format                      # Biome format
+```
+
+---
+
+## Table of Contents
+
+- [0. Hard Rules](#0-hard-rules)
+- [1. Tooling Decisions](#1-tooling-decisions-opinionated)
+- [2. Project Structure](#2-project-structure)
+- [3. Architecture](#3-architecture)
+- [4. Code Standards](#4-code-standards)
+- [5. Testing Philosophy](#5-testing-philosophy)
+- [6. Git & CI/CD](#6-git--cicd)
+- [7. Database](#7-database)
+- [8. Monorepo Rules](#8-monorepo-specific-rules)
+- [9. What We Don't Use](#9-what-we-do-not-use)
+- [10. Skills & Agent Roles](#10-skills--agent-roles)
+- [11. Common Commands](#11-common-commands)
+- [12. Environment & Secrets](#12-environment--secrets)
+- [13. Stealth Brand Separation](#13-stealth-brand-separation)
+- [14. Known Tech Debt / Current Limitations](#14-known-tech-debt--current-limitations)
+- [15. Agent Mental Checklist](#15-keep-in-mind--agent-mental-checklist)
+
+---
+
+## Current State vs Target State
+
+This repo is new. Most patterns in this doc describe **target state**, not current state.
+
+**Currently EXISTS and WORKS:**
+
+- ✅ NX + Bun workspaces configured (6 projects discovered)
+- ✅ `apps/web/` — TanStack Start scaffold (index + about routes only)
+- ✅ `apps/api/` — Full FastAPI backend migrated from ai-visibility (248+ tests)
+- ✅ `packages/ui/` — just `cn()` utility (no components yet)
+- ✅ `packages/types/` — domain types (`Workspace`, `ScanRun`, etc.)
+- ✅ `packages/config/` — constants (`APP_NAME`, `AI_PROVIDERS`)
+- ✅ `packages/api-client/` — typed fetch wrappers for FastAPI endpoints
+- ✅ Brand assets in `brand/official/` (SVG + PNG + favicon)
+- ✅ Python env — 146 packages installed via `uv sync`
+- ✅ Node env — 876 packages installed via `bun install`
+- ✅ Pushed to GitHub (yuvals41/citetrack)
+
+**Does NOT exist yet (labeled TARGET in this doc where relevant):**
+
+- ❌ Clerk auth wired into `apps/web`
+- ❌ Shadcn components in `@citetrack/ui` (no `Button`, `Dialog`, `Input`, etc.)
+- ❌ `apps/web/src/features/` folder structure
+- ❌ Router context with `queryClient` / `auth`
+- ❌ Citetrack-specific Prisma schema (uses Solara's local-path client via stanley repo)
+- ❌ Lemon Squeezy payment integration
+- ❌ Sentry / Plausible analytics
+- ❌ Git hooks (no lefthook, no pre-commit)
+- ❌ CI/CD pipeline (no GitHub Actions)
+- ❌ Public landing page (citetrack.ai has no content yet)
+- ❌ Dashboard pages in `apps/web`
+
+> **When this doc says something like `import { Button } from "@citetrack/ui/button"`, that is TARGET PATTERN.** It will error today. Each such section is labeled.
+
+---
+
 ## 0) Hard Rules
 
 - **NEVER revert uncommitted work.** No `git reset --hard`, no `git checkout -- .`, no `git clean -fd`. Use `git stash` to save work, `git stash apply` (never `pop`) to restore.
@@ -61,9 +145,11 @@ Every tool here was chosen deliberately. Do NOT introduce alternatives without e
 - `bun run format` to format, `bun run format:check` to verify
 - NO ESLint. NO Prettier. If Biome doesn't cover a rule, we don't need it.
 
+**Note:** The root `package.json` script is `"lint": "biome check ."` — invoke via `bun run lint`, not `bun lint` (which would try to find a `lint` binary).
+
 ### NX — Monorepo Orchestrator
 
-**Choice:** NX 20.x
+**Choice:** NX 20.8.4 (20.x line)
 **Replaces:** Turborepo, Lerna, manual scripts
 **Why:**
 
@@ -82,7 +168,8 @@ Every tool here was chosen deliberately. Do NOT introduce alternatives without e
 
 ### UV — Python Dependency Manager
 
-**Choice:** UV
+**Choice:** UV 0.9.x
+**Python Version:** 3.11+ required (3.13 locally installed)
 **Replaces:** pip, pip-tools, poetry, conda
 **Why:**
 
@@ -100,9 +187,21 @@ Every tool here was chosen deliberately. Do NOT introduce alternatives without e
 - Root `pyproject.toml` defines UV workspace members
 - Each Python app has its own `pyproject.toml`
 
+**⚠️ Local path dependencies (portability concern):**
+
+`apps/api/pyproject.toml` currently uses ABSOLUTE paths for two deps:
+
+```toml
+[tool.uv.sources]
+solaraai-llm = { path = "/home/yuval/Documents/solaraai/stanley/repos/solaraai-packages/packages/python/solaraai-llm", editable = true }
+solaraai-prisma-client = { path = "/home/yuval/Documents/solaraai/stanley/repos/prisma/dist/client-python", editable = true }
+```
+
+This **breaks on any other machine**. See §14 for the migration plan. For now, only Yuval's laptop can `uv sync` this repo.
+
 ### TypeScript 5.9+ — Strict Mode
 
-**Choice:** TypeScript with strict mode enabled
+**Choice:** TypeScript 5.9.3 with strict mode enabled
 **Why:**
 
 - Catches bugs at compile time instead of runtime
@@ -282,9 +381,13 @@ The frontend at `apps/web` is a **TanStack Start SPA** that consumes the shared 
 
 #### Router Context
 
-The root route uses `createRootRouteWithContext<{ queryClient: QueryClient }>()`. The query client is available to every route loader via `context.queryClient`, so loaders can prefetch queries before the component renders.
+> 🎯 **TARGET PATTERN** — not yet implemented. The current `src/router.tsx` is scaffold-only.
+
+The root route should use `createRootRouteWithContext<{ queryClient: QueryClient }>()`. The query client will be available to every route loader via `context.queryClient`, so loaders can prefetch queries before the component renders.
 
 #### TanStack Query Standards
+
+> 🎯 **TARGET PATTERN** — no `features/` folder exists yet. Apply this when building the first real feature.
 
 **Query keys — factory pattern, always.** Never inline raw arrays in `useQuery`. Put query keys and options in a `queries.ts` file next to the feature code:
 
@@ -365,8 +468,9 @@ Then `useSuspenseQuery(workspaceQueries.detail(slug))` reads from cache — no l
   });
   ```
   `loaderDeps` tells the router which search params the loader depends on.
-- **Auth guards via `beforeLoad`**, not inside components:
+- **Auth guards via `beforeLoad`**, not inside components (TARGET — Clerk not wired yet):
   ```ts
+  // TARGET PATTERN — requires router context to include auth state
   beforeLoad: ({ context, location }) => {
     if (!context.auth.user) {
       throw redirect({ to: "/sign-in", search: { redirect: location.href } });
@@ -417,6 +521,8 @@ Then `useSuspenseQuery(workspaceQueries.detail(slug))` reads from cache — no l
 ---
 
 #### Clean Code & File Splitting
+
+> 🎯 **TARGET PATTERN** — `src/features/` doesn't exist yet. Apply when building first real feature.
 
 **The 400-line rule is a hard cap, not a target.** If a file approaches 300 lines, start thinking about splitting.
 
@@ -503,13 +609,31 @@ export const Route = createFileRoute("/workspaces")({
 
 #### `@citetrack/ui` Library
 
-- Located at `packages/ui/src/`
-- Shadcn-based primitives (copied from [ui.shadcn.com](https://ui.shadcn.com), adapted for our tokens)
-- Per-file imports: `import { Button } from "@citetrack/ui/button"` (not barrel — once we have many components)
-- For now, `import { cn } from "@citetrack/ui"` is the main export
+**Current state (Week 1):**
+- Only exports `cn()` — merges Tailwind classes via `clsx` + `twMerge`
+- Import: `import { cn } from "@citetrack/ui"`
+- Zero actual components yet
+
+**🎯 TARGET PATTERN (when we add Shadcn primitives):**
+- Shadcn-based primitives (copied from [ui.shadcn.com](https://ui.shadcn.com), adapted for Citetrack tokens)
+- Per-file exports via package.json `exports` map
+- Per-file imports: `import { Button } from "@citetrack/ui/button"` (NOT barrel)
 - One component per file, `kebab-case.tsx` filenames
-- **Before building a new component**, check `packages/ui/src/` — it may already exist
-- New shared components go in `packages/ui/src/components/` as `kebab-case.tsx` files
+- New shared components go in `packages/ui/src/components/` as `kebab-case.tsx`
+
+**When adding a component for the first time:**
+
+1. Copy from Shadcn docs to `packages/ui/src/components/button.tsx`
+2. Adapt to Citetrack tokens (black/white, no gray defaults)
+3. Add entry to `packages/ui/package.json` `exports`:
+   ```json
+   "exports": {
+     ".": "./src/index.ts",
+     "./lib/utils": "./src/lib/utils.ts",
+     "./button": "./src/components/button.tsx"
+   }
+   ```
+4. Verify: `import { Button } from "@citetrack/ui/button"` works in `apps/web`
 
 ---
 
@@ -591,13 +715,19 @@ A task is NOT done until:
 3. Coverage ≥ 95% for touched areas
 4. Debug logs cleaned up; useful structured logs kept
 5. TypeScript passes (`nx typecheck`)
-6. Biome lint passes (`bun lint`)
+6. Biome lint passes (`bun run lint`)
 7. No new secrets in git history
 8. PR documented
 
 ---
 
 ## 6) Git & CI/CD
+
+### Repository
+
+- **GitHub:** https://github.com/yuvals41/citetrack
+- **Default branch:** `master` (deliberate — matches Solara platform convention, not the modern "main" default)
+- **Owner:** yuvals41 (Yuval Strutti's personal GitHub account)
 
 ### Git Conventions
 
@@ -607,25 +737,35 @@ A task is NOT done until:
   - `feat(web): add KPI cards to dashboard`
   - `fix(api): correct JWT validation for Clerk tokens`
   - `chore(deps): bump tanstack-router to v1.200.0`
-- **Branch naming:** `feat/<description>`, `fix/<description>`, `chore/<description>`
+- **Branch naming:** `feat/<scope>-<description>` or `fix/<scope>-<description>` — e.g. `feat/web-dashboard-kpi-cards`
 - **Trunk-based development:** short-lived branches, merge to `master` frequently
-- **Default branch:** `master`
+  - Solo founder reality: most small changes commit directly to master
+  - Use feature branches for anything > 2 commits or experimental
+
+### Git Hooks
+
+**None configured yet.** No lefthook, no husky, no pre-commit. Commits are NOT checked locally until GitHub CI runs.
+
+When adding hooks later: use [lefthook](https://github.com/evilmartians/lefthook) (matches Solara platform).
 
 ### CI Pipeline (future)
 
-- GitHub Actions triggered on push and PR
-- NX `affected` for build / test / lint — never build everything
-- Vercel preview deploy on every PR
-- Vercel production deploy on merge to master
+Not yet configured. Target GitHub Actions pipeline:
+
+- Triggered on push and PR
+- `bunx nx affected -t lint test typecheck build` — only affected projects
+- Vercel preview deploy on every PR (auto — already linked)
+- Vercel production deploy on merge to master (auto — already linked)
 
 ### Deployment
 
-- **apps/web** → Vercel (auto-deploys from master)
-- **apps/api** → Fly.io or Railway
-- **Postgres** → Supabase Pro or Neon
-- **Redis** → Upstash
+- **apps/web** → Vercel (not yet configured)
+- **apps/api** → Fly.io or Railway (not yet configured)
+- **Postgres** → Supabase Pro or Neon (not yet set up — uses Solara's local Prisma client)
+- **Redis** → Upstash (not yet set up)
+- **Domain** → citetrack.ai (registered via Porkbun, no content yet)
 
-See `apps/web/docs/deployment.md` and `apps/api/docs/runbooks.md`.
+See `apps/web/docs/deployment.md` and `apps/api/docs/runbooks.md` for target deployment steps.
 
 ---
 
@@ -763,16 +903,16 @@ cd apps/api && uv run pytest
 bunx nx affected -t test             # Only affected by git changes
 
 # Lint
-bun lint                              # Biome across everything
-bun lint:fix                          # Auto-fix
+bun run lint                          # Biome across everything
+bun run lint:fix                      # Auto-fix
 cd apps/api && uv run ruff check .    # Python
 
 # Type check
 bunx nx typecheck @citetrack/web
 bunx nx run-many -t typecheck
 
-# Everything (pre-push check)
-bun run check
+# Everything (pre-push sanity check)
+bun run check                         # lint + typecheck across monorepo
 
 # NX tools
 bunx nx show projects                 # List all projects
@@ -854,7 +994,105 @@ See [AI_VISIBILITY_LAUNCH_PLAYBOOK.md](../stanley/AI_VISIBILITY_LAUNCH_PLAYBOOK.
 
 ---
 
-## 14) Keep In Mind — Agent Mental Checklist
+## 14) Known Tech Debt / Current Limitations
+
+Honest list of things that need fixing but haven't been addressed yet.
+
+### 🔴 Critical (blocks other machines / CI)
+
+**Local-path Python dependencies**
+
+`apps/api/pyproject.toml` has absolute paths to Yuval's Solara stanley repo:
+
+```toml
+solaraai-llm = { path = "/home/yuval/Documents/solaraai/stanley/repos/solaraai-packages/packages/python/solaraai-llm", editable = true }
+solaraai-prisma-client = { path = "/home/yuval/Documents/solaraai/stanley/repos/prisma/dist/client-python", editable = true }
+```
+
+**Impact:** `uv sync` fails on any machine that isn't Yuval's laptop. CI cannot install deps. Contributors cannot onboard.
+
+**Fix options:**
+
+1. Publish `solaraai-llm` and `solaraai-prisma-client` as private PyPI packages (needs registry setup)
+2. Vendor the relevant code into `citetrack/packages/python/` (heavier, tighter coupling)
+3. Refactor `apps/api` to not depend on either package (use `prisma-client-py` directly + replace `solaraai-llm` with `mirascope` or `openai` SDK)
+
+**Priority:** Must fix before any contributor/CI onboarding.
+
+### 🟡 Important (but not blocking current work)
+
+**Prisma schema ownership unclear**
+
+`apps/api` imports the Prisma client from Solara's stanley repo. Citetrack has NO schema of its own. Tables used by the API (`ai_vis_workspaces`, `ai_vis_runs`, etc.) live inside Solara's schema.
+
+**Impact:** Citetrack is effectively reading/writing to Solara's database schema. Any schema change requires coordination with Solara.
+
+**Fix:** Fork the relevant schema fragments into `citetrack/prisma/schema.prisma`, generate our own Prisma clients, migrate data if needed.
+
+**Priority:** Fix before launching to real customers. Stealth brand can't cleanly separate from Solara while sharing a database schema.
+
+**Legacy folders still in `apps/api/`**
+
+Migrated from ai-visibility but not cleaned up:
+
+- `apps/api/.sisyphus/` — 47 evidence files from previous task tracking system. Historical artifact. Can delete or move to `docs/history/`.
+- `apps/api/data/` — 244KB of seed data. May or may not be used.
+- `apps/api/docker/` — Old Docker configs alongside the root `Dockerfile` / `docker-compose.yml`. May overlap.
+- `apps/api/Dockerfile`, `Dockerfile.dev` — Pre-date the monorepo context. Build paths may be wrong.
+- `apps/api/docker-compose.yml` — Still references ai-visibility by name in places.
+
+**Fix:** Audit each, keep what's used, delete or archive the rest.
+
+### 🟡 Documentation claims not yet real
+
+This `AGENTS.md` describes many patterns as if they exist. As of Week 1:
+
+- No `src/features/` folder in `apps/web`
+- No Shadcn primitives in `@citetrack/ui`
+- No Clerk integration (only the package is installed)
+- No `createRootRouteWithContext` with queryClient in `src/router.tsx`
+- No Lemon Squeezy integration
+- No Sentry / Plausible
+- No GitHub Actions
+- No lefthook / pre-commit
+
+All labeled as TARGET PATTERN in the sections where they appear. Don't trust examples without first checking the file.
+
+### 🟡 Test running without API keys
+
+`apps/api` tests include a `@pytest.mark.slow` marker for tests that hit real LLM APIs. To run tests without keys:
+
+```bash
+cd apps/api
+uv run pytest -m "not slow"
+```
+
+This skips the ~20 tests that require real API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.).
+
+Fast tests (~230 of them) use stub adapters and should pass without any API keys set. If they don't, that's a bug — fix the test, don't skip it.
+
+### 🟢 Quality-of-life improvements (nice to have)
+
+- Add `lefthook.yml` with pre-commit Biome + pre-push typecheck
+- Add GitHub Actions workflow (at minimum: lint + typecheck on PR)
+- Add `CONTRIBUTING.md` (even if solo — helps future you)
+- Add Storybook for `@citetrack/ui` (matches Solara platform pattern)
+- Add `CHANGELOG.md` per-app using Changesets
+- Add `.env.local` template auto-generator
+
+### 🟢 Brand / launch prep not started
+
+Separate from code debt, the business side has its own todo list (documented in `AI_VISIBILITY_LAUNCH_PLAYBOOK.md` in the Solara stanley directory, not this repo). Key items:
+
+- Social accounts not claimed (@citetrack on X, LinkedIn, etc.)
+- Osek Patur not registered
+- Lemon Squeezy account not created
+- No landing page on citetrack.ai
+- No free tool / SEO content
+
+---
+
+## 15) Keep In Mind — Agent Mental Checklist
 
 Before you act, pause and run this checklist:
 
@@ -869,7 +1107,7 @@ Before you act, pause and run this checklist:
 - Did I avoid unnecessary abstraction, duplication cleanup, or refactors that the task did not require?
 - If I claim something works, have I actually verified it with the strongest check available?
 - Am I respecting the stealth brand separation (§13)?
-- Did I run `bun lint` and `bun typecheck` before claiming the change is done?
+- Did I run `bun run lint` and `bun run typecheck` before claiming the change is done?
 
 ---
 
