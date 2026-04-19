@@ -41,18 +41,29 @@ All routes JWT-protected via `Depends(get_current_user_id)` except where noted.
 
 ### Test counts
 
-| Suite | Count | Runtime |
-|---|---:|---:|
-| pytest (`apps/api/tests/api/`) | 43 | 2.71 s |
-| Vitest (`apps/web/src/**/*.test.tsx`) | 69 | 6.5 s |
-| Playwright (`apps/web/e2e/*.spec.ts`) | 6 | 6.4 s |
-| **Total** | **118** | **~15 s** |
+| Suite | Count | Runtime | Notes |
+|---|---:|---:|---|
+| pytest (`apps/api/tests/api/` + `tests/services/`) | 101 | 2.8 s | auth, user, onboarding, snapshot, routes, **discovery, research** |
+| pytest (`apps/api/tests/` full, ignore e2e + not slow) | 710 | 40 s | 29 pre-existing failures in scan/cli/pixel (migration debt, AGENTS.md §14) |
+| Vitest (`apps/web/src/**/*.test.tsx`) | 76 | 6.5 s | schema · steps · forgot-password · dashboard · **research states** |
+| Playwright (`apps/web/e2e/*.spec.ts`) | **14** | **40 s** | 6 public + 3 authenticated + 1 onboarding + 3 setup + 1 teardown |
+| **Total green** | **901** | **~90 s** | excludes pre-existing migration failures |
 
-Backend coverage: auth (9) · user routes (9) · onboarding routes (7) · existing routes refreshed with auth (13) · snapshot routes with auth (5).
+Backend coverage:
+- auth (9) · user routes (9) · onboarding routes (7) · research routes (7)
+- snapshot routes (5) · legacy routes (13) · **competitor-discovery pipeline (51)**
 
-Frontend coverage: zod schema (17) · step indicator · each step component · onboarding page flow · dashboard chart + lists · forgot-password flow.
+Frontend coverage:
+- zod schema (17) · step indicator · each step component (incl. 4 research states)
+- onboarding page state machine · dashboard chart + lists · forgot-password flow
 
-E2E coverage: landing renders · auth pages render (Clerk-less fallback) · forgot-password interactions · `/dashboard` and `/onboarding` redirect to sign-in when unauthenticated.
+**E2E coverage (REAL sign-in via Clerk testing mode, not a smoke test):**
+- Public routes render correctly
+- Auth guard redirects to `/sign-in` when unauthenticated
+- **Signed-in user's dashboard loads with sidebar**
+- **Root `/` redirects signed-in users to `/dashboard`**
+- **Fresh ephemeral user completes full 4-step onboarding wizard** (create user via Backend API → sign in via ticket strategy → brand → competitors with research wait → engines → finish → land on dashboard or onboarding-retry)
+- Ephemeral users cleaned up in teardown
 
 ---
 
@@ -127,7 +138,7 @@ storage/repositories/user_repo.py   file-backed stub at
 ## What's next (not in scope for this workstream)
 
 ### Setup you need to do
-See `docs/CLERK_SETUP.md` — takes ~15 minutes. Without it, sign-up and sign-in don't work end-to-end (but the app still renders).
+See `docs/CLERK_SETUP.md` — takes ~15 minutes. **Already done on this machine** (Clerk test keys in `apps/web/.env.local`, backend JWKS in `apps/api/.env`, E2E test user provisions automatically).
 
 ### Backend pending Prisma migrations
 See `apps/api/docs/MIGRATION_NEEDED.md`:
@@ -155,15 +166,24 @@ All still documented as tech debt in `AGENTS.md` §14.
 
 ## Git history for this workstream
 
+Scaffold + auth + dashboard + onboarding:
 ```
-b64d3c9  test: add 69 vitest unit tests + 6 Playwright E2E tests (118 green total)
-5c2f64d  feat: dashboard shell + page + onboarding wizard + backend endpoints
+8804f94  docs: Clerk setup guide + handoff
+b64d3c9  test: 69 vitest + 6 Playwright E2E
+5c2f64d  feat: shell + dashboard + onboarding wizard + backend endpoints
 26eb2c4  feat(auth): wire Clerk end-to-end (frontend + FastAPI JWT)
-0b95f3d  feat(ui): add 9 primitives for auth+dashboard (Multica-style)
-c7d4d4a  fix(web): pin nitro + @tanstack/* to stable versions (unblock dev server)
+0b95f3d  feat(ui): 9 primitives (Multica-style)
+c7d4d4a  fix(web): pin nitro + @tanstack/* (unblock dev server)
 ```
 
-5 commits. Clean history, no squashing needed.
+Light-only theme + app-only routing + competitor research + real E2E:
+```
+(head)   test(e2e): real Playwright suite with Clerk testing mode
+(head~1) feat: competitor auto-research (restored from ai-visibility)
+383a361  fix(web): / redirect + light-only theme + restore Tailwind
+```
+
+9 commits. Clean history.
 
 ---
 
