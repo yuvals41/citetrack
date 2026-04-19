@@ -15,9 +15,9 @@ import {
 function KPISkeleton() {
   return (
     <KPICard>
-      <Skeleton className="h-3 w-24" />
-      <Skeleton className="h-8 w-16" />
-      <Skeleton className="h-3 w-12" />
+      <Skeleton className="h-3 w-2/3 max-w-[140px] rounded-md" />
+      <Skeleton className="h-9 w-1/2 max-w-[120px] rounded-md" />
+      <Skeleton className="h-3 w-1/3 max-w-[80px] rounded-md" />
     </KPICard>
   );
 }

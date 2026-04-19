@@ -1,5 +1,6 @@
 # pyright: reportAny=false, reportUnknownMemberType=false, reportCallInDefaultInitializer=false, reportAttributeAccessIssue=false
 
+import os
 from typing import Annotated, TypeAlias
 
 from fastapi import Depends, FastAPI
@@ -247,7 +248,28 @@ def _degraded_response(state: DegradedState | None) -> ApiPayload:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="AI Visibility API", version="1.0.0")
+    from fastapi.middleware.cors import CORSMiddleware
+
+    app = FastAPI(title="Citetrack AI API", version="1.0.0")
+
+    allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    default_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "https://citetrack.ai",
+        "https://www.citetrack.ai",
+        "https://app.citetrack.ai",
+    ]
+    extra_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=default_origins + extra_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     app.add_api_route("/api/v1/health", endpoint=health, methods=["GET"])
     app.add_api_route("/api/v1/workspaces", endpoint=list_workspaces, methods=["GET"])
