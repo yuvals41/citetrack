@@ -1,6 +1,6 @@
 import { Alert } from "@citetrack/ui/alert";
 import { Card, CardContent } from "@citetrack/ui/card";
-import { SignUp } from "@clerk/tanstack-react-start";
+import { SignUp } from "@clerk/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/sign-up/$")({

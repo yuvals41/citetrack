@@ -16,7 +16,7 @@ const { navigateMock, signIn } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@clerk/tanstack-react-start", () => ({
+vi.mock("@clerk/react", () => ({
   useSignIn: () => ({ signIn, fetchStatus: "idle" }),
 }));
 

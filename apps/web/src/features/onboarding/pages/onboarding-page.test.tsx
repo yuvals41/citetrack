@@ -9,7 +9,7 @@ const { navigateMock, getTokenMock } = vi.hoisted(() => ({
   getTokenMock: vi.fn(async () => "fake-token"),
 }));
 
-vi.mock("@clerk/tanstack-react-start", () => ({
+vi.mock("@clerk/react", () => ({
   useAuth: () => ({ getToken: getTokenMock }),
 }));
 

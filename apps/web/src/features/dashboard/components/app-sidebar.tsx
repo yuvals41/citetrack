@@ -1,4 +1,4 @@
-import { useUser, UserButton } from "@clerk/tanstack-react-start";
+import { UserButton, useUser } from "@clerk/react";
 import { useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {

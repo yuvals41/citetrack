@@ -1,24 +1,10 @@
-import { auth } from "@clerk/tanstack-react-start/server";
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { SidebarInset, SidebarProvider } from "@citetrack/ui/sidebar";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { AppSidebar } from "#/features/dashboard/components/app-sidebar";
-
-const requireAuth = createServerFn().handler(async () => {
-  const { isAuthenticated, userId } = await auth();
-
-  if (!isAuthenticated) {
-    throw redirect({
-      to: "/sign-in/$",
-      params: { _splat: "" },
-    });
-  }
-
-  return { userId };
-});
+import { requireSignedIn } from "#/lib/require-auth";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => await requireAuth(),
+  beforeLoad: async ({ location }) => await requireSignedIn(location.pathname),
   component: AuthenticatedShell,
 });
 

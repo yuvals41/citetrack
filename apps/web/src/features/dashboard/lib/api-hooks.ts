@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/tanstack-react-start";
+import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import {
   createCitetrackClient,

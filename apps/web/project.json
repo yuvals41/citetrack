@@ -18,7 +18,7 @@
         "cwd": "apps/web"
       },
       "cache": true,
-      "outputs": ["{projectRoot}/dist", "{projectRoot}/.output"]
+      "outputs": ["{projectRoot}/dist"]
     },
     "preview": {
       "executor": "nx:run-commands",

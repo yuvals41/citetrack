@@ -10,7 +10,7 @@ const { useQueryMock } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
 }));
 
-vi.mock("@clerk/tanstack-react-start", () => ({
+vi.mock("@clerk/react", () => ({
   useAuth: () => ({ getToken: vi.fn(async () => "fake-token") }),
 }));
 

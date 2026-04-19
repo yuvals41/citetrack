@@ -10,7 +10,7 @@ import {
 } from "@citetrack/ui/card";
 import { Input } from "@citetrack/ui/input";
 import { Label } from "@citetrack/ui/label";
-import { useSignIn } from "@clerk/tanstack-react-start";
+import { useSignIn } from "@clerk/react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ComponentProps } from "react";
 import { useState } from "react";

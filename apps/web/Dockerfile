@@ -1,12 +1,14 @@
-FROM oven/bun:1.3-alpine AS build
+FROM oven/bun:1.3-slim AS deps
 
 WORKDIR /build
 
 COPY package.json bun.lock nx.json tsconfig.base.json biome.json ./
 COPY packages ./packages
-COPY apps/web ./apps/web
+COPY apps/web/package.json ./apps/web/
 
 RUN bun install --frozen-lockfile
+
+FROM deps AS build
 
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_API_BASE_URL=http://localhost:8000
@@ -20,27 +22,57 @@ ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY \
     VITE_CLERK_SIGN_IN_URL=$VITE_CLERK_SIGN_IN_URL \
     VITE_CLERK_SIGN_UP_URL=$VITE_CLERK_SIGN_UP_URL \
     VITE_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=$VITE_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL \
-    VITE_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=$VITE_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL
+    VITE_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=$VITE_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL \
+    NODE_ENV=production
+
+COPY apps/web ./apps/web
 
 RUN bunx nx build @citetrack/web
 
+FROM nginx:1.27-alpine AS production
 
-FROM node:22-alpine AS runtime
+COPY --from=build /build/apps/web/dist /usr/share/nginx/html
 
-ENV NODE_ENV=production \
-    PORT=3003 \
-    HOST=0.0.0.0
+RUN cat <<'NGINX' > /etc/nginx/conf.d/default.conf
+server {
+    listen       8080;
+    server_name  _;
+    root         /usr/share/nginx/html;
 
-WORKDIR /app
+    location ~* \.(?:js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|ico|webp|avif)$ {
+        expires    1y;
+        add_header Cache-Control "public, immutable";
+        try_files  $uri =404;
+    }
 
-RUN adduser -D -u 1001 citetrack && chown citetrack:citetrack /app
-USER citetrack
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        expires    -1;
+        try_files  $uri =404;
+    }
 
-COPY --from=build --chown=citetrack:citetrack /build/apps/web/.output ./.output
+    location / {
+        add_header Cache-Control "no-cache" always;
+        try_files $uri /index.html;
+    }
 
-EXPOSE 3003
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options        "DENY" always;
+    add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
+}
+NGINX
 
-HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
-  CMD wget --quiet --tries=1 --spider http://127.0.0.1:3003/favicon.svg || exit 1
+RUN chown -R nginx:nginx /usr/share/nginx/html \
+ && chown -R nginx:nginx /var/cache/nginx \
+ && chown -R nginx:nginx /var/log/nginx \
+ && chown -R nginx:nginx /etc/nginx/conf.d \
+ && touch /var/run/nginx.pid \
+ && chown -R nginx:nginx /var/run/nginx.pid
 
-CMD ["node", ".output/server/index.mjs"]
+USER nginx
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:8080/favicon.svg || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

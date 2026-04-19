@@ -1,9 +1,8 @@
 node_modules
-.output
 .vite
 .cache
 .nx
-dist
+dist/
 build
 coverage
 test-results

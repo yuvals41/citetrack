@@ -2,8 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClerkClient } from "@clerk/backend";
-import { clerk, clerkSetup } from "@clerk/testing/playwright";
-import { expect, test as setup } from "@playwright/test";
+import { clerkSetup } from "@clerk/testing/playwright";
+import { test as setup } from "@playwright/test";
+import { signInViaUI } from "./helpers/clerk-sign-in";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,13 +62,7 @@ setup("ensure persistent test user", async () => {
 });
 
 setup("authenticate + save storage state", async ({ page }) => {
-  await page.goto("/");
-  await clerk.signIn({
-    page,
-    emailAddress: requireEnv("E2E_CLERK_USER_EMAIL"),
-  });
-  await page.goto("/dashboard");
-  await expect(page).not.toHaveURL(/sign-in/);
+  await signInViaUI(page, requireEnv("E2E_CLERK_USER_EMAIL"), requireEnv("E2E_CLERK_USER_PASSWORD"));
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
   await page.context().storageState({ path: authFile });
 });

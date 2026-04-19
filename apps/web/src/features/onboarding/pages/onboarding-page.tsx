@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/tanstack-react-start";
+import { useAuth } from "@clerk/react";
 import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@citetrack/ui/card";
 import { useState } from "react";

@@ -1,4 +1,4 @@
-import { ClerkProvider } from "@clerk/tanstack-react-start";
+import { ClerkProvider } from "@clerk/react";
 import type { ComponentProps } from "react";
 
 type ClerkAppearance = NonNullable<ComponentProps<typeof ClerkProvider>["appearance"]>;

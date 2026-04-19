@@ -1,5 +1,5 @@
-import { clerk, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
+import { signInViaUI } from "./helpers/clerk-sign-in";
 import { createEphemeralUser } from "./helpers/create-test-user";
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -7,14 +7,8 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("fresh user can complete onboarding", async ({ page }) => {
   test.slow();
 
-  await setupClerkTestingToken({ page });
-  const { email } = await createEphemeralUser();
-
-  await page.goto("/");
-  await clerk.signIn({
-    page,
-    emailAddress: email,
-  });
+  const { email, password } = await createEphemeralUser();
+  await signInViaUI(page, email, password);
 
   await page.goto("/onboarding");
   await expect(page).not.toHaveURL(/sign-in/);
