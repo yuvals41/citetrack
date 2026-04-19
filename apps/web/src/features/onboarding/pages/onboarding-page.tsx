@@ -37,23 +37,18 @@ export function OnboardingPage() {
     }
   };
 
-  const handleBrandNext = async (brand: OnboardingData["brand"]) => {
-    setData((prev) => ({ ...prev, brand }));
-    setStep(2);
+  const runResearch = async (domain: string) => {
     setResearchState({ status: "loading" });
     try {
-      const result = await researchCompetitors({ domain: brand.domain, getToken });
+      const result = await researchCompetitors({ domain, getToken });
       if (result.degraded) {
         setResearchState({
           status: "degraded",
           reason: result.degraded.reason,
           message: result.degraded.message,
         });
-      } else if (result.competitors.length === 0) {
-        setResearchState({ status: "success", competitors: [] });
       } else {
         setResearchState({ status: "success", competitors: result.competitors });
-        setData((d) => ({ ...d, competitors: result.competitors }));
       }
     } catch (err) {
       setResearchState({
@@ -61,6 +56,17 @@ export function OnboardingPage() {
         message: err instanceof Error ? err.message : "Research failed",
       });
     }
+  };
+
+  const handleBrandNext = async (brand: OnboardingData["brand"]) => {
+    setData((prev) => ({ ...prev, brand }));
+    setStep(2);
+    await runResearch(brand.domain);
+  };
+
+  const handleResearchAgain = async () => {
+    if (!data.brand?.domain) return;
+    await runResearch(data.brand.domain);
   };
 
   const handleCompetitorsNext = (competitors: OnboardingData["competitors"]) => {
@@ -98,6 +104,7 @@ export function OnboardingPage() {
               onBack={handleBack}
               initial={data.competitors}
               researchState={researchState}
+              onResearchAgain={handleResearchAgain}
             />
           )}
           {step === 3 && (

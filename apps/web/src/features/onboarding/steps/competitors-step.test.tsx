@@ -153,4 +153,52 @@ describe("CompetitorsStep", () => {
     expect(screen.getByDisplayValue("existing.com")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("research.com")).not.toBeInTheDocument();
   });
+
+  it("renders a 'Run research again' button only when onResearchAgain is provided", () => {
+    const { rerender } = render(
+      <CompetitorsStep onNext={vi.fn()} onBack={vi.fn()} />,
+    );
+    expect(screen.queryByRole("button", { name: /run research again/i })).not.toBeInTheDocument();
+
+    rerender(
+      <CompetitorsStep onNext={vi.fn()} onBack={vi.fn()} onResearchAgain={vi.fn()} />,
+    );
+    expect(screen.getByRole("button", { name: /run research again/i })).toBeInTheDocument();
+  });
+
+  it("Run again clears existing fields and invokes onResearchAgain", async () => {
+    const user = userEvent.setup();
+    const onResearchAgain = vi.fn();
+    const competitors = [{ name: "Old Co", domain: "old.com" }];
+
+    render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "success", competitors }}
+        onResearchAgain={onResearchAgain}
+      />,
+    );
+
+    expect(await screen.findByDisplayValue("old.com")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /run research again/i }));
+
+    expect(onResearchAgain).toHaveBeenCalledTimes(1);
+    expect(screen.queryByDisplayValue("old.com")).not.toBeInTheDocument();
+  });
+
+  it("disables the Run again button while research is loading", () => {
+    render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "loading" }}
+        onResearchAgain={vi.fn()}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: /finding competitors/i });
+    expect(button).toBeDisabled();
+  });
 });

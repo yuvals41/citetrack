@@ -10,8 +10,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@citetrack/ui/form";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowLeft, Loader2, Plus, RotateCw, Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import type { OnboardingCompetitor } from "../lib/schema";
@@ -34,6 +34,7 @@ interface CompetitorsStepProps {
   onBack: () => void;
   initial?: OnboardingCompetitor[];
   researchState?: ResearchState;
+  onResearchAgain?: () => void | Promise<void>;
 }
 
 export function CompetitorsStep({
@@ -41,6 +42,7 @@ export function CompetitorsStep({
   onBack,
   initial,
   researchState = { status: "idle" },
+  onResearchAgain,
 }: CompetitorsStepProps) {
   const form = useForm<CompetitorsStepValues>({
     resolver: zodResolver(competitorsStepSchema),
@@ -52,17 +54,28 @@ export function CompetitorsStep({
     name: "competitors",
   });
 
+  const appliedResearchRef = useRef<ResearchState | null>(null);
+
   useEffect(() => {
     if (
       researchState.status === "success" &&
       researchState.competitors.length > 0 &&
-      (!initial || initial.length === 0)
+      fields.length === 0 &&
+      appliedResearchRef.current !== researchState
     ) {
       form.reset({ competitors: researchState.competitors });
+      appliedResearchRef.current = researchState;
     }
-  }, [researchState, initial, form]);
+  }, [researchState, fields.length, form]);
 
   const isLoading = researchState.status === "loading";
+
+  const handleRunAgain = () => {
+    if (!onResearchAgain) return;
+    appliedResearchRef.current = researchState;
+    form.reset({ competitors: [] });
+    void onResearchAgain();
+  };
 
   return (
     <div className="space-y-6">
@@ -150,17 +163,31 @@ export function CompetitorsStep({
             ))}
           </div>
 
-          {fields.length < 5 && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => append({ name: "", domain: "" })}
-              className="w-full"
-            >
-              <Plus />
-              Add competitor
-            </Button>
-          )}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {fields.length < 5 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => append({ name: "", domain: "" })}
+                className="flex-1"
+              >
+                <Plus />
+                Add competitor
+              </Button>
+            )}
+            {onResearchAgain && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRunAgain}
+                disabled={isLoading}
+                className="flex-1"
+              >
+                {isLoading ? <Loader2 className="animate-spin" /> : <RotateCw />}
+                {isLoading ? "Finding competitors…" : "Run research again"}
+              </Button>
+            )}
+          </div>
 
           <div className="flex justify-between pt-2">
             <Button type="button" variant="ghost" onClick={onBack}>
