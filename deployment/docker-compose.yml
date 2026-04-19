@@ -18,6 +18,37 @@ services:
       timeout: 3s
       retries: 20
 
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile.dev
+    container_name: citetrack-api
+    restart: unless-stopped
+    working_dir: /home/yuval/Documents/solaraai/citetrack/apps/api
+    command:
+      - sh
+      - -c
+      - "uv sync --frozen && exec uv run uvicorn ai_visibility.api.routes:app --host 0.0.0.0 --port 8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../apps/api/.env
+    environment:
+      DATABASE_URL: postgresql://citetrack:citetrack@postgres:5432/citetrack
+      DIRECT_URL: postgresql://citetrack:citetrack@postgres:5432/citetrack
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - /home/yuval/Documents/solaraai:/home/yuval/Documents/solaraai
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8000/api/v1/health\").read()' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
 volumes:
   citetrack-postgres-data:
     name: citetrack-postgres-data
