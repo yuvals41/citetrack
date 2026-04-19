@@ -23,6 +23,8 @@ export const onboardingSchema = z.object({
   engines: z
     .array(z.enum(["openai", "anthropic", "perplexity", "google", "xai"]))
     .min(1, "Pick at least one"),
+  site_content: z.string().optional(),
 });
 
 export type OnboardingData = z.infer<typeof onboardingSchema>;
+export type OnboardingCompetitor = OnboardingData["competitors"][number];

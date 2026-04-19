@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Alert } from "@citetrack/ui/alert";
 import { Button } from "@citetrack/ui/button";
 import { Input } from "@citetrack/ui/input";
 import {
@@ -9,27 +10,36 @@ import {
   FormLabel,
   FormMessage,
 } from "@citetrack/ui/form";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
+import type { OnboardingCompetitor } from "../lib/schema";
 import { onboardingSchema } from "../lib/schema";
+
+export type ResearchState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; competitors: OnboardingCompetitor[] }
+  | { status: "error"; message: string };
 
 const competitorsStepSchema = z.object({
   competitors: onboardingSchema.shape.competitors,
 });
 type CompetitorsStepValues = z.infer<typeof competitorsStepSchema>;
-type CompetitorItem = CompetitorsStepValues["competitors"][number];
 
 interface CompetitorsStepProps {
-  onNext: (competitors: CompetitorItem[]) => void;
+  onNext: (competitors: OnboardingCompetitor[]) => void;
   onBack: () => void;
-  initial?: CompetitorItem[];
+  initial?: OnboardingCompetitor[];
+  researchState?: ResearchState;
 }
 
 export function CompetitorsStep({
   onNext,
   onBack,
   initial,
+  researchState = { status: "idle" },
 }: CompetitorsStepProps) {
   const form = useForm<CompetitorsStepValues>({
     resolver: zodResolver(competitorsStepSchema),
@@ -41,6 +51,18 @@ export function CompetitorsStep({
     name: "competitors",
   });
 
+  useEffect(() => {
+    if (
+      researchState.status === "success" &&
+      researchState.competitors.length > 0 &&
+      (!initial || initial.length === 0)
+    ) {
+      form.reset({ competitors: researchState.competitors });
+    }
+  }, [researchState, initial, form]);
+
+  const isLoading = researchState.status === "loading";
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -49,6 +71,32 @@ export function CompetitorsStep({
           We'll benchmark your visibility against theirs. Add up to 5.
         </p>
       </div>
+
+      {isLoading && (
+        <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Finding your competitors...
+        </div>
+      )}
+
+      {researchState.status === "success" && researchState.competitors.length === 0 && (
+        <Alert variant="warning">
+          We couldn't find competitors automatically. Add yours below.
+        </Alert>
+      )}
+
+      {researchState.status === "success" && researchState.competitors.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          We found these — edit or add more below.
+        </p>
+      )}
+
+      {researchState.status === "error" && (
+        <Alert variant="error">
+          Research failed: {researchState.message}. You can still add competitors manually.
+        </Alert>
+      )}
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit((values) => onNext(values.competitors))}
@@ -112,7 +160,9 @@ export function CompetitorsStep({
               <ArrowLeft />
               Back
             </Button>
-            <Button type="submit">Continue</Button>
+            <Button type="submit" disabled={isLoading}>
+              Continue
+            </Button>
           </div>
         </form>
       </Form>

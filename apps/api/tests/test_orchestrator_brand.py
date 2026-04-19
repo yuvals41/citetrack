@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false
+
 from __future__ import annotations
 
 # pyright: reportPrivateUsage=false, reportAny=false, reportExplicitAny=false, reportUnannotatedClassAttribute=false
@@ -10,7 +12,7 @@ import pytest
 
 from ai_visibility.providers.adapters import AdapterResult, StubAdapter
 from ai_visibility.runs.orchestrator import RunOrchestrator
-from ai_visibility.ui.onboarding_state import _discover_competitors_with_site_content
+from ai_visibility.services.competitor_discovery import discover_competitors_with_site_content
 
 
 class _FakeResponse:
@@ -27,7 +29,7 @@ def _patch_async_client(client: AsyncMock):
     context_manager = AsyncMock()
     context_manager.__aenter__.return_value = client
     context_manager.__aexit__.return_value = None
-    return patch("ai_visibility.ui.onboarding_state.httpx.AsyncClient", return_value=context_manager)
+    return patch("ai_visibility.services.competitor_discovery.httpx.AsyncClient", return_value=context_manager)
 
 
 def _env_map(values: dict[str, str]):
@@ -171,23 +173,28 @@ async def test_exa_contents_provides_summary_and_text() -> None:
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="should not be used")
+            "ai_visibility.services.competitor_discovery._describe_business",
+            new=AsyncMock(return_value="should not be used"),
         ) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])) as find_exa,
         patch(
-            "ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])
+        ) as find_exa,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
         ) as find_tavily,
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=[])) as validate,
         patch(
-            "ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=[])
+            "ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=[])
+        ) as validate,
+        patch(
+            "ai_visibility.services.competitor_discovery._filter_direct_competitors", new=AsyncMock(return_value=[])
         ) as filter_competitors,
     ):
-        result, site_content = await _discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
+        result, site_content = await discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
 
     assert result == []
     assert site_content == "site content from exa"
@@ -214,19 +221,22 @@ async def test_exa_contents_empty_falls_back_to_tavily() -> None:
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="described from tavily")
+            "ai_visibility.services.competitor_discovery._describe_business",
+            new=AsyncMock(return_value="described from tavily"),
         ) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=[])),
+        patch("ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch("ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=[])),
+        patch("ai_visibility.services.competitor_discovery._filter_direct_competitors", new=AsyncMock(return_value=[])),
     ):
-        result, site_content = await _discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
+        result, site_content = await discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
 
     assert result == []
     assert site_content == "t" * 220
@@ -253,17 +263,21 @@ async def test_exa_contents_error_falls_back_to_tavily() -> None:
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
-        patch("ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="desc")) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._describe_business", new=AsyncMock(return_value="desc")
+        ) as describe,
+        patch("ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch("ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=[])),
+        patch("ai_visibility.services.competitor_discovery._filter_direct_competitors", new=AsyncMock(return_value=[])),
     ):
-        result, site_content = await _discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
+        result, site_content = await discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
 
     assert result == []
     assert site_content == "tavily fallback"
@@ -288,17 +302,21 @@ async def test_all_extraction_fails_uses_direct_http() -> None:
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
-        patch("ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="desc")) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._describe_business", new=AsyncMock(return_value="desc")
+        ) as describe,
+        patch("ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch("ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=[])),
+        patch("ai_visibility.services.competitor_discovery._filter_direct_competitors", new=AsyncMock(return_value=[])),
     ):
-        result, site_content = await _discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
+        result, site_content = await discover_competitors_with_site_content("solaraai.com", "SaaS / Software", "US")
 
     assert result == []
     assert "Solara AI helps teams automate social media workflows at scale." in site_content
@@ -333,17 +351,24 @@ async def test_brand_name_stripped_from_exa_summary() -> None:
     client.post.side_effect = post_side_effect
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})),
+        patch(
+            "ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})
+        ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="should not run")
+            "ai_visibility.services.competitor_discovery._describe_business",
+            new=AsyncMock(return_value="should not run"),
         ) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])) as find_exa,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])
+        ) as find_exa,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch("ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=[])),
+        patch("ai_visibility.services.competitor_discovery._filter_direct_competitors", new=AsyncMock(return_value=[])),
     ):
-        result, _ = await _discover_competitors_with_site_content("solaraai.com", "SaaS / Software")
+        result, _ = await discover_competitors_with_site_content("solaraai.com", "SaaS / Software")
 
     assert result == []
     describe.assert_not_awaited()

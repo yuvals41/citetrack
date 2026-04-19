@@ -76,4 +76,81 @@ describe("CompetitorsStep", () => {
       expect(onNext).toHaveBeenCalledWith([]);
     });
   });
+
+  it("renders loading state when researchState status is loading", () => {
+    render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "loading" }}
+      />,
+    );
+
+    expect(screen.getByText(/finding your competitors/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
+  });
+
+  it("renders warning alert when researchState is success with no competitors", () => {
+    render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "success", competitors: [] }}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /couldn't find competitors automatically/i,
+    );
+  });
+
+  it("pre-populates form rows when researchState has competitors", async () => {
+    const competitors = [
+      { name: "Rival Inc.", domain: "rival.com" },
+      { name: "Contender Corp", domain: "contender.com" },
+    ];
+
+    render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "success", competitors }}
+      />,
+    );
+
+    expect(await screen.findByDisplayValue("rival.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Rival Inc.")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("contender.com")).toBeInTheDocument();
+  });
+
+  it("renders error alert when researchState status is error", () => {
+    render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "error", message: "Network timeout" }}
+      />,
+    );
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent(/research failed/i);
+    expect(alert).toHaveTextContent(/network timeout/i);
+  });
+
+  it("does not override initial competitors when research succeeds", async () => {
+    const initial = [{ name: "Existing Co", domain: "existing.com" }];
+    const researchCompetitors = [{ name: "Research Co", domain: "research.com" }];
+
+    render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        initial={initial}
+        researchState={{ status: "success", competitors: researchCompetitors }}
+      />,
+    );
+
+    expect(screen.getByDisplayValue("existing.com")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("research.com")).not.toBeInTheDocument();
+  });
 });

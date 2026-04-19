@@ -20,7 +20,7 @@ import json
 import os
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Annotated, Any
 
 import httpx
 import jwt
@@ -156,6 +156,9 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(bear
     if not isinstance(user_id, str) or not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing sub claim")
     return user_id
+
+
+CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 
 
 def get_auth_context(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> ClerkAuthContext:

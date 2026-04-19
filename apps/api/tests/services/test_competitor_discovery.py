@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false
+
 from __future__ import annotations
 
 from typing import Any
@@ -6,9 +8,9 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from ai_visibility.ui.onboarding_state import (
+from ai_visibility.services.competitor_discovery import (
     _describe_business,
-    _discover_competitors_with_site_content,
+    discover_competitors_with_site_content,
     _extract_domain,
     _filter_direct_competitors,
     _find_competitors_exa,
@@ -36,7 +38,7 @@ def _patch_async_client(client: AsyncMock):
     context_manager = AsyncMock()
     context_manager.__aenter__.return_value = client
     context_manager.__aexit__.return_value = None
-    return patch("ai_visibility.ui.onboarding_state.httpx.AsyncClient", return_value=context_manager)
+    return patch("ai_visibility.services.competitor_discovery.httpx.AsyncClient", return_value=context_manager)
 
 
 def _env_map(values: dict[str, str]):
@@ -171,7 +173,7 @@ async def test_filter_direct_competitors_valid_json_returns_filtered_list() -> N
     )
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", return_value="anthropic-key"),
+        patch("ai_visibility.services.competitor_discovery.os.getenv", return_value="anthropic-key"),
         _patch_async_client(client),
     ):
         result = await _filter_direct_competitors(
@@ -187,7 +189,7 @@ async def test_filter_direct_competitors_valid_json_returns_filtered_list() -> N
 @pytest.mark.asyncio
 async def test_filter_direct_competitors_no_api_key_falls_back() -> None:
     candidates = ["A (a.com)"]
-    with patch("ai_visibility.ui.onboarding_state.os.getenv", return_value=""):
+    with patch("ai_visibility.services.competitor_discovery.os.getenv", return_value=""):
         result = await _filter_direct_competitors(candidates, "desc", "acme.com", "SaaS / Software")
     assert result == candidates
 
@@ -201,7 +203,7 @@ async def test_describe_business_success_returns_claude_text_and_cleans_content(
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"ANTHROPIC_API_KEY": "anthropic-key"}),
         ),
         _patch_async_client(client),
@@ -223,7 +225,7 @@ async def test_describe_business_success_returns_claude_text_and_cleans_content(
 
 @pytest.mark.asyncio
 async def test_describe_business_returns_industry_when_api_key_missing() -> None:
-    with patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({})):
+    with patch("ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({})):
         result = await _describe_business("some site content", "acme.com", "SaaS / Software")
     assert result == "SaaS / Software"
 
@@ -231,7 +233,7 @@ async def test_describe_business_returns_industry_when_api_key_missing() -> None
 @pytest.mark.asyncio
 async def test_describe_business_returns_industry_when_content_empty_after_cleaning() -> None:
     with patch(
-        "ai_visibility.ui.onboarding_state.os.getenv",
+        "ai_visibility.services.competitor_discovery.os.getenv",
         side_effect=_env_map({"ANTHROPIC_API_KEY": "anthropic-key"}),
     ):
         result = await _describe_business("<div></div> https://x.com [a](https://b.com)", "acme.com", "Consulting")
@@ -245,7 +247,7 @@ async def test_describe_business_returns_industry_on_http_failure() -> None:
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"ANTHROPIC_API_KEY": "anthropic-key"}),
         ),
         _patch_async_client(client),
@@ -257,8 +259,8 @@ async def test_describe_business_returns_industry_on_http_failure() -> None:
 
 @pytest.mark.asyncio
 async def test_describe_business_logs_with_describe_prefix() -> None:
-    with patch("ai_visibility.ui.onboarding_state.logger.info") as info_log:
-        with patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({})):
+    with patch("ai_visibility.services.competitor_discovery.logger.info") as info_log:
+        with patch("ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({})):
             _ = await _describe_business("site", "acme.com", "SaaS")
     logged_messages = [call.args[0] for call in info_log.call_args_list if call.args]
     assert any("[describe]" in msg for msg in logged_messages)
@@ -270,7 +272,9 @@ async def test_find_competitors_exa_builds_query_without_country_for_dot_com_dom
     client.post.return_value = _FakeResponse(payload={"results": []})
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})),
+        patch(
+            "ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})
+        ),
         _patch_async_client(client),
     ):
         _ = await _find_competitors_exa("acme.com", "B2B accounting software", "US")
@@ -286,7 +290,9 @@ async def test_find_competitors_exa_builds_query_with_country_for_non_com_domain
     client.post.return_value = _FakeResponse(payload={"results": []})
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})),
+        patch(
+            "ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})
+        ),
         _patch_async_client(client),
     ):
         _ = await _find_competitors_exa("acme.co.uk", "Home remodeling contractor", "GB")
@@ -312,7 +318,9 @@ async def test_find_competitors_exa_uses_summary_field_for_description() -> None
     )
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})),
+        patch(
+            "ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})
+        ),
         _patch_async_client(client),
     ):
         result = await _find_competitors_exa("acme.com", "SaaS", "")
@@ -336,7 +344,9 @@ async def test_find_competitors_exa_filters_self_domain_and_blocked_sites() -> N
     )
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})),
+        patch(
+            "ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})
+        ),
         _patch_async_client(client),
     ):
         result = await _find_competitors_exa("acme.com", "SaaS", "")
@@ -358,7 +368,9 @@ async def test_find_competitors_exa_deduplicates_domains_and_handles_missing_sum
     )
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})),
+        patch(
+            "ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})
+        ),
         _patch_async_client(client),
     ):
         result = await _find_competitors_exa("acme.com", "SaaS", "")
@@ -368,7 +380,7 @@ async def test_find_competitors_exa_deduplicates_domains_and_handles_missing_sum
 
 @pytest.mark.asyncio
 async def test_find_competitors_exa_no_api_key_returns_empty() -> None:
-    with patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({})):
+    with patch("ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({})):
         result = await _find_competitors_exa("acme.com", "SaaS", "")
     assert result == []
 
@@ -379,7 +391,9 @@ async def test_find_competitors_exa_http_error_returns_empty() -> None:
     client.post.side_effect = RuntimeError("exa unavailable")
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})),
+        patch(
+            "ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({"EXA_API_KEY": "exa-key"})
+        ),
         _patch_async_client(client),
     ):
         result = await _find_competitors_exa("acme.com", "SaaS", "")
@@ -389,7 +403,7 @@ async def test_find_competitors_exa_http_error_returns_empty() -> None:
 
 @pytest.mark.asyncio
 async def test_find_competitors_tavily_returns_empty_without_api_key() -> None:
-    with patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({})):
+    with patch("ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({})):
         result = await _find_competitors_tavily_gpt("acme.com", "SaaS", "US")
     assert result == []
 
@@ -401,7 +415,7 @@ async def test_find_competitors_tavily_posts_with_include_answer_and_new_query_f
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
@@ -428,7 +442,7 @@ async def test_find_competitors_tavily_parses_answer_and_matches_result_domains(
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
@@ -453,7 +467,7 @@ async def test_find_competitors_tavily_adds_remaining_domains_from_results() -> 
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
@@ -481,7 +495,7 @@ async def test_find_competitors_tavily_filters_self_domain_listicles_and_blocked
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
@@ -498,7 +512,7 @@ async def test_find_competitors_tavily_http_error_returns_empty() -> None:
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
@@ -510,7 +524,7 @@ async def test_find_competitors_tavily_http_error_returns_empty() -> None:
 
 @pytest.mark.asyncio
 async def test_discover_with_site_content_invalid_input_returns_empty_immediately() -> None:
-    result, site_content = await _discover_competitors_with_site_content("", "")
+    result, site_content = await discover_competitors_with_site_content("", "")
     assert result == []
     assert site_content == ""
 
@@ -542,26 +556,30 @@ async def test_discover_with_site_content_uses_exa_contents_summary_and_skips_de
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="AI analytics platform")
+            "ai_visibility.services.competitor_discovery._describe_business",
+            new=AsyncMock(return_value="AI analytics platform"),
         ) as describe,
         patch(
-            "ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=exa_results)
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=exa_results)
         ) as exa,
         patch(
-            "ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt",
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt",
             new=AsyncMock(return_value=tavily_results),
         ) as tavily,
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=validated)) as validate,
         patch(
-            "ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=filtered)
+            "ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=validated)
+        ) as validate,
+        patch(
+            "ai_visibility.services.competitor_discovery._filter_direct_competitors",
+            new=AsyncMock(return_value=filtered),
         ) as flt,
     ):
-        result, site_content = await _discover_competitors_with_site_content("acme.com", "SaaS / Software", "US")
+        result, site_content = await discover_competitors_with_site_content("acme.com", "SaaS / Software", "US")
 
     assert result == filtered
     assert len(site_content) == 300
@@ -598,17 +616,21 @@ async def test_discover_with_site_content_exa_empty_falls_back_to_tavily_extract
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="Claude desc")
+            "ai_visibility.services.competitor_discovery._describe_business", new=AsyncMock(return_value="Claude desc")
         ) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])) as exa,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])
+        ) as exa,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
     ):
-        result, site_content = await _discover_competitors_with_site_content("acme.com", "SaaS / Software", "US")
+        result, site_content = await discover_competitors_with_site_content("acme.com", "SaaS / Software", "US")
 
     assert result == []
     assert site_content == "t" * 220
@@ -635,17 +657,22 @@ async def test_discover_with_site_content_exa_failure_falls_back_to_tavily_then_
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="Fallback described")
+            "ai_visibility.services.competitor_discovery._describe_business",
+            new=AsyncMock(return_value="Fallback described"),
         ) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])) as exa,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])
+        ) as exa,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
     ):
-        result, site_content = await _discover_competitors_with_site_content("acme.com", "SaaS / Software", "US")
+        result, site_content = await discover_competitors_with_site_content("acme.com", "SaaS / Software", "US")
 
     assert result == []
     assert site_content == "fallback content"
@@ -675,17 +702,22 @@ async def test_discover_with_site_content_strips_brand_name_from_exa_summary() -
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business", new=AsyncMock(return_value="should not be used")
+            "ai_visibility.services.competitor_discovery._describe_business",
+            new=AsyncMock(return_value="should not be used"),
         ) as describe,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])) as exa,
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])
+        ) as exa,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
     ):
-        result, _ = await _discover_competitors_with_site_content("acme-remodeling.com", "Home Services / Remodeling")
+        result, _ = await discover_competitors_with_site_content("acme-remodeling.com", "Home Services / Remodeling")
 
     assert result == []
     describe.assert_not_awaited()
@@ -711,22 +743,30 @@ async def test_discover_with_site_content_passes_business_description_to_filter_
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._describe_business",
+            "ai_visibility.services.competitor_discovery._describe_business",
             new=AsyncMock(return_value="Custom business description"),
         ),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=["A (a.com)"])),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=["A (a.com)"])),
         patch(
-            "ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=["A (a.com)"])
+            "ai_visibility.services.competitor_discovery._find_competitors_exa",
+            new=AsyncMock(return_value=["A (a.com)"]),
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=["A (a.com)"])
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._filter_direct_competitors",
+            new=AsyncMock(return_value=["A (a.com)"]),
         ) as flt,
     ):
-        _ = await _discover_competitors_with_site_content("acme.com", "SaaS / Software", "GB")
+        _ = await discover_competitors_with_site_content("acme.com", "SaaS / Software", "GB")
 
     assert flt.await_args is not None
     args = flt.await_args.args
@@ -748,14 +788,16 @@ async def test_discover_with_site_content_returns_empty_when_no_candidates_after
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
+        patch("ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
     ):
-        result, site_content = await _discover_competitors_with_site_content("acme.com", "SaaS")
+        result, site_content = await discover_competitors_with_site_content("acme.com", "SaaS")
 
     assert result == []
     assert site_content == "x" * 120
@@ -776,16 +818,21 @@ async def test_discover_with_site_content_returns_empty_when_validation_fails_al
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=["A (a.com)"])),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock()) as flt,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa",
+            new=AsyncMock(return_value=["A (a.com)"]),
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch("ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=[])),
+        patch("ai_visibility.services.competitor_discovery._filter_direct_competitors", new=AsyncMock()) as flt,
     ):
-        result, _ = await _discover_competitors_with_site_content("acme.com", "SaaS")
+        result, _ = await discover_competitors_with_site_content("acme.com", "SaaS")
 
     assert result == []
     flt.assert_not_called()
@@ -806,16 +853,23 @@ async def test_discover_with_site_content_returns_empty_when_filter_returns_empt
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=["A (a.com)"])),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=["A (a.com)"])),
-        patch("ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=[])),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa",
+            new=AsyncMock(return_value=["A (a.com)"]),
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=["A (a.com)"])
+        ),
+        patch("ai_visibility.services.competitor_discovery._filter_direct_competitors", new=AsyncMock(return_value=[])),
     ):
-        result, _ = await _discover_competitors_with_site_content("acme.com", "SaaS")
+        result, _ = await discover_competitors_with_site_content("acme.com", "SaaS")
 
     assert result == []
 
@@ -835,23 +889,27 @@ async def test_discover_with_site_content_handles_source_exception_and_keeps_oth
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
         patch(
-            "ai_visibility.ui.onboarding_state._find_competitors_exa",
+            "ai_visibility.services.competitor_discovery._find_competitors_exa",
             new=AsyncMock(side_effect=RuntimeError("exa fail")),
         ),
         patch(
-            "ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=["B (b.com)"])
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt",
+            new=AsyncMock(return_value=["B (b.com)"]),
         ),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=["B (b.com)"])),
         patch(
-            "ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=["B (b.com)"])
+            "ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=["B (b.com)"])
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._filter_direct_competitors",
+            new=AsyncMock(return_value=["B (b.com)"]),
         ),
     ):
-        result, _ = await _discover_competitors_with_site_content("acme.com", "SaaS")
+        result, _ = await discover_competitors_with_site_content("acme.com", "SaaS")
 
     assert result == ["B (b.com)"]
 
@@ -880,16 +938,23 @@ async def test_discover_with_site_content_limits_output_to_five_competitors() ->
 
     with (
         patch(
-            "ai_visibility.ui.onboarding_state.os.getenv",
+            "ai_visibility.services.competitor_discovery.os.getenv",
             side_effect=_env_map({"EXA_API_KEY": "exa-key", "TAVILY_API_KEY": "tavily-key"}),
         ),
         _patch_async_client(client),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=filtered)),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])),
-        patch("ai_visibility.ui.onboarding_state._validate_domains", new=AsyncMock(return_value=filtered)),
-        patch("ai_visibility.ui.onboarding_state._filter_direct_competitors", new=AsyncMock(return_value=filtered)),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=filtered)
+        ),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ),
+        patch("ai_visibility.services.competitor_discovery._validate_domains", new=AsyncMock(return_value=filtered)),
+        patch(
+            "ai_visibility.services.competitor_discovery._filter_direct_competitors",
+            new=AsyncMock(return_value=filtered),
+        ),
     ):
-        result, _ = await _discover_competitors_with_site_content("acme.com", "SaaS")
+        result, _ = await discover_competitors_with_site_content("acme.com", "SaaS")
 
     assert result == filtered[:5]
 
@@ -900,14 +965,16 @@ async def test_discover_with_site_content_all_sources_fail_uses_industry_fallbac
     client.get.side_effect = RuntimeError("direct fetch failed")
 
     with (
-        patch("ai_visibility.ui.onboarding_state.os.getenv", side_effect=_env_map({})),
+        patch("ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({})),
         _patch_async_client(client),
-        patch("ai_visibility.ui.onboarding_state._find_competitors_exa", new=AsyncMock(return_value=[])) as exa,
         patch(
-            "ai_visibility.ui.onboarding_state._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])
+        ) as exa,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
         ) as tavily,
     ):
-        result, site_content = await _discover_competitors_with_site_content("acme.com", "Consulting")
+        result, site_content = await discover_competitors_with_site_content("acme.com", "Consulting")
 
     assert result == []
     assert site_content == ""
