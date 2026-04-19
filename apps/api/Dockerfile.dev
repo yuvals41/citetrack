@@ -1,12 +1,28 @@
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
 
-# Dependencies are resolved at container startup (not build time)
-# so that volume-mounted source code and local path deps are available.
-CMD ["sh", "-c", "uv sync --frozen --no-dev && exec uv run uvicorn ai_visibility.api.routes:app --host 0.0.0.0 --port 8000 --reload"]
+ARG PRISMA_ENGINE_COMMIT=393aa359c9ad4a4bb28630fb5613f9c281cde053
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then \
+        PLATFORM="linux-arm64-openssl-3.0.x"; \
+    else \
+        PLATFORM="debian-openssl-3.0.x"; \
+    fi && \
+    curl -fsSL "https://binaries.prisma.sh/all_commits/${PRISMA_ENGINE_COMMIT}/${PLATFORM}/query-engine.gz" \
+      | gunzip > /usr/local/bin/prisma-query-engine && \
+    chmod +x /usr/local/bin/prisma-query-engine && \
+    /usr/local/bin/prisma-query-engine --version
+
+ENV PRISMA_QUERY_ENGINE_BINARY=/usr/local/bin/prisma-query-engine
+
+WORKDIR /app
