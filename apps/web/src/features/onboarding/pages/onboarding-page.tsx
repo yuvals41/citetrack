@@ -43,7 +43,13 @@ export function OnboardingPage() {
     setResearchState({ status: "loading" });
     try {
       const result = await researchCompetitors({ domain: brand.domain, getToken });
-      if (result.degraded || result.competitors.length === 0) {
+      if (result.degraded) {
+        setResearchState({
+          status: "degraded",
+          reason: result.degraded.reason,
+          message: result.degraded.message,
+        });
+      } else if (result.competitors.length === 0) {
         setResearchState({ status: "success", competitors: [] });
       } else {
         setResearchState({ status: "success", competitors: result.competitors });

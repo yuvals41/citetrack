@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 from ai_visibility.api.auth import get_current_user_id
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
@@ -37,7 +38,16 @@ async def complete_onboarding(
 ) -> OnboardingCompleteResponse | JSONResponse:
     user_repo = UserRepository()
     workspace_slug = _slugify(payload.brand.name)
+    logger.info(
+        "onboarding.start brand={!r} slug={} competitors={} engines={}",
+        payload.brand.name,
+        workspace_slug,
+        len(payload.competitors),
+        [e.value for e in payload.engines],
+    )
+
     if user_repo.user_owns_workspace(user_id, workspace_slug):
+        logger.info("onboarding.idempotent slug={} — already owned by user", workspace_slug)
         return OnboardingCompleteResponse(workspace_slug=workspace_slug)
 
     try:
@@ -48,6 +58,10 @@ async def complete_onboarding(
             owner = user_repo.get_workspace_owner(workspace_slug)
             if owner == user_id:
                 return OnboardingCompleteResponse(workspace_slug=workspace_slug)
+            logger.warning(
+                "onboarding.conflict slug={} already owned by another user",
+                workspace_slug,
+            )
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Workspace slug already exists")
 
         now = datetime.now(timezone.utc)
@@ -67,10 +81,16 @@ async def complete_onboarding(
             "competitors": [competitor.model_dump() for competitor in payload.competitors],
             "engines": [engine.value for engine in payload.engines],
         }
+        logger.info(
+            "onboarding.complete workspace_id={} slug={}",
+            created["id"],
+            workspace_slug,
+        )
         return OnboardingCompleteResponse(workspace_slug=workspace_slug)
     except HTTPException:
         raise
     except Exception as exc:
+        logger.exception("onboarding.db_error slug={}", workspace_slug)
         return JSONResponse(content=_degraded_response(_database_degraded_state(exc)))
 
 

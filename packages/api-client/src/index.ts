@@ -61,15 +61,20 @@ export type CitetrackApi = typeof citetrackApi;
 export interface CitetrackClientOptions {
   baseUrl?: string;
   getToken: () => Promise<string | null>;
+  requestIdProvider?: () => string;
 }
 
-export function createCitetrackClient({ baseUrl = "http://localhost:8000", getToken }: CitetrackClientOptions) {
+export function createCitetrackClient({
+  baseUrl = "http://localhost:8000",
+  getToken,
+  requestIdProvider,
+}: CitetrackClientOptions) {
   async function authedFetch<T>(path: string): Promise<T> {
     const token = await getToken();
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${baseUrl}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    if (requestIdProvider) headers["X-Request-ID"] = requestIdProvider();
+    const res = await fetch(`${baseUrl}${path}`, { headers });
     if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
     return res.json() as Promise<T>;
   }

@@ -21,6 +21,7 @@ export type ResearchState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "success"; competitors: OnboardingCompetitor[] }
+  | { status: "degraded"; reason: string; message?: string }
   | { status: "error"; message: string };
 
 const competitorsStepSchema = z.object({
@@ -81,7 +82,7 @@ export function CompetitorsStep({
 
       {researchState.status === "success" && researchState.competitors.length === 0 && (
         <Alert variant="warning">
-          We couldn't find competitors automatically. Add yours below.
+          We couldn't find competitors automatically for this domain. Add yours below.
         </Alert>
       )}
 
@@ -89,6 +90,12 @@ export function CompetitorsStep({
         <p className="text-sm text-muted-foreground">
           We found these — edit or add more below.
         </p>
+      )}
+
+      {researchState.status === "degraded" && (
+        <Alert variant="warning">
+          {researchState.message ?? `Auto-research is unavailable (${researchState.reason}). Add competitors manually below.`}
+        </Alert>
       )}
 
       {researchState.status === "error" && (

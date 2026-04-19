@@ -250,7 +250,13 @@ def _degraded_response(state: DegradedState | None) -> ApiPayload:
 def create_app() -> FastAPI:
     from fastapi.middleware.cors import CORSMiddleware
 
+    from ai_visibility.observability import configure_logging
+    from ai_visibility.observability.middleware import RequestContextMiddleware
+
+    configure_logging()
+
     app = FastAPI(title="Citetrack AI API", version="1.0.0")
+    app.add_middleware(RequestContextMiddleware)
 
     allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
     default_origins = [

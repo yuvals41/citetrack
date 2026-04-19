@@ -27,6 +27,9 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.algorithms import RSAAlgorithm
+from loguru import logger
+
+from ai_visibility.observability.logging_config import user_id_var
 
 CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL", "")
 CLERK_JWT_ISSUER = os.getenv("CLERK_JWT_ISSUER")
@@ -151,10 +154,17 @@ def verify_clerk_token(token: str) -> dict[str, Any]:
 
 
 def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> str:
-    payload = verify_clerk_token(credentials.credentials)
+    try:
+        payload = verify_clerk_token(credentials.credentials)
+    except HTTPException as exc:
+        logger.info("auth.rejected {} — {}", exc.status_code, exc.detail)
+        raise
     user_id = payload.get("sub")
     if not isinstance(user_id, str) or not user_id:
+        logger.warning("auth.rejected 401 — token missing sub claim")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing sub claim")
+    user_id_var.set(user_id)
+    logger.debug("auth.ok user_id={}", user_id)
     return user_id
 
 
