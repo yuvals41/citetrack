@@ -16,6 +16,14 @@ import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedDashboardTeamRouteImport } from './routes/_authenticated.dashboard.team'
+import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_authenticated.dashboard.settings'
+import { Route as AuthenticatedDashboardScansRouteImport } from './routes/_authenticated.dashboard.scans'
+import { Route as AuthenticatedDashboardPromptsRouteImport } from './routes/_authenticated.dashboard.prompts'
+import { Route as AuthenticatedDashboardIntegrationsRouteImport } from './routes/_authenticated.dashboard.integrations'
+import { Route as AuthenticatedDashboardInboxRouteImport } from './routes/_authenticated.dashboard.inbox'
+import { Route as AuthenticatedDashboardCompetitorsRouteImport } from './routes/_authenticated.dashboard.competitors'
+import { Route as AuthenticatedDashboardBrandsRouteImport } from './routes/_authenticated.dashboard.brands'
 
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
@@ -51,32 +59,104 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDashboardTeamRoute =
+  AuthenticatedDashboardTeamRouteImport.update({
+    id: '/team',
+    path: '/team',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardSettingsRoute =
+  AuthenticatedDashboardSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardScansRoute =
+  AuthenticatedDashboardScansRouteImport.update({
+    id: '/scans',
+    path: '/scans',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardPromptsRoute =
+  AuthenticatedDashboardPromptsRouteImport.update({
+    id: '/prompts',
+    path: '/prompts',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardIntegrationsRoute =
+  AuthenticatedDashboardIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardInboxRoute =
+  AuthenticatedDashboardInboxRouteImport.update({
+    id: '/inbox',
+    path: '/inbox',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardCompetitorsRoute =
+  AuthenticatedDashboardCompetitorsRouteImport.update({
+    id: '/competitors',
+    path: '/competitors',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardBrandsRoute =
+  AuthenticatedDashboardBrandsRouteImport.update({
+    id: '/brands',
+    path: '/brands',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/dashboard/brands': typeof AuthenticatedDashboardBrandsRoute
+  '/dashboard/competitors': typeof AuthenticatedDashboardCompetitorsRoute
+  '/dashboard/inbox': typeof AuthenticatedDashboardInboxRoute
+  '/dashboard/integrations': typeof AuthenticatedDashboardIntegrationsRoute
+  '/dashboard/prompts': typeof AuthenticatedDashboardPromptsRoute
+  '/dashboard/scans': typeof AuthenticatedDashboardScansRoute
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
+  '/dashboard/team': typeof AuthenticatedDashboardTeamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/dashboard/brands': typeof AuthenticatedDashboardBrandsRoute
+  '/dashboard/competitors': typeof AuthenticatedDashboardCompetitorsRoute
+  '/dashboard/inbox': typeof AuthenticatedDashboardInboxRoute
+  '/dashboard/integrations': typeof AuthenticatedDashboardIntegrationsRoute
+  '/dashboard/prompts': typeof AuthenticatedDashboardPromptsRoute
+  '/dashboard/scans': typeof AuthenticatedDashboardScansRoute
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
+  '/dashboard/team': typeof AuthenticatedDashboardTeamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/_authenticated/dashboard/brands': typeof AuthenticatedDashboardBrandsRoute
+  '/_authenticated/dashboard/competitors': typeof AuthenticatedDashboardCompetitorsRoute
+  '/_authenticated/dashboard/inbox': typeof AuthenticatedDashboardInboxRoute
+  '/_authenticated/dashboard/integrations': typeof AuthenticatedDashboardIntegrationsRoute
+  '/_authenticated/dashboard/prompts': typeof AuthenticatedDashboardPromptsRoute
+  '/_authenticated/dashboard/scans': typeof AuthenticatedDashboardScansRoute
+  '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
+  '/_authenticated/dashboard/team': typeof AuthenticatedDashboardTeamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +167,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/dashboard/brands'
+    | '/dashboard/competitors'
+    | '/dashboard/inbox'
+    | '/dashboard/integrations'
+    | '/dashboard/prompts'
+    | '/dashboard/scans'
+    | '/dashboard/settings'
+    | '/dashboard/team'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -95,6 +183,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/dashboard/brands'
+    | '/dashboard/competitors'
+    | '/dashboard/inbox'
+    | '/dashboard/integrations'
+    | '/dashboard/prompts'
+    | '/dashboard/scans'
+    | '/dashboard/settings'
+    | '/dashboard/team'
   id:
     | '__root__'
     | '/'
@@ -104,6 +200,14 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/_authenticated/dashboard/brands'
+    | '/_authenticated/dashboard/competitors'
+    | '/_authenticated/dashboard/inbox'
+    | '/_authenticated/dashboard/integrations'
+    | '/_authenticated/dashboard/prompts'
+    | '/_authenticated/dashboard/scans'
+    | '/_authenticated/dashboard/settings'
+    | '/_authenticated/dashboard/team'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,16 +269,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/dashboard/team': {
+      id: '/_authenticated/dashboard/team'
+      path: '/team'
+      fullPath: '/dashboard/team'
+      preLoaderRoute: typeof AuthenticatedDashboardTeamRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/settings': {
+      id: '/_authenticated/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof AuthenticatedDashboardSettingsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/scans': {
+      id: '/_authenticated/dashboard/scans'
+      path: '/scans'
+      fullPath: '/dashboard/scans'
+      preLoaderRoute: typeof AuthenticatedDashboardScansRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/prompts': {
+      id: '/_authenticated/dashboard/prompts'
+      path: '/prompts'
+      fullPath: '/dashboard/prompts'
+      preLoaderRoute: typeof AuthenticatedDashboardPromptsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/integrations': {
+      id: '/_authenticated/dashboard/integrations'
+      path: '/integrations'
+      fullPath: '/dashboard/integrations'
+      preLoaderRoute: typeof AuthenticatedDashboardIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/inbox': {
+      id: '/_authenticated/dashboard/inbox'
+      path: '/inbox'
+      fullPath: '/dashboard/inbox'
+      preLoaderRoute: typeof AuthenticatedDashboardInboxRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/competitors': {
+      id: '/_authenticated/dashboard/competitors'
+      path: '/competitors'
+      fullPath: '/dashboard/competitors'
+      preLoaderRoute: typeof AuthenticatedDashboardCompetitorsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/brands': {
+      id: '/_authenticated/dashboard/brands'
+      path: '/brands'
+      fullPath: '/dashboard/brands'
+      preLoaderRoute: typeof AuthenticatedDashboardBrandsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
   }
 }
 
+interface AuthenticatedDashboardRouteChildren {
+  AuthenticatedDashboardBrandsRoute: typeof AuthenticatedDashboardBrandsRoute
+  AuthenticatedDashboardCompetitorsRoute: typeof AuthenticatedDashboardCompetitorsRoute
+  AuthenticatedDashboardInboxRoute: typeof AuthenticatedDashboardInboxRoute
+  AuthenticatedDashboardIntegrationsRoute: typeof AuthenticatedDashboardIntegrationsRoute
+  AuthenticatedDashboardPromptsRoute: typeof AuthenticatedDashboardPromptsRoute
+  AuthenticatedDashboardScansRoute: typeof AuthenticatedDashboardScansRoute
+  AuthenticatedDashboardSettingsRoute: typeof AuthenticatedDashboardSettingsRoute
+  AuthenticatedDashboardTeamRoute: typeof AuthenticatedDashboardTeamRoute
+}
+
+const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
+  {
+    AuthenticatedDashboardBrandsRoute: AuthenticatedDashboardBrandsRoute,
+    AuthenticatedDashboardCompetitorsRoute:
+      AuthenticatedDashboardCompetitorsRoute,
+    AuthenticatedDashboardInboxRoute: AuthenticatedDashboardInboxRoute,
+    AuthenticatedDashboardIntegrationsRoute:
+      AuthenticatedDashboardIntegrationsRoute,
+    AuthenticatedDashboardPromptsRoute: AuthenticatedDashboardPromptsRoute,
+    AuthenticatedDashboardScansRoute: AuthenticatedDashboardScansRoute,
+    AuthenticatedDashboardSettingsRoute: AuthenticatedDashboardSettingsRoute,
+    AuthenticatedDashboardTeamRoute: AuthenticatedDashboardTeamRoute,
+  }
+
+const AuthenticatedDashboardRouteWithChildren =
+  AuthenticatedDashboardRoute._addFileChildren(
+    AuthenticatedDashboardRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRouteWithChildren
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRouteWithChildren,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
 }
 

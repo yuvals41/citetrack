@@ -1,5 +1,5 @@
 import { UserButton, useUser } from "@clerk/react";
-import { useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
@@ -31,26 +31,26 @@ import { WorkspaceSwitcher } from "./workspace-switcher";
 
 interface NavItem {
   label: string;
-  href: string;
+  to: string;
   icon: LucideIcon;
 }
 
 const personalNavItems: NavItem[] = [
-  { label: "Inbox", href: "/dashboard/inbox", icon: Inbox },
-  { label: "My Tracking", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Inbox", to: "/dashboard/inbox", icon: Inbox },
+  { label: "My Tracking", to: "/dashboard", icon: LayoutDashboard },
 ];
 
 const workspaceNavItems: NavItem[] = [
-  { label: "Brands", href: "/dashboard/brands", icon: Tag },
-  { label: "Competitors", href: "/dashboard/competitors", icon: Swords },
-  { label: "Prompts", href: "/dashboard/prompts", icon: MessageSquareQuote },
-  { label: "Scans", href: "/dashboard/scans", icon: Activity },
+  { label: "Brands", to: "/dashboard/brands", icon: Tag },
+  { label: "Competitors", to: "/dashboard/competitors", icon: Swords },
+  { label: "Prompts", to: "/dashboard/prompts", icon: MessageSquareQuote },
+  { label: "Scans", to: "/dashboard/scans", icon: Activity },
 ];
 
 const configureNavItems: NavItem[] = [
-  { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
-  { label: "Team", href: "/dashboard/team", icon: Users },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Integrations", to: "/dashboard/integrations", icon: Plug },
+  { label: "Team", to: "/dashboard/team", icon: Users },
+  { label: "Settings", to: "/dashboard/settings", icon: Settings },
 ];
 
 function NavGroup({
@@ -69,14 +69,14 @@ function NavGroup({
         <SidebarMenu>
           {items.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPathname === item.href;
+            const isActive = currentPathname === item.to;
             return (
-              <SidebarMenuItem key={item.href}>
+              <SidebarMenuItem key={item.to}>
                 <SidebarMenuButton asChild isActive={isActive}>
-                  <a href={item.href}>
+                  <Link to={item.to}>
                     <Icon className="size-4" />
                     <span>{item.label}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
