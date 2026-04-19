@@ -80,10 +80,29 @@ export interface ActionQueue {
   items: ActionItem[];
 }
 
+export interface ProviderBreakdownItem {
+  provider: string;
+  responses: number;
+  mentions: number;
+}
+
+export interface MentionTypeItem {
+  label: "mentioned" | "not_mentioned" | string;
+  count: number;
+}
+
+export interface SnapshotBreakdowns {
+  workspace: string;
+  provider_breakdown: ProviderBreakdownItem[];
+  mention_types: MentionTypeItem[];
+  total_responses: number;
+}
+
 export type OverviewSnapshotResult = OverviewSnapshot | DegradedResponse;
 export type TrendResult = TrendResponse | DegradedResponse;
 export type FindingsResult = FindingsSummary | DegradedResponse;
 export type ActionsResult = ActionQueue | DegradedResponse;
+export type BreakdownsResult = SnapshotBreakdowns | DegradedResponse;
 
 export function isDegraded(v: unknown): v is DegradedResponse {
   return typeof v === "object" && v !== null && "degraded" in v;

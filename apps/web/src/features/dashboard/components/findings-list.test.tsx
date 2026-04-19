@@ -79,6 +79,11 @@ function setDashboardQueries(findingsData: FindingsSummary | { degraded: { reaso
       data: { workspace: "default", total_actions: 0, items: [] },
       isPending: false,
       error: null,
+    })
+    .mockReturnValueOnce({
+      data: { workspace: "default", provider_breakdown: [], mention_types: [], total_responses: 0 },
+      isPending: false,
+      error: null,
     });
 }
 

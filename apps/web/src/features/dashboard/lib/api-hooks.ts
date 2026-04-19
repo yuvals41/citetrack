@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   createCitetrackClient,
   type ActionsResult,
+  type BreakdownsResult,
   type FindingsResult,
   type OverviewSnapshotResult,
   type TrendResult,
@@ -15,7 +16,8 @@ type SnapshotMethod =
   | "getSnapshotOverview"
   | "getSnapshotTrend"
   | "getSnapshotFindings"
-  | "getSnapshotActions";
+  | "getSnapshotActions"
+  | "getSnapshotBreakdowns";
 
 async function runTracked<T>(
   method: SnapshotMethod,
@@ -89,6 +91,15 @@ export function useSnapshotActions(workspace = "default") {
   return useQuery({
     queryKey: ["snapshot", "actions", workspace],
     queryFn: () => runTracked<ActionsResult>("getSnapshotActions", workspace, getToken),
+    staleTime: 30_000,
+  });
+}
+
+export function useSnapshotBreakdowns(workspace = "default") {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["snapshot", "breakdowns", workspace],
+    queryFn: () => runTracked<BreakdownsResult>("getSnapshotBreakdowns", workspace, getToken),
     staleTime: 30_000,
   });
 }

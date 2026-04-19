@@ -4,9 +4,12 @@ import { KPICard, KPICardChange, KPICardLabel, KPICardValue } from "@citetrack/u
 import { Skeleton } from "@citetrack/ui/skeleton";
 import { ActionsQueue } from "../components/actions-queue";
 import { FindingsList } from "../components/findings-list";
+import { MentionTypeDonut } from "../components/mention-type-donut";
+import { ProviderBreakdownChart } from "../components/provider-breakdown-chart";
 import { VisibilityTrendChart } from "../components/visibility-trend-chart";
 import {
   useSnapshotActions,
+  useSnapshotBreakdowns,
   useSnapshotFindings,
   useSnapshotOverview,
   useSnapshotTrend,
@@ -35,6 +38,7 @@ export function DashboardPage() {
   const trend = useSnapshotTrend();
   const findings = useSnapshotFindings();
   const actions = useSnapshotActions();
+  const breakdowns = useSnapshotBreakdowns();
 
   const overviewData =
     overview.data && !isDegraded(overview.data) ? overview.data : null;
@@ -53,6 +57,11 @@ export function DashboardPage() {
     actions.data && !isDegraded(actions.data) ? actions.data : null;
   const actionsDegraded =
     actions.data && isDegraded(actions.data) ? actions.data.degraded : null;
+
+  const breakdownsData =
+    breakdowns.data && !isDegraded(breakdowns.data) ? breakdowns.data : null;
+  const breakdownsDegraded =
+    breakdowns.data && isDegraded(breakdowns.data) ? breakdowns.data.degraded : null;
 
   const trendDelta = overviewData?.trend_delta ?? 0;
   const trendDirection =
@@ -145,6 +154,53 @@ export function DashboardPage() {
             <ActionsQueue actions={actionsData.items} />
           ) : null}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Visibility by AI engine</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdowns.isPending ? (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : breakdowns.error ? (
+              <ErrorCard label="breakdowns" message={breakdowns.error.message} />
+            ) : breakdownsDegraded ? (
+              <p className="text-sm text-muted-foreground py-2">
+                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+              </p>
+            ) : breakdownsData ? (
+              <ProviderBreakdownChart items={breakdownsData.provider_breakdown} />
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Brand presence</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdowns.isPending ? (
+              <Skeleton className="h-40 w-40 mx-auto rounded-full" />
+            ) : breakdowns.error ? (
+              <ErrorCard label="mention types" message={breakdowns.error.message} />
+            ) : breakdownsDegraded ? (
+              <p className="text-sm text-muted-foreground py-2">
+                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+              </p>
+            ) : breakdownsData ? (
+              <MentionTypeDonut
+                items={breakdownsData.mention_types}
+                totalResponses={breakdownsData.total_responses}
+              />
+            ) : null}
+          </CardContent>
+        </Card>
       </div>
 
       <div>

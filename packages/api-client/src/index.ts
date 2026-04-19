@@ -7,6 +7,7 @@ import type {
   ActionsResult,
   BrandDetail,
   BrandUpsertInput,
+  BreakdownsResult,
   CrawlerSimInput,
   CrawlerSimResult,
   CompetitorCreateInput,
@@ -34,7 +35,7 @@ import type {
   WorkspaceSettingsUpdate,
 } from "./types.js";
 
-export type { AIResponseItem, AIResponsesList, AIShoppingResult, ActionsResult, BrandDetail, BrandUpsertInput, CompetitorCreateInput, CompetitorRecord, CompetitorsList, CrawlerSimInput, CrawlerSimResult, EntityAnalysisInput, EntityResult, ExtractabilityInput, ExtractabilityResult, FindingsResult, GoogleShoppingResult, OverviewSnapshotResult, PixelStats, PromptsResult, QueryFanoutInput, QueryFanoutItem, QueryFanoutResult, RunsResult, ShoppingAnalysisInput, ShoppingResult, TrendResult, WorkspaceApiResponse, WorkspaceSettings, WorkspaceSettingsUpdate };
+export type { AIResponseItem, AIResponsesList, AIShoppingResult, ActionsResult, BrandDetail, BrandUpsertInput, BreakdownsResult, CompetitorCreateInput, CompetitorRecord, CompetitorsList, CrawlerSimInput, CrawlerSimResult, EntityAnalysisInput, EntityResult, ExtractabilityInput, ExtractabilityResult, FindingsResult, GoogleShoppingResult, OverviewSnapshotResult, PixelStats, PromptsResult, QueryFanoutInput, QueryFanoutItem, QueryFanoutResult, RunsResult, ShoppingAnalysisInput, ShoppingResult, TrendResult, WorkspaceApiResponse, WorkspaceSettings, WorkspaceSettingsUpdate };
 export type {
   AIResponseCitation,
   ActionItem,
@@ -46,11 +47,14 @@ export type {
   DegradedResponse,
   Finding,
   FindingsSummary,
+  MentionTypeItem,
   OverviewSnapshot,
   PresenceResult,
+  ProviderBreakdownItem,
   PromptRecord,
   RunRecord,
   ScanScheduleValue,
+  SnapshotBreakdowns,
   TrendPoint,
   TrendResponse,
   TrendSeries,
@@ -163,6 +167,8 @@ export function createCitetrackClient({
       authedRequest<FindingsResult>(`/api/v1/snapshot/findings?workspace=${workspace}`),
     getSnapshotActions: (workspace = "default") =>
       authedRequest<ActionsResult>(`/api/v1/snapshot/actions?workspace=${workspace}`),
+    getSnapshotBreakdowns: (workspace = "default") =>
+      authedRequest<BreakdownsResult>(`/api/v1/snapshot/breakdowns?workspace=${workspace}`),
     getRuns: (workspace = "default") =>
       authedRequest<RunsResult>(`/api/v1/runs?workspace=${workspace}`),
     getResponses: (

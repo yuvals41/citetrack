@@ -78,7 +78,12 @@ function setDashboardQueries(actionsData: { workspace: string; total_actions?: n
       isPending: false,
       error: null,
     })
-    .mockReturnValueOnce({ data: actionsData, isPending: false, error: null });
+    .mockReturnValueOnce({ data: actionsData, isPending: false, error: null })
+    .mockReturnValueOnce({
+      data: { workspace: "default", provider_breakdown: [], mention_types: [], total_responses: 0 },
+      isPending: false,
+      error: null,
+    });
 }
 
 describe("ActionsQueue", () => {

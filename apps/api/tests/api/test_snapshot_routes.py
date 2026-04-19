@@ -9,7 +9,14 @@ from fastapi.testclient import TestClient
 
 from ai_visibility.api import routes as routes_module
 from ai_visibility.metrics.engine import TrendPoint, TrendSeries
-from ai_visibility.metrics.snapshot import ActionQueue, FindingsSummary, OverviewSnapshot
+from ai_visibility.metrics.snapshot import (
+    ActionQueue,
+    FindingsSummary,
+    MentionTypeItem,
+    OverviewSnapshot,
+    ProviderBreakdownItem,
+    SnapshotBreakdowns,
+)
 
 
 class _ForbiddenRepository:
@@ -90,6 +97,20 @@ class _SnapshotRepoStub:
             ],
         )
 
+    async def get_breakdowns(self, workspace: str) -> SnapshotBreakdowns:
+        return SnapshotBreakdowns(
+            workspace=workspace,
+            provider_breakdown=[
+                ProviderBreakdownItem(provider="anthropic", responses=3, mentions=3),
+                ProviderBreakdownItem(provider="openai", responses=0, mentions=0),
+            ],
+            mention_types=[
+                MentionTypeItem(label="mentioned", count=3),
+                MentionTypeItem(label="not_mentioned", count=0),
+            ],
+            total_responses=3,
+        )
+
     async def get_action_queue(self, workspace: str) -> ActionQueue:
         return ActionQueue(
             workspace=workspace,
@@ -145,6 +166,16 @@ def test_snapshot_routes_return_precomputed_models(
     assert actions.json()["total_actions"] == 1
     assert actions.json()["items"][0]["action_id"] == "add_schema_markup"
 
+    breakdowns = auth_client.get("/api/v1/snapshot/breakdowns?workspace=default")
+    assert breakdowns.status_code == 200
+    bd_payload = cast(dict[str, object], breakdowns.json())
+    assert bd_payload["workspace"] == "default"
+    assert bd_payload["total_responses"] == 3
+    bd_providers = cast(list[dict[str, object]], bd_payload["provider_breakdown"])
+    assert {p["provider"] for p in bd_providers} == {"anthropic", "openai"}
+    mention_types = cast(list[dict[str, object]], bd_payload["mention_types"])
+    assert {mt["label"] for mt in mention_types} == {"mentioned", "not_mentioned"}
+
 
 @pytest.mark.parametrize(
     "path",
@@ -153,6 +184,7 @@ def test_snapshot_routes_return_precomputed_models(
         "/api/v1/snapshot/trend?workspace=default",
         "/api/v1/snapshot/findings?workspace=default",
         "/api/v1/snapshot/actions?workspace=default",
+        "/api/v1/snapshot/breakdowns?workspace=default",
     ],
 )
 def test_snapshot_routes_require_auth(path: str, unauth_client: TestClient) -> None:

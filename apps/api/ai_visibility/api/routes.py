@@ -176,6 +176,22 @@ async def _snapshot_actions_payload(workspace: str = "default") -> ApiPayload:
         )
 
 
+async def _snapshot_breakdowns_payload(workspace: str = "default") -> ApiPayload:
+    try:
+        repo = await _snapshot_repository()
+        breakdowns = await repo.get_breakdowns(workspace)
+        return breakdowns.model_dump()
+    except Exception as exc:
+        return _degraded_response(
+            DegradedState(
+                reason=DegradedReason.PROVIDER_FAILURE,
+                message=f"Database unavailable: {exc}",
+                recoverable=True,
+                context={"dependency": "postgres"},
+            )
+        )
+
+
 async def health() -> ApiPayload:
     return await _health_payload()
 
@@ -237,6 +253,11 @@ async def snapshot_actions(workspace: str = "default", *, user_id: CurrentUserId
     return await _snapshot_actions_payload(workspace)
 
 
+async def snapshot_breakdowns(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
+    _ = user_id
+    return await _snapshot_breakdowns_payload(workspace)
+
+
 def _degraded_response(state: DegradedState | None) -> ApiPayload:
     if state is None:
         raise ValueError("Degraded state is required")
@@ -291,6 +312,7 @@ def create_app() -> FastAPI:
     app.add_api_route("/api/v1/snapshot/trend", endpoint=snapshot_trend, methods=["GET"])
     app.add_api_route("/api/v1/snapshot/findings", endpoint=snapshot_findings, methods=["GET"])
     app.add_api_route("/api/v1/snapshot/actions", endpoint=snapshot_actions, methods=["GET"])
+    app.add_api_route("/api/v1/snapshot/breakdowns", endpoint=snapshot_breakdowns, methods=["GET"])
     app.include_router(user_router, prefix="/api/v1")
     app.include_router(onboarding_router, prefix="/api/v1")
     app.include_router(brands_router, prefix="/api/v1")

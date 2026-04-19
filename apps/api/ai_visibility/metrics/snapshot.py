@@ -42,6 +42,24 @@ class ActionQueue(BaseModel):
     items: list[dict[str, object]]
 
 
+class ProviderBreakdownItem(BaseModel):
+    provider: str
+    responses: int
+    mentions: int
+
+
+class MentionTypeItem(BaseModel):
+    label: str
+    count: int
+
+
+class SnapshotBreakdowns(BaseModel):
+    workspace: str
+    provider_breakdown: list[ProviderBreakdownItem]
+    mention_types: list[MentionTypeItem]
+    total_responses: int
+
+
 class SnapshotRepository:
     def __init__(
         self,
@@ -109,6 +127,58 @@ class SnapshotRepository:
     def get_findings_summary(self, workspace: str) -> FindingsSummary:
         findings = [dict(item) for item in self._findings_by_workspace.get(workspace, [])]
         return FindingsSummary(workspace=workspace, total_findings=len(findings), items=findings)
+
+    async def get_breakdowns(self, workspace: str) -> SnapshotBreakdowns:
+        prisma = self._metric_repo.prisma
+        scan_jobs = await prisma.aivisscanjob.find_many(where={"workspaceSlug": workspace})
+        if not scan_jobs:
+            return SnapshotBreakdowns(
+                workspace=workspace,
+                provider_breakdown=[],
+                mention_types=[],
+                total_responses=0,
+            )
+
+        job_ids = [j.id for j in scan_jobs]
+        executions = await prisma.aivisscanexecution.find_many(
+            where={"scanJobId": {"in": job_ids}},
+        )
+
+        provider_to_exec_ids: dict[str, list[str]] = {}
+        for exec_row in executions:
+            provider_to_exec_ids.setdefault(exec_row.provider, []).append(exec_row.id)
+
+        provider_items: list[ProviderBreakdownItem] = []
+        total_mentioned = 0
+        total_responses = 0
+        for provider, exec_ids in provider_to_exec_ids.items():
+            prompt_execs = await prisma.aivispromptexecution.find_many(
+                where={"scanExecutionId": {"in": exec_ids}},
+            )
+            responses = len(prompt_execs)
+            mentions = 0
+            if prompt_execs:
+                pe_ids = [pe.id for pe in prompt_execs]
+                observations = await prisma.aivisobservation.find_many(
+                    where={"promptExecutionId": {"in": pe_ids}},
+                )
+                mentions = sum(1 for obs in observations if bool(obs.brandMentioned))
+            provider_items.append(ProviderBreakdownItem(provider=provider, responses=responses, mentions=mentions))
+            total_responses += responses
+            total_mentioned += mentions
+
+        provider_items.sort(key=lambda item: item.responses, reverse=True)
+        mention_types = [
+            MentionTypeItem(label="mentioned", count=total_mentioned),
+            MentionTypeItem(label="not_mentioned", count=max(0, total_responses - total_mentioned)),
+        ]
+
+        return SnapshotBreakdowns(
+            workspace=workspace,
+            provider_breakdown=provider_items,
+            mention_types=mention_types,
+            total_responses=total_responses,
+        )
 
     async def get_action_queue(self, workspace: str) -> ActionQueue:
         precomputed_actions = self._actions_by_workspace.get(workspace)
