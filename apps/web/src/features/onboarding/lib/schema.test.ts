@@ -131,7 +131,7 @@ describe("onboardingSchema", () => {
     expect(
       onboardingSchema.safeParse({
         ...validPayload,
-        engines: ["openai", "anthropic", "perplexity", "google", "xai"],
+        engines: ["openai", "anthropic", "perplexity", "google", "xai", "google_ai_overview"],
       }).success,
     ).toBe(true);
   });

@@ -104,7 +104,14 @@ describe("OnboardingPage", () => {
         {
           brand: { name: "Acme Corp", domain: "example.com" },
           competitors: [],
-          engines: ["openai", "anthropic", "perplexity", "google", "xai"],
+          engines: [
+            "openai",
+            "anthropic",
+            "perplexity",
+            "google",
+            "xai",
+            "google_ai_overview",
+          ],
         },
         getTokenMock,
       );

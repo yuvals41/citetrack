@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { EnginesStep } from "./engines-step";
 
 describe("EnginesStep", () => {
-  it("renders all five engine checkboxes", () => {
+  it("renders all six engine checkboxes", () => {
     render(<EnginesStep onNext={vi.fn()} onBack={vi.fn()} />);
 
     expect(screen.getByLabelText(/chatgpt/i)).toBeInTheDocument();
@@ -12,6 +12,7 @@ describe("EnginesStep", () => {
     expect(screen.getByLabelText(/perplexity/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/gemini/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/grok/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/ai overviews/i)).toBeInTheDocument();
   });
 
   it("checks all engines by default", () => {
@@ -22,6 +23,7 @@ describe("EnginesStep", () => {
     expect(screen.getByLabelText(/perplexity/i)).toBeChecked();
     expect(screen.getByLabelText(/gemini/i)).toBeChecked();
     expect(screen.getByLabelText(/grok/i)).toBeChecked();
+    expect(screen.getByLabelText(/ai overviews/i)).toBeChecked();
   });
 
   it("shows an error when all engines are unchecked", async () => {
@@ -33,6 +35,7 @@ describe("EnginesStep", () => {
     await user.click(screen.getByLabelText(/perplexity/i));
     await user.click(screen.getByLabelText(/gemini/i));
     await user.click(screen.getByLabelText(/grok/i));
+    await user.click(screen.getByLabelText(/ai overviews/i));
     await user.click(screen.getByRole("button", { name: /finish setup/i }));
 
     expect(await screen.findByText(/pick at least one/i)).toBeInTheDocument();
@@ -59,7 +62,12 @@ describe("EnginesStep", () => {
     await user.click(screen.getByRole("button", { name: /finish setup/i }));
 
     await waitFor(() => {
-      expect(onNext).toHaveBeenCalledWith(["openai", "perplexity", "xai"]);
+      expect(onNext).toHaveBeenCalledWith([
+        "openai",
+        "perplexity",
+        "xai",
+        "google_ai_overview",
+      ]);
     });
   });
 
@@ -84,6 +92,7 @@ describe("EnginesStep", () => {
       "/engines/perplexity.svg",
       "/engines/google.svg",
       "/engines/xai.svg",
+      "/engines/google_ai_overview.svg",
     ];
     for (const src of expectedSources) {
       expect(container.querySelector(`img[src="${src}"]`)).toBeInTheDocument();

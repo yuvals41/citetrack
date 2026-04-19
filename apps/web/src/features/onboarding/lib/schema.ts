@@ -21,7 +21,16 @@ export const onboardingSchema = z.object({
     )
     .max(5, "Up to 5 competitors"),
   engines: z
-    .array(z.enum(["openai", "anthropic", "perplexity", "google", "xai"]))
+    .array(
+      z.enum([
+        "openai",
+        "anthropic",
+        "perplexity",
+        "google",
+        "xai",
+        "google_ai_overview",
+      ]),
+    )
     .min(1, "Pick at least one"),
   site_content: z.string().optional(),
 });

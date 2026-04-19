@@ -18,6 +18,7 @@ const ALL_ENGINES: Engine[] = [
   "perplexity",
   "google",
   "xai",
+  "google_ai_overview",
 ];
 
 const ENGINE_OPTIONS: {
@@ -38,6 +39,12 @@ const ENGINE_OPTIONS: {
   { value: "perplexity", label: "Perplexity", provider: "Perplexity AI", icon: "/engines/perplexity.svg" },
   { value: "google", label: "Gemini", provider: "Google", icon: "/engines/google.svg" },
   { value: "xai", label: "Grok", provider: "xAI", icon: "/engines/xai.svg" },
+  {
+    value: "google_ai_overview",
+    label: "AI Overviews",
+    provider: "Google Search",
+    icon: "/engines/google_ai_overview.svg",
+  },
 ];
 
 interface EnginesStepProps {

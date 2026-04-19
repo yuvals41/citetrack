@@ -21,6 +21,7 @@ class OnboardingEngine(str, Enum):
     PERPLEXITY = "perplexity"
     GOOGLE = "google"
     XAI = "xai"
+    GOOGLE_AI_OVERVIEW = "google_ai_overview"
 
 
 class OnboardingBrand(BaseModel):
