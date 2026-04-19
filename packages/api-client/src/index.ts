@@ -1,7 +1,13 @@
 import { API_BASE_URL } from "@citetrack/config";
 import type { ScanRun, VisibilityScore, Workspace } from "@citetrack/types";
 import type {
+  AIResponseItem,
+  AIResponsesList,
   ActionsResult,
+  CompetitorCreateInput,
+  CompetitorRecord,
+  CompetitorsList,
+  DegradedResponse,
   FindingsResult,
   OverviewSnapshotResult,
   PixelStats,
@@ -9,10 +15,13 @@ import type {
   RunsResult,
   TrendResult,
   WorkspaceApiResponse,
+  WorkspaceSettings,
+  WorkspaceSettingsUpdate,
 } from "./types.js";
 
-export type { ActionsResult, FindingsResult, OverviewSnapshotResult, PixelStats, PromptsResult, RunsResult, TrendResult, WorkspaceApiResponse };
+export type { AIResponseItem, AIResponsesList, ActionsResult, CompetitorCreateInput, CompetitorRecord, CompetitorsList, FindingsResult, OverviewSnapshotResult, PixelStats, PromptsResult, RunsResult, TrendResult, WorkspaceApiResponse, WorkspaceSettings, WorkspaceSettingsUpdate };
 export type {
+  AIResponseCitation,
   ActionItem,
   ActionQueue,
   DegradedInfo,
@@ -22,11 +31,24 @@ export type {
   OverviewSnapshot,
   PromptRecord,
   RunRecord,
+  ScanScheduleValue,
   TrendPoint,
   TrendResponse,
   TrendSeries,
 } from "./types.js";
 export { isDegraded } from "./types.js";
+
+export class ApiClientError extends Error {
+  readonly status: number;
+  readonly body: string;
+
+  constructor(status: number, body: string, message?: string) {
+    super(message ?? `API ${status}: ${body}`);
+    this.name = "ApiClientError";
+    this.status = status;
+    this.body = body;
+  }
+}
 
 type RequestOptions = {
   baseUrl?: string;
@@ -75,13 +97,31 @@ export function createCitetrackClient({
   getToken,
   requestIdProvider,
 }: CitetrackClientOptions) {
-  async function authedFetch<T>(path: string): Promise<T> {
+  async function authedRequest<T>(path: string, init?: RequestInit): Promise<T> {
     const token = await getToken();
     if (!token) throw new Error("Not authenticated");
-    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-    if (requestIdProvider) headers["X-Request-ID"] = requestIdProvider();
-    const res = await fetch(`${baseUrl}${path}`, { headers });
-    if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    if (requestIdProvider) {
+      headers.set("X-Request-ID", requestIdProvider());
+    }
+    const res = await fetch(`${baseUrl}${path}`, { ...init, headers });
+    if (!res.ok) {
+      const body = await res.text();
+      let message = body;
+      try {
+        const parsed = JSON.parse(body) as { detail?: string };
+        if (typeof parsed.detail === "string" && parsed.detail.length > 0) {
+          message = parsed.detail;
+        }
+      } catch {
+        // Use raw body when parsing fails.
+      }
+      throw new ApiClientError(res.status, body, message);
+    }
+    if (res.status === 204) {
+      return undefined as T;
+    }
     return res.json() as Promise<T>;
   }
 
@@ -91,28 +131,61 @@ export function createCitetrackClient({
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
     if (requestIdProvider) headers["X-Request-ID"] = requestIdProvider();
     const res = await fetch(`${baseUrl}${path}`, { headers });
-    if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new ApiClientError(res.status, await res.text());
     return res.text();
   }
 
   return {
     getSnapshotOverview: (workspace = "default") =>
-      authedFetch<OverviewSnapshotResult>(`/api/v1/snapshot/overview?workspace=${workspace}`),
+      authedRequest<OverviewSnapshotResult>(`/api/v1/snapshot/overview?workspace=${workspace}`),
     getSnapshotTrend: (workspace = "default") =>
-      authedFetch<TrendResult>(`/api/v1/snapshot/trend?workspace=${workspace}`),
+      authedRequest<TrendResult>(`/api/v1/snapshot/trend?workspace=${workspace}`),
     getSnapshotFindings: (workspace = "default") =>
-      authedFetch<FindingsResult>(`/api/v1/snapshot/findings?workspace=${workspace}`),
+      authedRequest<FindingsResult>(`/api/v1/snapshot/findings?workspace=${workspace}`),
     getSnapshotActions: (workspace = "default") =>
-      authedFetch<ActionsResult>(`/api/v1/snapshot/actions?workspace=${workspace}`),
+      authedRequest<ActionsResult>(`/api/v1/snapshot/actions?workspace=${workspace}`),
     getRuns: (workspace = "default") =>
-      authedFetch<RunsResult>(`/api/v1/runs?workspace=${workspace}`),
+      authedRequest<RunsResult>(`/api/v1/runs?workspace=${workspace}`),
+    getResponses: (
+      workspaceSlug: string,
+      options?: { runId?: string; limit?: number; offset?: number },
+    ) => {
+      const query = new URLSearchParams();
+      if (options?.runId) query.set("run_id", options.runId);
+      if (options?.limit !== undefined) query.set("limit", String(options.limit));
+      if (options?.offset !== undefined) query.set("offset", String(options.offset));
+      const queryString = query.toString();
+      return authedRequest<AIResponsesList | DegradedResponse>(
+        `/api/v1/workspaces/${workspaceSlug}/responses${queryString ? `?${queryString}` : ""}`,
+      );
+    },
     getMyWorkspaces: () =>
-      authedFetch<WorkspaceApiResponse[]>(`/api/v1/workspaces/mine`),
+      authedRequest<WorkspaceApiResponse[]>(`/api/v1/workspaces/mine`),
     getPixelSnippet: (workspaceId: string) =>
       authedFetchText(`/api/v1/pixel/snippet/${workspaceId}`),
     getPixelStats: (workspaceId: string, days = 30) =>
-      authedFetch<PixelStats>(`/api/v1/pixel/stats/${workspaceId}?days=${days}`),
+      authedRequest<PixelStats>(`/api/v1/pixel/stats/${workspaceId}?days=${days}`),
     getPrompts: () =>
-      authedFetch<PromptsResult>(`/api/v1/prompts`),
+      authedRequest<PromptsResult>(`/api/v1/prompts`),
+    listCompetitors: (workspaceSlug: string) =>
+      authedRequest<CompetitorsList>(`/api/v1/workspaces/${workspaceSlug}/competitors`),
+    createCompetitor: (workspaceSlug: string, input: CompetitorCreateInput) =>
+      authedRequest<CompetitorRecord>(`/api/v1/workspaces/${workspaceSlug}/competitors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    deleteCompetitor: (workspaceSlug: string, competitorId: string) =>
+      authedRequest<void>(`/api/v1/workspaces/${workspaceSlug}/competitors/${competitorId}`, {
+        method: "DELETE",
+      }),
+    getSettings: (workspaceSlug: string) =>
+      authedRequest<WorkspaceSettings>(`/api/v1/workspaces/${workspaceSlug}/settings`),
+    updateSettings: (workspaceSlug: string, patch: WorkspaceSettingsUpdate) =>
+      authedRequest<WorkspaceSettings>(`/api/v1/workspaces/${workspaceSlug}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      }),
   };
 }

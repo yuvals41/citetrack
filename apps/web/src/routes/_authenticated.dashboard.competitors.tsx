@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "#/features/dashboard/components/placeholder-page";
+import { CompetitorsPage } from "#/features/dashboard/pages/competitors-page";
 
 export const Route = createFileRoute("/_authenticated/dashboard/competitors")({
-  component: () => (
-    <PlaceholderPage
-      title="Competitors"
-      description="Your tracked competitors and how they compare to you across AI engines."
-    />
-  ),
+  component: CompetitorsPage,
 });

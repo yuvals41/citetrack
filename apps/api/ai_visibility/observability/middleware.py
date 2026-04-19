@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+# pyright: reportMissingImports=false, reportUnknownVariableType=false, reportUnknownMemberType=false, reportImplicitOverride=false
+
 import time
 import uuid
-from typing import Callable
+from collections.abc import Awaitable
+from collections.abc import Callable
 
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -15,7 +18,7 @@ REQUEST_ID_HEADER = "X-Request-ID"
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Response]) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         incoming_id = request.headers.get(REQUEST_ID_HEADER)
         request_id = incoming_id or f"req_{uuid.uuid4().hex[:12]}"
         token = request_id_var.set(request_id)

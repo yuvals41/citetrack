@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "#/features/dashboard/components/placeholder-page";
+import { AIResponsesPage } from "#/features/dashboard/pages/ai-responses-page";
 
 export const Route = createFileRoute("/_authenticated/dashboard/citations")({
-  component: () => (
-    <PlaceholderPage
-      title="AI Responses"
-      description="Every response AI assistants gave when asked about your brand — with mention type, citation URL, position, and sentiment."
-    />
-  ),
+  component: AIResponsesRoute,
 });
+
+function AIResponsesRoute() {
+  return <AIResponsesPage />;
+}

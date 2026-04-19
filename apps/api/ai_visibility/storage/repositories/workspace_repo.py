@@ -44,6 +44,28 @@ class WorkspaceRepository:
 
         return _workspace_from_model(created, schedule)
 
+    async def update_by_slug(
+        self,
+        slug: str,
+        *,
+        brand_name: str | None = None,
+        scan_schedule: ScanSchedule | None = None,
+    ) -> WorkspaceRecord | None:
+        await self._ensure_schedule_table()
+        existing = await self.prisma.aivisworkspace.find_unique(where={"slug": slug})
+        if existing is None:
+            return None
+        data: dict[str, Any] = {}
+        if brand_name is not None:
+            data["brandName"] = brand_name
+        if data:
+            await self.prisma.aivisworkspace.update(where={"slug": slug}, data=data)
+        if scan_schedule is not None:
+            await self.set_scan_schedule(str(existing.id), scan_schedule)
+        refreshed = await self.prisma.aivisworkspace.find_unique(where={"slug": slug})
+        resolved_schedule = await self.get_scan_schedule(str(existing.id))
+        return _workspace_from_model(refreshed, resolved_schedule) if refreshed else None
+
     async def get_by_slug(self, slug: str) -> WorkspaceRecord | None:
         await self._ensure_schedule_table()
         row = await self.prisma.aivisworkspace.find_unique(where={"slug": slug})

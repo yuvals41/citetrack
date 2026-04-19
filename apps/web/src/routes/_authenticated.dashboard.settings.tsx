@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "#/features/dashboard/components/placeholder-page";
+import { SettingsPage } from "#/features/dashboard/pages/settings-page";
 
 export const Route = createFileRoute("/_authenticated/dashboard/settings")({
-  component: () => (
-    <PlaceholderPage
-      title="Settings"
-      description="Workspace settings, billing, and account preferences."
-    />
-  ),
+  component: SettingsPage,
 });

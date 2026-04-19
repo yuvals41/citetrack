@@ -107,6 +107,35 @@ export interface RunsResult {
   items: RunRecord[];
 }
 
+export type ResponseMentionType = "mentioned" | "cited" | "not_mentioned";
+
+export interface AIResponseCitation {
+  url: string;
+  domain: string;
+}
+
+export interface AIResponseItem {
+  id: string;
+  run_id: string;
+  provider: string;
+  model: string;
+  prompt_text: string;
+  response_text: string;
+  excerpt: string;
+  mention_type: ResponseMentionType;
+  citations: AIResponseCitation[];
+  position: number | null;
+  sentiment: string | null;
+  created_at: string;
+}
+
+export interface AIResponsesList {
+  workspace: string;
+  total: number;
+  items: AIResponseItem[];
+  degraded: { reason: string; message: string } | null;
+}
+
 export interface PixelStats {
   total_visits: number;
   total_conversions: number;
@@ -125,6 +154,25 @@ export interface WorkspaceApiResponse {
   updated_at: string;
 }
 
+export interface CompetitorRecord {
+  id: string;
+  workspace_id: string;
+  name: string;
+  domain: string;
+  created_at: string | null;
+}
+
+export interface CompetitorsList {
+  workspace: string;
+  items: CompetitorRecord[];
+  degraded: { reason: string; message: string } | null;
+}
+
+export interface CompetitorCreateInput {
+  name: string;
+  domain: string;
+}
+
 // Prompts -------------------------------------------------------------------
 
 export interface PromptRecord {
@@ -138,4 +186,19 @@ export interface PromptRecord {
 
 export interface PromptsResult {
   items: PromptRecord[];
+}
+
+export type ScanScheduleValue = "off" | "daily" | "weekly";
+
+export interface WorkspaceSettings {
+  workspace_slug: string;
+  name: string;
+  scan_schedule: ScanScheduleValue;
+  created_at: string | null;
+  degraded?: { reason: string; message: string } | null;
+}
+
+export interface WorkspaceSettingsUpdate {
+  name?: string;
+  scan_schedule?: ScanScheduleValue;
 }

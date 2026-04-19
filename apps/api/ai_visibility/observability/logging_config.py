@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+# pyright: reportMissingImports=false, reportUnknownVariableType=false, reportUnknownMemberType=false, reportAny=false, reportExplicitAny=false, reportImplicitOverride=false
+
 import logging
 import os
 import sys
 from contextvars import ContextVar
+from types import FrameType
 from typing import Any
+from typing import cast
 
 from loguru import logger
 
@@ -26,7 +30,8 @@ class _InterceptHandler(logging.Handler):
             level: str | int = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
-        frame, depth = logging.currentframe(), 2
+        frame: FrameType | None = logging.currentframe()
+        depth = 2
         while frame and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1
@@ -44,7 +49,7 @@ def configure_logging() -> None:
     use_json = os.getenv("LOG_JSON", "").lower() in {"1", "true", "yes"}
 
     logger.remove()
-    logger.configure(patcher=_patch_context)
+    logger.configure(patcher=cast(Any, _patch_context))
 
     if use_json:
         logger.add(
