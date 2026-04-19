@@ -7,7 +7,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@citetrack/ui/form";
 import { ArrowLeft, Loader2, Plus, RotateCw, Trash2 } from "lucide-react";
@@ -137,46 +136,53 @@ export function CompetitorsStep({
           onSubmit={form.handleSubmit((values) => onNext(values.competitors))}
           className="space-y-4"
         >
-          <div className="space-y-3">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex gap-2 items-start">
-                <FormField
-                  control={form.control}
-                  name={`competitors.${index}.name`}
-                  render={({ field: f }) => (
-                    <FormItem className="flex-1">
-                      {index === 0 && <FormLabel>Name</FormLabel>}
-                      <FormControl>
-                        <Input placeholder="Competitor Inc." {...f} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`competitors.${index}.domain`}
-                  render={({ field: f }) => (
-                    <FormItem className="flex-1">
-                      {index === 0 && <FormLabel>Domain</FormLabel>}
-                      <FormControl>
-                        <Input placeholder="competitor.com" {...f} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={() => remove(index)}
-                  aria-label="Remove competitor"
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground ${index === 0 ? "mt-8" : "mt-0"}`}
-                >
-                  <Trash2 className="size-4" />
-                </button>
+          {fields.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex gap-2 items-end text-sm font-medium">
+                <div className="flex-1">Name</div>
+                <div className="flex-1">Domain</div>
+                <div className="w-10 shrink-0" aria-hidden="true" />
               </div>
-            ))}
-          </div>
+              <div className="space-y-2">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="flex gap-2 items-start">
+                    <FormField
+                      control={form.control}
+                      name={`competitors.${index}.name`}
+                      render={({ field: f }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input placeholder="Competitor Inc." aria-label="Name" {...f} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`competitors.${index}.domain`}
+                      render={({ field: f }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input placeholder="competitor.com" aria-label="Domain" {...f} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      aria-label="Remove competitor"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {fields.length < 5 && (
             <Button
