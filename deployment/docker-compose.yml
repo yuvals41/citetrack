@@ -28,7 +28,12 @@ services:
     command:
       - sh
       - -c
-      - "uv sync --frozen && exec uv run uvicorn ai_visibility.api.routes:app --host 0.0.0.0 --port 8000"
+      - |
+        set -e
+        uv sync --frozen
+        VENV_PURELIB=$$(uv run python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+        ln -sfn /home/yuval/Documents/solaraai/stanley/repos/prisma/dist/client-python "$$VENV_PURELIB/prisma"
+        exec uv run uvicorn ai_visibility.api.routes:app --host 0.0.0.0 --port 8000
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,6 +43,7 @@ services:
       DATABASE_URL: postgresql://citetrack:citetrack@postgres:5432/citetrack
       DIRECT_URL: postgresql://citetrack:citetrack@postgres:5432/citetrack
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      UV_PROJECT_ENVIRONMENT: /opt/citetrack-venv
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
