@@ -22,7 +22,6 @@ test("forgot-password page supports unauthenticated rendering and navigation", a
   await expect(page.getByRole("button", { name: "Send reset code" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
 
-  // Clerk is intentionally unconfigured in this phase, so the form cannot progress end-to-end yet.
   await page.getByRole("link", { name: "Sign in" }).click();
   await page.waitForURL(/\/sign-in\/?$/);
 });
