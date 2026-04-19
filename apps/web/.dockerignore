@@ -1,0 +1,14 @@
+node_modules
+.output
+.vite
+.cache
+.nx
+dist
+build
+coverage
+test-results
+playwright-report
+playwright/.clerk
+*.log
+.env.local
+.env.*.local
