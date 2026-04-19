@@ -3,15 +3,16 @@ import { Link, useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  Inbox,
+  BarChart3,
+  FileSearch,
   LayoutDashboard,
+  Lightbulb,
   MessageSquareQuote,
-  Plug,
+  Quote,
   Search as SearchIcon,
   Settings,
   Swords,
   Tag,
-  Users,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,20 +37,24 @@ interface NavItem {
 }
 
 const personalNavItems: NavItem[] = [
-  { label: "Inbox", to: "/dashboard/inbox", icon: Inbox },
   { label: "My Tracking", to: "/dashboard", icon: LayoutDashboard },
 ];
 
-const workspaceNavItems: NavItem[] = [
-  { label: "Brands", to: "/dashboard/brands", icon: Tag },
-  { label: "Competitors", to: "/dashboard/competitors", icon: Swords },
-  { label: "Prompts", to: "/dashboard/prompts", icon: MessageSquareQuote },
+const dataNavItems: NavItem[] = [
   { label: "Scans", to: "/dashboard/scans", icon: Activity },
+  { label: "Prompts", to: "/dashboard/prompts", icon: MessageSquareQuote },
+  { label: "AI Responses", to: "/dashboard/citations", icon: Quote },
+];
+
+const insightsNavItems: NavItem[] = [
+  { label: "Action Plan", to: "/dashboard/actions", icon: Lightbulb },
+  { label: "Content Analysis", to: "/dashboard/content-analysis", icon: FileSearch },
+  { label: "Pixel", to: "/dashboard/pixel", icon: BarChart3 },
 ];
 
 const configureNavItems: NavItem[] = [
-  { label: "Integrations", to: "/dashboard/integrations", icon: Plug },
-  { label: "Team", to: "/dashboard/team", icon: Users },
+  { label: "Brands", to: "/dashboard/brands", icon: Tag },
+  { label: "Competitors", to: "/dashboard/competitors", icon: Swords },
   { label: "Settings", to: "/dashboard/settings", icon: Settings },
 ];
 
@@ -137,11 +142,8 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <NavGroup items={personalNavItems} currentPathname={location.pathname} />
-        <NavGroup
-          label="Workspace"
-          items={workspaceNavItems}
-          currentPathname={location.pathname}
-        />
+        <NavGroup label="Data" items={dataNavItems} currentPathname={location.pathname} />
+        <NavGroup label="Insights" items={insightsNavItems} currentPathname={location.pathname} />
         <NavGroup
           label="Configure"
           items={configureNavItems}

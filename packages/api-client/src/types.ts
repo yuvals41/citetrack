@@ -88,3 +88,54 @@ export type ActionsResult = ActionQueue | DegradedResponse;
 export function isDegraded(v: unknown): v is DegradedResponse {
   return typeof v === "object" && v !== null && "degraded" in v;
 }
+
+export interface RunRecord {
+  id: string;
+  workspace_id: string;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  parser_version: string;
+  status: "pending" | "running" | "completed" | "completed_with_partial_failures" | "failed";
+  started_at: string;
+  completed_at: string | null;
+  error_message: string | null;
+}
+
+export interface RunsResult {
+  workspace: string;
+  items: RunRecord[];
+}
+
+export interface PixelStats {
+  total_visits: number;
+  total_conversions: number;
+  total_revenue: number;
+  visits_by_source: Record<string, number>;
+  conversions_by_source: Record<string, number>;
+  daily_visits: Array<{ date: string; source: string; count: number }>;
+}
+
+export interface WorkspaceApiResponse {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Prompts -------------------------------------------------------------------
+
+export interface PromptRecord {
+  id: string;
+  /** Raw prompt template with {brand} / {competitor} placeholders. */
+  template: string;
+  category?: string;
+  version?: string;
+  ai_search_volume?: number;
+}
+
+export interface PromptsResult {
+  items: PromptRecord[];
+}

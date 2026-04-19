@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "#/features/dashboard/components/placeholder-page";
+import { PromptsPage } from "#/features/dashboard/pages/prompts-page";
 
 export const Route = createFileRoute("/_authenticated/dashboard/prompts")({
-  component: () => (
-    <PlaceholderPage
-      title="Prompts"
-      description="The prompts we run against ChatGPT, Claude, Perplexity, Gemini, and Grok to measure visibility."
-    />
-  ),
+  component: PromptsPage,
 });

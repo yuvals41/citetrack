@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlaceholderPage } from "#/features/dashboard/components/placeholder-page";
+import { ScansPage } from "#/features/dashboard/pages/scans-page";
 
 export const Route = createFileRoute("/_authenticated/dashboard/scans")({
-  component: () => (
-    <PlaceholderPage
-      title="Scans"
-      description="History and results of every scan we've run for your brand."
-    />
-  ),
+  component: ScansPage,
 });

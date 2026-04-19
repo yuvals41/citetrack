@@ -1,14 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { DashboardPage } from "#/features/dashboard/pages/dashboard-page";
-import { PageHeader } from "#/features/dashboard/components/page-header";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/dashboard")({ component: Page });
-
-function Page() {
-  return (
-    <>
-      <PageHeader title="Dashboard" />
-      <DashboardPage />
-    </>
-  );
-}
+export const Route = createFileRoute("/_authenticated/dashboard")({
+  component: () => <Outlet />,
+});

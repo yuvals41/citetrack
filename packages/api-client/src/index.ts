@@ -4,10 +4,14 @@ import type {
   ActionsResult,
   FindingsResult,
   OverviewSnapshotResult,
+  PixelStats,
+  PromptsResult,
+  RunsResult,
   TrendResult,
+  WorkspaceApiResponse,
 } from "./types.js";
 
-export type { ActionsResult, FindingsResult, OverviewSnapshotResult, TrendResult };
+export type { ActionsResult, FindingsResult, OverviewSnapshotResult, PixelStats, PromptsResult, RunsResult, TrendResult, WorkspaceApiResponse };
 export type {
   ActionItem,
   ActionQueue,
@@ -16,6 +20,8 @@ export type {
   Finding,
   FindingsSummary,
   OverviewSnapshot,
+  PromptRecord,
+  RunRecord,
   TrendPoint,
   TrendResponse,
   TrendSeries,
@@ -79,6 +85,16 @@ export function createCitetrackClient({
     return res.json() as Promise<T>;
   }
 
+  async function authedFetchText(path: string): Promise<string> {
+    const token = await getToken();
+    if (!token) throw new Error("Not authenticated");
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    if (requestIdProvider) headers["X-Request-ID"] = requestIdProvider();
+    const res = await fetch(`${baseUrl}${path}`, { headers });
+    if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+    return res.text();
+  }
+
   return {
     getSnapshotOverview: (workspace = "default") =>
       authedFetch<OverviewSnapshotResult>(`/api/v1/snapshot/overview?workspace=${workspace}`),
@@ -88,5 +104,15 @@ export function createCitetrackClient({
       authedFetch<FindingsResult>(`/api/v1/snapshot/findings?workspace=${workspace}`),
     getSnapshotActions: (workspace = "default") =>
       authedFetch<ActionsResult>(`/api/v1/snapshot/actions?workspace=${workspace}`),
+    getRuns: (workspace = "default") =>
+      authedFetch<RunsResult>(`/api/v1/runs?workspace=${workspace}`),
+    getMyWorkspaces: () =>
+      authedFetch<WorkspaceApiResponse[]>(`/api/v1/workspaces/mine`),
+    getPixelSnippet: (workspaceId: string) =>
+      authedFetchText(`/api/v1/pixel/snippet/${workspaceId}`),
+    getPixelStats: (workspaceId: string, days = 30) =>
+      authedFetch<PixelStats>(`/api/v1/pixel/stats/${workspaceId}?days=${days}`),
+    getPrompts: () =>
+      authedFetch<PromptsResult>(`/api/v1/prompts`),
   };
 }

@@ -16,14 +16,16 @@ import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
-import { Route as AuthenticatedDashboardTeamRouteImport } from './routes/_authenticated.dashboard.team'
+import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated.dashboard.index'
 import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_authenticated.dashboard.settings'
 import { Route as AuthenticatedDashboardScansRouteImport } from './routes/_authenticated.dashboard.scans'
 import { Route as AuthenticatedDashboardPromptsRouteImport } from './routes/_authenticated.dashboard.prompts'
-import { Route as AuthenticatedDashboardIntegrationsRouteImport } from './routes/_authenticated.dashboard.integrations'
-import { Route as AuthenticatedDashboardInboxRouteImport } from './routes/_authenticated.dashboard.inbox'
+import { Route as AuthenticatedDashboardPixelRouteImport } from './routes/_authenticated.dashboard.pixel'
+import { Route as AuthenticatedDashboardContentAnalysisRouteImport } from './routes/_authenticated.dashboard.content-analysis'
 import { Route as AuthenticatedDashboardCompetitorsRouteImport } from './routes/_authenticated.dashboard.competitors'
+import { Route as AuthenticatedDashboardCitationsRouteImport } from './routes/_authenticated.dashboard.citations'
 import { Route as AuthenticatedDashboardBrandsRouteImport } from './routes/_authenticated.dashboard.brands'
+import { Route as AuthenticatedDashboardActionsRouteImport } from './routes/_authenticated.dashboard.actions'
 
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
@@ -59,10 +61,10 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedDashboardTeamRoute =
-  AuthenticatedDashboardTeamRouteImport.update({
-    id: '/team',
-    path: '/team',
+const AuthenticatedDashboardIndexRoute =
+  AuthenticatedDashboardIndexRouteImport.update({
+    id: '/',
+    path: '/',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
 const AuthenticatedDashboardSettingsRoute =
@@ -83,16 +85,16 @@ const AuthenticatedDashboardPromptsRoute =
     path: '/prompts',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
-const AuthenticatedDashboardIntegrationsRoute =
-  AuthenticatedDashboardIntegrationsRouteImport.update({
-    id: '/integrations',
-    path: '/integrations',
+const AuthenticatedDashboardPixelRoute =
+  AuthenticatedDashboardPixelRouteImport.update({
+    id: '/pixel',
+    path: '/pixel',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
-const AuthenticatedDashboardInboxRoute =
-  AuthenticatedDashboardInboxRouteImport.update({
-    id: '/inbox',
-    path: '/inbox',
+const AuthenticatedDashboardContentAnalysisRoute =
+  AuthenticatedDashboardContentAnalysisRouteImport.update({
+    id: '/content-analysis',
+    path: '/content-analysis',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
 const AuthenticatedDashboardCompetitorsRoute =
@@ -101,10 +103,22 @@ const AuthenticatedDashboardCompetitorsRoute =
     path: '/competitors',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
+const AuthenticatedDashboardCitationsRoute =
+  AuthenticatedDashboardCitationsRouteImport.update({
+    id: '/citations',
+    path: '/citations',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
 const AuthenticatedDashboardBrandsRoute =
   AuthenticatedDashboardBrandsRouteImport.update({
     id: '/brands',
     path: '/brands',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardActionsRoute =
+  AuthenticatedDashboardActionsRouteImport.update({
+    id: '/actions',
+    path: '/actions',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
 
@@ -115,30 +129,33 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/dashboard/actions': typeof AuthenticatedDashboardActionsRoute
   '/dashboard/brands': typeof AuthenticatedDashboardBrandsRoute
+  '/dashboard/citations': typeof AuthenticatedDashboardCitationsRoute
   '/dashboard/competitors': typeof AuthenticatedDashboardCompetitorsRoute
-  '/dashboard/inbox': typeof AuthenticatedDashboardInboxRoute
-  '/dashboard/integrations': typeof AuthenticatedDashboardIntegrationsRoute
+  '/dashboard/content-analysis': typeof AuthenticatedDashboardContentAnalysisRoute
+  '/dashboard/pixel': typeof AuthenticatedDashboardPixelRoute
   '/dashboard/prompts': typeof AuthenticatedDashboardPromptsRoute
   '/dashboard/scans': typeof AuthenticatedDashboardScansRoute
   '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
-  '/dashboard/team': typeof AuthenticatedDashboardTeamRoute
+  '/dashboard/': typeof AuthenticatedDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/dashboard/actions': typeof AuthenticatedDashboardActionsRoute
   '/dashboard/brands': typeof AuthenticatedDashboardBrandsRoute
+  '/dashboard/citations': typeof AuthenticatedDashboardCitationsRoute
   '/dashboard/competitors': typeof AuthenticatedDashboardCompetitorsRoute
-  '/dashboard/inbox': typeof AuthenticatedDashboardInboxRoute
-  '/dashboard/integrations': typeof AuthenticatedDashboardIntegrationsRoute
+  '/dashboard/content-analysis': typeof AuthenticatedDashboardContentAnalysisRoute
+  '/dashboard/pixel': typeof AuthenticatedDashboardPixelRoute
   '/dashboard/prompts': typeof AuthenticatedDashboardPromptsRoute
   '/dashboard/scans': typeof AuthenticatedDashboardScansRoute
   '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
-  '/dashboard/team': typeof AuthenticatedDashboardTeamRoute
+  '/dashboard': typeof AuthenticatedDashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,14 +166,16 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/_authenticated/dashboard/actions': typeof AuthenticatedDashboardActionsRoute
   '/_authenticated/dashboard/brands': typeof AuthenticatedDashboardBrandsRoute
+  '/_authenticated/dashboard/citations': typeof AuthenticatedDashboardCitationsRoute
   '/_authenticated/dashboard/competitors': typeof AuthenticatedDashboardCompetitorsRoute
-  '/_authenticated/dashboard/inbox': typeof AuthenticatedDashboardInboxRoute
-  '/_authenticated/dashboard/integrations': typeof AuthenticatedDashboardIntegrationsRoute
+  '/_authenticated/dashboard/content-analysis': typeof AuthenticatedDashboardContentAnalysisRoute
+  '/_authenticated/dashboard/pixel': typeof AuthenticatedDashboardPixelRoute
   '/_authenticated/dashboard/prompts': typeof AuthenticatedDashboardPromptsRoute
   '/_authenticated/dashboard/scans': typeof AuthenticatedDashboardScansRoute
   '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
-  '/_authenticated/dashboard/team': typeof AuthenticatedDashboardTeamRoute
+  '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,30 +186,33 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/dashboard/actions'
     | '/dashboard/brands'
+    | '/dashboard/citations'
     | '/dashboard/competitors'
-    | '/dashboard/inbox'
-    | '/dashboard/integrations'
+    | '/dashboard/content-analysis'
+    | '/dashboard/pixel'
     | '/dashboard/prompts'
     | '/dashboard/scans'
     | '/dashboard/settings'
-    | '/dashboard/team'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/forgot-password'
-    | '/dashboard'
     | '/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/dashboard/actions'
     | '/dashboard/brands'
+    | '/dashboard/citations'
     | '/dashboard/competitors'
-    | '/dashboard/inbox'
-    | '/dashboard/integrations'
+    | '/dashboard/content-analysis'
+    | '/dashboard/pixel'
     | '/dashboard/prompts'
     | '/dashboard/scans'
     | '/dashboard/settings'
-    | '/dashboard/team'
+    | '/dashboard'
   id:
     | '__root__'
     | '/'
@@ -200,14 +222,16 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/_authenticated/dashboard/actions'
     | '/_authenticated/dashboard/brands'
+    | '/_authenticated/dashboard/citations'
     | '/_authenticated/dashboard/competitors'
-    | '/_authenticated/dashboard/inbox'
-    | '/_authenticated/dashboard/integrations'
+    | '/_authenticated/dashboard/content-analysis'
+    | '/_authenticated/dashboard/pixel'
     | '/_authenticated/dashboard/prompts'
     | '/_authenticated/dashboard/scans'
     | '/_authenticated/dashboard/settings'
-    | '/_authenticated/dashboard/team'
+    | '/_authenticated/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -269,11 +293,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/dashboard/team': {
-      id: '/_authenticated/dashboard/team'
-      path: '/team'
-      fullPath: '/dashboard/team'
-      preLoaderRoute: typeof AuthenticatedDashboardTeamRouteImport
+    '/_authenticated/dashboard/': {
+      id: '/_authenticated/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
     '/_authenticated/dashboard/settings': {
@@ -297,18 +321,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardPromptsRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
-    '/_authenticated/dashboard/integrations': {
-      id: '/_authenticated/dashboard/integrations'
-      path: '/integrations'
-      fullPath: '/dashboard/integrations'
-      preLoaderRoute: typeof AuthenticatedDashboardIntegrationsRouteImport
+    '/_authenticated/dashboard/pixel': {
+      id: '/_authenticated/dashboard/pixel'
+      path: '/pixel'
+      fullPath: '/dashboard/pixel'
+      preLoaderRoute: typeof AuthenticatedDashboardPixelRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
-    '/_authenticated/dashboard/inbox': {
-      id: '/_authenticated/dashboard/inbox'
-      path: '/inbox'
-      fullPath: '/dashboard/inbox'
-      preLoaderRoute: typeof AuthenticatedDashboardInboxRouteImport
+    '/_authenticated/dashboard/content-analysis': {
+      id: '/_authenticated/dashboard/content-analysis'
+      path: '/content-analysis'
+      fullPath: '/dashboard/content-analysis'
+      preLoaderRoute: typeof AuthenticatedDashboardContentAnalysisRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
     '/_authenticated/dashboard/competitors': {
@@ -318,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardCompetitorsRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/_authenticated/dashboard/citations': {
+      id: '/_authenticated/dashboard/citations'
+      path: '/citations'
+      fullPath: '/dashboard/citations'
+      preLoaderRoute: typeof AuthenticatedDashboardCitationsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
     '/_authenticated/dashboard/brands': {
       id: '/_authenticated/dashboard/brands'
       path: '/brands'
@@ -325,32 +356,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardBrandsRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
+    '/_authenticated/dashboard/actions': {
+      id: '/_authenticated/dashboard/actions'
+      path: '/actions'
+      fullPath: '/dashboard/actions'
+      preLoaderRoute: typeof AuthenticatedDashboardActionsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
   }
 }
 
 interface AuthenticatedDashboardRouteChildren {
+  AuthenticatedDashboardActionsRoute: typeof AuthenticatedDashboardActionsRoute
   AuthenticatedDashboardBrandsRoute: typeof AuthenticatedDashboardBrandsRoute
+  AuthenticatedDashboardCitationsRoute: typeof AuthenticatedDashboardCitationsRoute
   AuthenticatedDashboardCompetitorsRoute: typeof AuthenticatedDashboardCompetitorsRoute
-  AuthenticatedDashboardInboxRoute: typeof AuthenticatedDashboardInboxRoute
-  AuthenticatedDashboardIntegrationsRoute: typeof AuthenticatedDashboardIntegrationsRoute
+  AuthenticatedDashboardContentAnalysisRoute: typeof AuthenticatedDashboardContentAnalysisRoute
+  AuthenticatedDashboardPixelRoute: typeof AuthenticatedDashboardPixelRoute
   AuthenticatedDashboardPromptsRoute: typeof AuthenticatedDashboardPromptsRoute
   AuthenticatedDashboardScansRoute: typeof AuthenticatedDashboardScansRoute
   AuthenticatedDashboardSettingsRoute: typeof AuthenticatedDashboardSettingsRoute
-  AuthenticatedDashboardTeamRoute: typeof AuthenticatedDashboardTeamRoute
+  AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
 }
 
 const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
   {
+    AuthenticatedDashboardActionsRoute: AuthenticatedDashboardActionsRoute,
     AuthenticatedDashboardBrandsRoute: AuthenticatedDashboardBrandsRoute,
+    AuthenticatedDashboardCitationsRoute: AuthenticatedDashboardCitationsRoute,
     AuthenticatedDashboardCompetitorsRoute:
       AuthenticatedDashboardCompetitorsRoute,
-    AuthenticatedDashboardInboxRoute: AuthenticatedDashboardInboxRoute,
-    AuthenticatedDashboardIntegrationsRoute:
-      AuthenticatedDashboardIntegrationsRoute,
+    AuthenticatedDashboardContentAnalysisRoute:
+      AuthenticatedDashboardContentAnalysisRoute,
+    AuthenticatedDashboardPixelRoute: AuthenticatedDashboardPixelRoute,
     AuthenticatedDashboardPromptsRoute: AuthenticatedDashboardPromptsRoute,
     AuthenticatedDashboardScansRoute: AuthenticatedDashboardScansRoute,
     AuthenticatedDashboardSettingsRoute: AuthenticatedDashboardSettingsRoute,
-    AuthenticatedDashboardTeamRoute: AuthenticatedDashboardTeamRoute,
+    AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   }
 
 const AuthenticatedDashboardRouteWithChildren =
