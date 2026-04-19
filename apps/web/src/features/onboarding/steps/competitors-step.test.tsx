@@ -154,14 +154,20 @@ describe("CompetitorsStep", () => {
     expect(screen.queryByDisplayValue("research.com")).not.toBeInTheDocument();
   });
 
-  it("renders a 'Run research again' button only when onResearchAgain is provided", () => {
+  it("renders a 'Run research again' button only when research has finished and onResearchAgain is provided", () => {
+    const successState = { status: "success" as const, competitors: [] };
     const { rerender } = render(
-      <CompetitorsStep onNext={vi.fn()} onBack={vi.fn()} />,
+      <CompetitorsStep onNext={vi.fn()} onBack={vi.fn()} researchState={successState} />,
     );
     expect(screen.queryByRole("button", { name: /run research again/i })).not.toBeInTheDocument();
 
     rerender(
-      <CompetitorsStep onNext={vi.fn()} onBack={vi.fn()} onResearchAgain={vi.fn()} />,
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={successState}
+        onResearchAgain={vi.fn()}
+      />,
     );
     expect(screen.getByRole("button", { name: /run research again/i })).toBeInTheDocument();
   });
@@ -188,7 +194,7 @@ describe("CompetitorsStep", () => {
     expect(screen.queryByDisplayValue("old.com")).not.toBeInTheDocument();
   });
 
-  it("disables the Run again button while research is loading", () => {
+  it("hides the Run again button while research is loading", () => {
     render(
       <CompetitorsStep
         onNext={vi.fn()}
@@ -198,7 +204,28 @@ describe("CompetitorsStep", () => {
       />,
     );
 
-    const button = screen.getByRole("button", { name: /finding competitors/i });
-    expect(button).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /run research again/i })).not.toBeInTheDocument();
+  });
+
+  it("hides the Run again button in idle and degraded states", () => {
+    const { rerender } = render(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "idle" }}
+        onResearchAgain={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /run research again/i })).not.toBeInTheDocument();
+
+    rerender(
+      <CompetitorsStep
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+        researchState={{ status: "degraded", reason: "missing_keys" }}
+        onResearchAgain={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /run research again/i })).not.toBeInTheDocument();
   });
 });

@@ -117,6 +117,21 @@ export function CompetitorsStep({
         </Alert>
       )}
 
+      {onResearchAgain &&
+        (researchState.status === "success" || researchState.status === "error") && (
+          <div className="flex">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRunAgain}
+            >
+              <RotateCw />
+              Run research again
+            </Button>
+          </div>
+        )}
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit((values) => onNext(values.competitors))}
@@ -163,31 +178,17 @@ export function CompetitorsStep({
             ))}
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {fields.length < 5 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => append({ name: "", domain: "" })}
-                className="flex-1"
-              >
-                <Plus />
-                Add competitor
-              </Button>
-            )}
-            {onResearchAgain && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleRunAgain}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                {isLoading ? <Loader2 className="animate-spin" /> : <RotateCw />}
-                {isLoading ? "Finding competitors…" : "Run research again"}
-              </Button>
-            )}
-          </div>
+          {fields.length < 5 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => append({ name: "", domain: "" })}
+              className="w-full"
+            >
+              <Plus />
+              Add competitor
+            </Button>
+          )}
 
           <div className="flex justify-between pt-2">
             <Button type="button" variant="ghost" onClick={onBack}>
