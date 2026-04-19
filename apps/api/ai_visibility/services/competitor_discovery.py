@@ -890,7 +890,7 @@ async def discover_competitors_with_site_content(
 ) -> tuple[list[str], str]:
     exa_key = os.getenv("EXA_API_KEY", "")
     tavily_key = os.getenv("TAVILY_API_KEY", "")
-    if not domain or not industry:
+    if not domain:
         return [], ""
 
     site_content = ""

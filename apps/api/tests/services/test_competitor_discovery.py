@@ -980,3 +980,24 @@ async def test_discover_with_site_content_all_sources_fail_uses_industry_fallbac
     assert site_content == ""
     exa.assert_awaited_once_with("acme.com", "Consulting", "")
     tavily.assert_awaited_once_with("acme.com", "Consulting", "")
+
+
+@pytest.mark.asyncio
+async def test_discover_does_not_short_circuit_when_industry_is_empty() -> None:
+    client = AsyncMock()
+    client.get.side_effect = RuntimeError("direct fetch failed")
+
+    with (
+        patch("ai_visibility.services.competitor_discovery.os.getenv", side_effect=_env_map({})),
+        _patch_async_client(client),
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_exa", new=AsyncMock(return_value=[])
+        ) as exa,
+        patch(
+            "ai_visibility.services.competitor_discovery._find_competitors_tavily_gpt", new=AsyncMock(return_value=[])
+        ) as tavily,
+    ):
+        await discover_competitors_with_site_content("solaraai.com", "")
+
+    exa.assert_awaited_once()
+    tavily.assert_awaited_once()
