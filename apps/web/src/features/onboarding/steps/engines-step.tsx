@@ -20,12 +20,12 @@ const ALL_ENGINES: Engine[] = [
   "xai",
 ];
 
-const ENGINE_OPTIONS: { value: Engine; label: string; provider: string }[] = [
-  { value: "openai", label: "ChatGPT", provider: "OpenAI" },
-  { value: "anthropic", label: "Claude", provider: "Anthropic" },
-  { value: "perplexity", label: "Perplexity", provider: "Perplexity AI" },
-  { value: "google", label: "Gemini", provider: "Google" },
-  { value: "xai", label: "Grok", provider: "xAI" },
+const ENGINE_OPTIONS: { value: Engine; label: string; provider: string; icon: string }[] = [
+  { value: "openai", label: "ChatGPT", provider: "OpenAI", icon: "/engines/openai.svg" },
+  { value: "anthropic", label: "Claude", provider: "Anthropic", icon: "/engines/anthropic.svg" },
+  { value: "perplexity", label: "Perplexity", provider: "Perplexity AI", icon: "/engines/perplexity.svg" },
+  { value: "google", label: "Gemini", provider: "Google", icon: "/engines/google.svg" },
+  { value: "xai", label: "Grok", provider: "xAI", icon: "/engines/xai.svg" },
 ];
 
 interface EnginesStepProps {
@@ -67,7 +67,7 @@ export function EnginesStep({ onNext, onBack, initial }: EnginesStepProps) {
                     <label
                       key={engine.value}
                       className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/50",
+                        "flex cursor-pointer items-center gap-3 rounded-lg p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/50",
                         "has-[:checked]:bg-muted has-[:checked]:ring-foreground/30",
                       )}
                     >
@@ -82,7 +82,14 @@ export function EnginesStep({ onNext, onBack, initial }: EnginesStepProps) {
                           field.onChange(next);
                         }}
                       />
-                      <div className="flex flex-col gap-0.5 pt-0.5">
+                      <img
+                        src={engine.icon}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-6 w-6 shrink-0 select-none"
+                        draggable={false}
+                      />
+                      <div className="flex flex-col gap-0.5">
                         <span className="text-sm font-medium leading-none">
                           {engine.label}
                         </span>

@@ -73,4 +73,20 @@ describe("EnginesStep", () => {
 
     expect(onBack).toHaveBeenCalledTimes(1);
   });
+
+  it("renders a brand icon for each engine", () => {
+    const { container } = render(
+      <EnginesStep onNext={vi.fn()} onBack={vi.fn()} />,
+    );
+    const expectedSources = [
+      "/engines/openai.svg",
+      "/engines/anthropic.svg",
+      "/engines/perplexity.svg",
+      "/engines/google.svg",
+      "/engines/xai.svg",
+    ];
+    for (const src of expectedSources) {
+      expect(container.querySelector(`img[src="${src}"]`)).toBeInTheDocument();
+    }
+  });
 });
