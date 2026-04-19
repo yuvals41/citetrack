@@ -21,7 +21,12 @@ export const Route = createRootRoute({
           "Monitor how your brand appears in ChatGPT, Claude, Perplexity, Gemini, Grok, and AI Overviews.",
       },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "alternate icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: "/favicon.svg" },
+    ],
   }),
   shellComponent: RootDocument,
 });

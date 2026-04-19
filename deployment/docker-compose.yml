@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: citetrack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: citetrack
+      POSTGRES_PASSWORD: citetrack
+      POSTGRES_DB: citetrack
+    ports:
+      # 5433 to avoid colliding with any other local Postgres instance (Multica, Solara, etc.)
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - citetrack-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citetrack -d citetrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  citetrack-postgres-data:
+    name: citetrack-postgres-data
