@@ -20,8 +20,20 @@ const ALL_ENGINES: Engine[] = [
   "xai",
 ];
 
-const ENGINE_OPTIONS: { value: Engine; label: string; provider: string; icon: string }[] = [
-  { value: "openai", label: "ChatGPT", provider: "OpenAI", icon: "/engines/openai.svg" },
+const ENGINE_OPTIONS: {
+  value: Engine;
+  label: string;
+  provider: string;
+  icon: string;
+  iconClassName?: string;
+}[] = [
+  {
+    value: "openai",
+    label: "ChatGPT",
+    provider: "OpenAI",
+    icon: "/engines/openai.svg",
+    iconClassName: "h-7 w-7",
+  },
   { value: "anthropic", label: "Claude", provider: "Anthropic", icon: "/engines/anthropic.svg" },
   { value: "perplexity", label: "Perplexity", provider: "Perplexity AI", icon: "/engines/perplexity.svg" },
   { value: "google", label: "Gemini", provider: "Google", icon: "/engines/google.svg" },
@@ -86,7 +98,10 @@ export function EnginesStep({ onNext, onBack, initial }: EnginesStepProps) {
                         src={engine.icon}
                         alt=""
                         aria-hidden="true"
-                        className="h-6 w-6 shrink-0 select-none"
+                        className={cn(
+                          "shrink-0 select-none",
+                          engine.iconClassName ?? "h-6 w-6",
+                        )}
                         draggable={false}
                       />
                       <div className="flex flex-col gap-0.5">
