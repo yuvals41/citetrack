@@ -3,32 +3,51 @@ import type { ScanRun, VisibilityScore, Workspace } from "@citetrack/types";
 import type {
   AIResponseItem,
   AIResponsesList,
+  AIShoppingResult,
   ActionsResult,
+  BrandDetail,
+  BrandUpsertInput,
+  CrawlerSimInput,
+  CrawlerSimResult,
   CompetitorCreateInput,
   CompetitorRecord,
   CompetitorsList,
   DegradedResponse,
+  EntityAnalysisInput,
+  EntityResult,
+  ExtractabilityInput,
+  ExtractabilityResult,
   FindingsResult,
+  GoogleShoppingResult,
   OverviewSnapshotResult,
   PixelStats,
   PromptsResult,
+  QueryFanoutInput,
+  QueryFanoutItem,
+  QueryFanoutResult,
   RunsResult,
+  ShoppingAnalysisInput,
+  ShoppingResult,
   TrendResult,
   WorkspaceApiResponse,
   WorkspaceSettings,
   WorkspaceSettingsUpdate,
 } from "./types.js";
 
-export type { AIResponseItem, AIResponsesList, ActionsResult, CompetitorCreateInput, CompetitorRecord, CompetitorsList, FindingsResult, OverviewSnapshotResult, PixelStats, PromptsResult, RunsResult, TrendResult, WorkspaceApiResponse, WorkspaceSettings, WorkspaceSettingsUpdate };
+export type { AIResponseItem, AIResponsesList, AIShoppingResult, ActionsResult, BrandDetail, BrandUpsertInput, CompetitorCreateInput, CompetitorRecord, CompetitorsList, CrawlerSimInput, CrawlerSimResult, EntityAnalysisInput, EntityResult, ExtractabilityInput, ExtractabilityResult, FindingsResult, GoogleShoppingResult, OverviewSnapshotResult, PixelStats, PromptsResult, QueryFanoutInput, QueryFanoutItem, QueryFanoutResult, RunsResult, ShoppingAnalysisInput, ShoppingResult, TrendResult, WorkspaceApiResponse, WorkspaceSettings, WorkspaceSettingsUpdate };
 export type {
   AIResponseCitation,
   ActionItem,
   ActionQueue,
+  ChatGPTShoppingResult,
+  ContentAnalysisDimension,
+  CrawlerBotAccessResult,
   DegradedInfo,
   DegradedResponse,
   Finding,
   FindingsSummary,
   OverviewSnapshot,
+  PresenceResult,
   PromptRecord,
   RunRecord,
   ScanScheduleValue,
@@ -179,6 +198,14 @@ export function createCitetrackClient({
       authedRequest<void>(`/api/v1/workspaces/${workspaceSlug}/competitors/${competitorId}`, {
         method: "DELETE",
       }),
+    getBrand: (workspaceSlug: string) =>
+      authedRequest<BrandDetail>(`/api/v1/workspaces/${workspaceSlug}/brand`),
+    upsertBrand: (workspaceSlug: string, input: BrandUpsertInput) =>
+      authedRequest<BrandDetail>(`/api/v1/workspaces/${workspaceSlug}/brand`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
     getSettings: (workspaceSlug: string) =>
       authedRequest<WorkspaceSettings>(`/api/v1/workspaces/${workspaceSlug}/settings`),
     updateSettings: (workspaceSlug: string, patch: WorkspaceSettingsUpdate) =>
@@ -186,6 +213,36 @@ export function createCitetrackClient({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
+      }),
+    runExtractability: (input: ExtractabilityInput) =>
+      authedRequest<ExtractabilityResult>("/api/v1/analyzers/extractability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    runCrawlerSim: (input: CrawlerSimInput) =>
+      authedRequest<CrawlerSimResult>("/api/v1/analyzers/crawler-sim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    runQueryFanout: (input: QueryFanoutInput) =>
+      authedRequest<QueryFanoutResult>("/api/v1/analyzers/query-fanout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    runEntityAnalysis: (input: EntityAnalysisInput) =>
+      authedRequest<EntityResult>("/api/v1/analyzers/entity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    runShoppingAnalysis: (input: ShoppingAnalysisInput) =>
+      authedRequest<ShoppingResult>("/api/v1/analyzers/shopping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
       }),
   };
 }

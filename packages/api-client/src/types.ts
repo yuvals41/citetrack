@@ -136,6 +136,107 @@ export interface AIResponsesList {
   degraded: { reason: string; message: string } | null;
 }
 
+export interface ContentAnalysisDimension {
+  score: number;
+  finding: string;
+}
+
+export interface ExtractabilityInput {
+  url: string;
+}
+
+export interface CrawlerSimInput {
+  url: string;
+}
+
+export interface QueryFanoutInput {
+  prompt: string;
+  brand_domain: string;
+}
+
+export interface EntityAnalysisInput {
+  brand_name: string;
+}
+
+export interface ShoppingAnalysisInput {
+  brand_name: string;
+}
+
+export interface ExtractabilityResult {
+  url: string;
+  overall_score: number;
+  summary_block: ContentAnalysisDimension;
+  section_integrity: ContentAnalysisDimension;
+  modular_content: ContentAnalysisDimension;
+  schema_markup: ContentAnalysisDimension;
+  static_content: ContentAnalysisDimension;
+  recommendations: string[];
+  degraded: { reason: string; message: string } | null;
+}
+
+export interface CrawlerBotAccessResult {
+  bot: string;
+  accessible: boolean;
+  status_code: number;
+  reason: string;
+}
+
+export interface CrawlerSimResult {
+  url: string;
+  results: CrawlerBotAccessResult[];
+  degraded: { reason: string; message: string } | null;
+}
+
+export interface QueryFanoutItem {
+  sub_query: string;
+  ranked: boolean;
+  position: number | null;
+}
+
+export interface QueryFanoutResult {
+  fanout_prompt: string;
+  results: QueryFanoutItem[];
+  coverage: number;
+  degraded: { reason: string; message: string } | null;
+}
+
+export interface PresenceResult {
+  present: boolean;
+  url: string | null;
+}
+
+export interface EntityResult {
+  brand_name: string;
+  entity_clarity_score: number;
+  knowledge_graph: PresenceResult;
+  wikipedia: PresenceResult;
+  wikidata: PresenceResult;
+  recommendations: string[];
+  degraded: { reason: string; message: string } | null;
+}
+
+export interface GoogleShoppingResult {
+  brand_products_found: boolean;
+}
+
+export interface AIShoppingResult {
+  brand_in_ai_text: boolean;
+}
+
+export interface ChatGPTShoppingResult {
+  brand_mentioned: boolean;
+}
+
+export interface ShoppingResult {
+  brand_name: string;
+  visibility_score: number;
+  google_shopping: GoogleShoppingResult;
+  ai_mode_shopping: AIShoppingResult;
+  chatgpt_shopping: ChatGPTShoppingResult;
+  recommendations: string[];
+  degraded: { reason: string; message: string } | null;
+}
+
 export interface PixelStats {
   total_visits: number;
   total_conversions: number;
@@ -171,6 +272,21 @@ export interface CompetitorsList {
 export interface CompetitorCreateInput {
   name: string;
   domain: string;
+}
+
+export interface BrandDetail {
+  id: string;
+  workspace_id: string;
+  name: string;
+  domain: string;
+  aliases: string[];
+  degraded: { reason: string; message: string } | null;
+}
+
+export interface BrandUpsertInput {
+  name: string;
+  domain: string;
+  aliases: string[];
 }
 
 // Prompts -------------------------------------------------------------------

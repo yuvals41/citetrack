@@ -6,7 +6,9 @@ from typing import Annotated, TypeAlias
 from fastapi import Depends, FastAPI
 
 from ai_visibility.api.auth import get_current_user_id
+from ai_visibility.api.brands_routes import router as brands_router
 from ai_visibility.api.competitors_routes import router as competitors_router
+from ai_visibility.api.content_analysis_routes import router as content_analysis_router
 from ai_visibility.api.mentions_routes import router as mentions_router
 from ai_visibility.api.onboarding_routes import router as onboarding_router
 from ai_visibility.api.research_routes import router as research_router
@@ -291,9 +293,11 @@ def create_app() -> FastAPI:
     app.add_api_route("/api/v1/snapshot/actions", endpoint=snapshot_actions, methods=["GET"])
     app.include_router(user_router, prefix="/api/v1")
     app.include_router(onboarding_router, prefix="/api/v1")
+    app.include_router(brands_router, prefix="/api/v1")
     app.include_router(competitors_router, prefix="/api/v1")
     app.include_router(research_router, prefix="/api/v1")
     app.include_router(mentions_router, prefix="/api/v1")
+    app.include_router(content_analysis_router, prefix="/api/v1")
     app.include_router(settings_router, prefix="/api/v1")
     app.include_router(pixel_router)
 

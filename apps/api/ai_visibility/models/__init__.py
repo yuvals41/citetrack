@@ -2,6 +2,7 @@
 
 from ai_visibility.models.workspace import Workspace, WorkspaceCreate
 from ai_visibility.models.brand import Brand, Competitor
+from ai_visibility.models.brand_detail import BrandDetail, BrandRecord, BrandUpsertInput
 from ai_visibility.models.onboarding import (
     OnboardingBrand,
     OnboardingCompetitor,
@@ -26,6 +27,9 @@ __all__ = [
     "UserResponse",
     # Brand
     "Brand",
+    "BrandDetail",
+    "BrandRecord",
+    "BrandUpsertInput",
     "Competitor",
     "OnboardingBrand",
     "OnboardingCompetitor",
