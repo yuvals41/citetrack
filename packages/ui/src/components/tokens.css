@@ -58,47 +58,6 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-background: #0a0a0a;
-    --color-foreground: #fafafa;
-
-    --color-primary: #fafafa;
-    --color-primary-foreground: #0a0a0a;
-    --color-primary-hover: #e4e4e7;
-
-    --color-secondary: #1a1a1a;
-    --color-secondary-foreground: #fafafa;
-    --color-secondary-hover: #27272a;
-
-    --color-surface: #1a1a1a;
-    --color-surface-foreground: #fafafa;
-    --color-surface-hover: #27272a;
-
-    --color-muted: #1a1a1a;
-    --color-muted-foreground: #a1a1aa;
-
-    --color-accent: #1a1a1a;
-    --color-accent-foreground: #fafafa;
-
-    --color-border: #27272a;
-    --color-input: #27272a;
-    --color-ring: #fafafa;
-    --color-ring-offset: #0a0a0a;
-
-    --color-card: #0f0f0f;
-    --color-card-foreground: #fafafa;
-
-    --color-popover: #0f0f0f;
-    --color-popover-foreground: #fafafa;
-
-    --color-sidebar: #0f0f0f;
-    --color-sidebar-foreground: #fafafa;
-    --color-sidebar-primary: #fafafa;
-    --color-sidebar-primary-foreground: #0a0a0a;
-    --color-sidebar-accent: #1a1a1a;
-    --color-sidebar-accent-foreground: #fafafa;
-    --color-sidebar-border: #27272a;
-    --color-sidebar-ring: #fafafa;
-  }
+:root {
+  color-scheme: light;
 }

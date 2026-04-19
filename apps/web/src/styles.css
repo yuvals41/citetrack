@@ -1,6 +1,9 @@
+@import "tailwindcss";
 @import "@citetrack/ui/tokens.css";
 @import "@citetrack/ui/animations.css";
 @plugin "@tailwindcss/typography";
+@source "../../packages/ui/src/**/*.{ts,tsx}";
+@source "./**/*.{ts,tsx}";
 
 * {
   box-sizing: border-box;
