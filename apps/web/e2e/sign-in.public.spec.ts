@@ -6,7 +6,7 @@ test("sign-in page shell renders with Clerk widget", async ({ page }) => {
   expect(response?.ok()).toBeTruthy();
   await page.waitForURL(/\/sign-in\/?$/);
 
-  await expect(page.getByAltText("Citetrack logo")).toBeVisible();
+  await expect(page.getByAltText("Citetrack AI")).toBeVisible();
   await expect(page.getByText("Citetrack AI")).toBeVisible();
   await expect(page.getByText("Track how AI cites your brand")).toBeVisible();
   await expect(page.getByLabel(/email address/i)).toBeVisible();

@@ -25,7 +25,7 @@ export default defineConfig({
   },
   webServer: {
     command: `bunx vite dev --port ${PORT}`,
-    url: `${baseURL}/logo192.png`,
+    url: `${baseURL}/favicon.ico`,
     reuseExistingServer: !process.env.CI,
     timeout: 90_000,
   },
