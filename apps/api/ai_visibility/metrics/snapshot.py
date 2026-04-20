@@ -14,6 +14,15 @@ from ai_visibility.storage.types import MetricSnapshotRecord, RunRecord
 
 Prisma = Any
 
+DISPLAY_PROVIDERS: tuple[str, ...] = (
+    "openai",
+    "anthropic",
+    "perplexity",
+    "gemini",
+    "grok",
+    "google_ai_overview",
+)
+
 
 class OverviewSnapshot(BaseModel):
     workspace: str
@@ -167,7 +176,13 @@ class SnapshotRepository:
             total_responses += responses
             total_mentioned += mentions
 
-        provider_items.sort(key=lambda item: item.responses, reverse=True)
+        if total_responses > 0:
+            seen = {item.provider for item in provider_items}
+            for display_provider in DISPLAY_PROVIDERS:
+                if display_provider not in seen:
+                    provider_items.append(ProviderBreakdownItem(provider=display_provider, responses=0, mentions=0))
+
+        provider_items.sort(key=lambda item: (-item.responses, item.provider))
         mention_types = [
             MentionTypeItem(label="mentioned", count=total_mentioned),
             MentionTypeItem(label="not_mentioned", count=max(0, total_responses - total_mentioned)),

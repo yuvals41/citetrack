@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # pyright: reportMissingImports=false
 
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -175,6 +176,93 @@ def test_snapshot_routes_return_precomputed_models(
     assert {p["provider"] for p in bd_providers} == {"anthropic", "openai"}
     mention_types = cast(list[dict[str, object]], bd_payload["mention_types"])
     assert {mt["label"] for mt in mention_types} == {"mentioned", "not_mentioned"}
+
+
+def test_breakdowns_repo_pads_missing_providers_when_scans_exist() -> None:
+    import asyncio
+    from ai_visibility.metrics.snapshot import DISPLAY_PROVIDERS, SnapshotRepository
+
+    class _FakePrisma:
+        class aivisscanjob:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="job-1")]
+
+        class aivisscanexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="exec-1", provider="anthropic")]
+
+        class aivispromptexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="pe-1"), SimpleNamespace(id="pe-2")]
+
+        class aivisobservation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(brandMentioned=True),
+                    SimpleNamespace(brandMentioned=False),
+                ]
+
+    class _FakeMetricRepo:
+        prisma = _FakePrisma()
+
+        async def list_by_workspace(self, *_a, **_k):
+            return []
+
+    class _FakeWorkspaceRepo:
+        async def get_by_slug(self, *_a, **_k):
+            return None
+
+    repo = SnapshotRepository(
+        prisma=_FakePrisma(),
+        metric_repo=cast(object, _FakeMetricRepo()),
+        workspace_repo=cast(object, _FakeWorkspaceRepo()),
+    )
+
+    result = asyncio.run(repo.get_breakdowns("any-slug"))
+
+    returned_providers = {item.provider for item in result.provider_breakdown}
+    assert set(DISPLAY_PROVIDERS) <= returned_providers
+    anthropic_item = next(item for item in result.provider_breakdown if item.provider == "anthropic")
+    assert anthropic_item.responses == 2
+    assert anthropic_item.mentions == 1
+    openai_item = next(item for item in result.provider_breakdown if item.provider == "openai")
+    assert openai_item.responses == 0
+    assert openai_item.mentions == 0
+
+
+def test_breakdowns_repo_returns_empty_when_no_scans_exist() -> None:
+    import asyncio
+    from ai_visibility.metrics.snapshot import SnapshotRepository
+
+    class _FakePrisma:
+        class aivisscanjob:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return []
+
+    class _FakeMetricRepo:
+        prisma = _FakePrisma()
+
+        async def list_by_workspace(self, *_a, **_k):
+            return []
+
+    class _FakeWorkspaceRepo:
+        async def get_by_slug(self, *_a, **_k):
+            return None
+
+    repo = SnapshotRepository(
+        prisma=_FakePrisma(),
+        metric_repo=cast(object, _FakeMetricRepo()),
+        workspace_repo=cast(object, _FakeWorkspaceRepo()),
+    )
+
+    result = asyncio.run(repo.get_breakdowns("empty-slug"))
+    assert result.provider_breakdown == []
+    assert result.total_responses == 0
 
 
 @pytest.mark.parametrize(
