@@ -104,6 +104,15 @@ export type FindingsResult = FindingsSummary | DegradedResponse;
 export type ActionsResult = ActionQueue | DegradedResponse;
 export type BreakdownsResult = SnapshotBreakdowns | DegradedResponse;
 
+export interface RunScanResult {
+  run_id: string | null;
+  status: string;
+  results_count: number;
+  provider: string;
+  failed_providers: string[];
+  error_message: string | null;
+}
+
 export function isDegraded(v: unknown): v is DegradedResponse {
   return typeof v === "object" && v !== null && "degraded" in v;
 }

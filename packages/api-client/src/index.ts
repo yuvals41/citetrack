@@ -8,6 +8,7 @@ import type {
   BrandDetail,
   BrandUpsertInput,
   BreakdownsResult,
+  RunScanResult,
   CrawlerSimInput,
   CrawlerSimResult,
   CompetitorCreateInput,
@@ -35,7 +36,7 @@ import type {
   WorkspaceSettingsUpdate,
 } from "./types.js";
 
-export type { AIResponseItem, AIResponsesList, AIShoppingResult, ActionsResult, BrandDetail, BrandUpsertInput, BreakdownsResult, CompetitorCreateInput, CompetitorRecord, CompetitorsList, CrawlerSimInput, CrawlerSimResult, EntityAnalysisInput, EntityResult, ExtractabilityInput, ExtractabilityResult, FindingsResult, GoogleShoppingResult, OverviewSnapshotResult, PixelStats, PromptsResult, QueryFanoutInput, QueryFanoutItem, QueryFanoutResult, RunsResult, ShoppingAnalysisInput, ShoppingResult, TrendResult, WorkspaceApiResponse, WorkspaceSettings, WorkspaceSettingsUpdate };
+export type { AIResponseItem, AIResponsesList, AIShoppingResult, ActionsResult, BrandDetail, BrandUpsertInput, BreakdownsResult, CompetitorCreateInput, CompetitorRecord, CompetitorsList, CrawlerSimInput, CrawlerSimResult, EntityAnalysisInput, EntityResult, ExtractabilityInput, ExtractabilityResult, FindingsResult, GoogleShoppingResult, OverviewSnapshotResult, PixelStats, PromptsResult, QueryFanoutInput, QueryFanoutItem, QueryFanoutResult, RunScanResult, RunsResult, ShoppingAnalysisInput, ShoppingResult, TrendResult, WorkspaceApiResponse, WorkspaceSettings, WorkspaceSettingsUpdate };
 export type {
   AIResponseCitation,
   ActionItem,
@@ -186,6 +187,11 @@ export function createCitetrackClient({
     },
     getMyWorkspaces: () =>
       authedRequest<WorkspaceApiResponse[]>(`/api/v1/workspaces/mine`),
+    runWorkspaceScan: (workspaceSlug: string, provider = "anthropic") =>
+      authedRequest<RunScanResult>(
+        `/api/v1/workspaces/${workspaceSlug}/scan?provider=${encodeURIComponent(provider)}`,
+        { method: "POST" },
+      ),
     getPixelSnippet: (workspaceId: string) =>
       authedFetchText(`/api/v1/pixel/snippet/${workspaceId}`),
     getPixelStats: (workspaceId: string, days = 30) =>
