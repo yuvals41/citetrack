@@ -37,32 +37,36 @@ async def complete_onboarding(
     user_id: CurrentUserId,
 ) -> OnboardingCompleteResponse | JSONResponse:
     user_repo = UserRepository()
-    workspace_slug = _slugify(payload.brand.name)
+    base_slug = _slugify(payload.brand.name)
     logger.info(
         "onboarding.start brand={!r} slug={} competitors={} engines={}",
         payload.brand.name,
-        workspace_slug,
+        base_slug,
         len(payload.competitors),
         [e.value for e in payload.engines],
     )
 
-    if user_repo.user_owns_workspace(user_id, workspace_slug):
-        logger.info("onboarding.idempotent slug={} — already owned by user", workspace_slug)
-        return OnboardingCompleteResponse(workspace_slug=workspace_slug)
+    if user_repo.user_owns_workspace(user_id, base_slug):
+        logger.info("onboarding.idempotent slug={} — already owned by user", base_slug)
+        return OnboardingCompleteResponse(workspace_slug=base_slug)
 
     try:
         prisma = cast(object, await get_prisma())
         workspace_repo = WorkspaceRepository(prisma)
-        existing = await workspace_repo.get_by_slug(workspace_slug)
-        if existing is not None:
-            owner = user_repo.get_workspace_owner(workspace_slug)
-            if owner == user_id:
-                return OnboardingCompleteResponse(workspace_slug=workspace_slug)
-            logger.warning(
-                "onboarding.conflict slug={} already owned by another user",
+        workspace_slug = await _resolve_available_slug(
+            base_slug=base_slug,
+            user_id=user_id,
+            user_repo=user_repo,
+            workspace_repo=workspace_repo,
+        )
+        if workspace_slug != base_slug:
+            logger.info(
+                "onboarding.slug_disambiguated base={} resolved={}",
+                base_slug,
                 workspace_slug,
             )
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Workspace slug already exists")
+        if user_repo.user_owns_workspace(user_id, workspace_slug):
+            return OnboardingCompleteResponse(workspace_slug=workspace_slug)
 
         now = datetime.now(timezone.utc)
         workspace_record: WorkspaceRecord = {
@@ -100,6 +104,29 @@ def _slugify(value: str) -> str:
     cleaned = re.sub(r"[^a-z0-9-]", "", replaced)
     collapsed = re.sub(r"-+", "-", cleaned).strip("-")
     return collapsed or "workspace"
+
+
+MAX_SLUG_ATTEMPTS = 100
+
+
+async def _resolve_available_slug(
+    *,
+    base_slug: str,
+    user_id: str,
+    user_repo: UserRepository,
+    workspace_repo: WorkspaceRepository,
+) -> str:
+    for attempt in range(MAX_SLUG_ATTEMPTS):
+        candidate = base_slug if attempt == 0 else f"{base_slug}-{attempt + 1}"
+        existing = await workspace_repo.get_by_slug(candidate)
+        if existing is None:
+            return candidate
+        if user_repo.get_workspace_owner(candidate) == user_id:
+            return candidate
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=f"Could not find an available slug for '{base_slug}' after {MAX_SLUG_ATTEMPTS} attempts",
+    )
 
 
 def _database_degraded_state(exc: Exception) -> DegradedState:

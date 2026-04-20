@@ -12,6 +12,8 @@ from typing import cast
 import pytest
 from fastapi.testclient import TestClient
 
+from ai_visibility.storage.repositories.user_repo import UserRepository
+from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 from ai_visibility.storage.types import WorkspaceRecord
 
 
@@ -201,3 +203,92 @@ def test_onboarding_associates_user(
     assert create_response.status_code == 200
     assert workspaces_response.status_code == 200
     assert [item["slug"] for item in workspaces_response.json()] == ["acme-corp"]
+
+
+@pytest.mark.asyncio
+async def test_resolve_available_slug_returns_base_when_unused() -> None:
+    from ai_visibility.api.onboarding_routes import _resolve_available_slug
+
+    user_repo = _FakeUserRepo(owners={})
+    workspace_repo = _FakeWorkspaceRepo(slugs=set())
+
+    resolved = await _resolve_available_slug(
+        base_slug="acme",
+        user_id="u-1",
+        user_repo=cast(UserRepository, user_repo),
+        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+    )
+
+    assert resolved == "acme"
+
+
+@pytest.mark.asyncio
+async def test_resolve_available_slug_returns_base_when_owned_by_same_user() -> None:
+    from ai_visibility.api.onboarding_routes import _resolve_available_slug
+
+    user_repo = _FakeUserRepo(owners={"acme": "u-1"})
+    workspace_repo = _FakeWorkspaceRepo(slugs={"acme"})
+
+    resolved = await _resolve_available_slug(
+        base_slug="acme",
+        user_id="u-1",
+        user_repo=cast(UserRepository, user_repo),
+        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+    )
+
+    assert resolved == "acme"
+
+
+@pytest.mark.asyncio
+async def test_resolve_available_slug_suffixes_on_collision_with_other_user() -> None:
+    from ai_visibility.api.onboarding_routes import _resolve_available_slug
+
+    user_repo = _FakeUserRepo(owners={"acme": "u-other"})
+    workspace_repo = _FakeWorkspaceRepo(slugs={"acme"})
+
+    resolved = await _resolve_available_slug(
+        base_slug="acme",
+        user_id="u-new",
+        user_repo=cast(UserRepository, user_repo),
+        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+    )
+
+    assert resolved == "acme-2"
+
+
+@pytest.mark.asyncio
+async def test_resolve_available_slug_skips_multiple_taken_suffixes() -> None:
+    from ai_visibility.api.onboarding_routes import _resolve_available_slug
+
+    user_repo = _FakeUserRepo(
+        owners={"acme": "u-a", "acme-2": "u-b", "acme-3": "u-c"},
+    )
+    workspace_repo = _FakeWorkspaceRepo(slugs={"acme", "acme-2", "acme-3"})
+
+    resolved = await _resolve_available_slug(
+        base_slug="acme",
+        user_id="u-new",
+        user_repo=cast(UserRepository, user_repo),
+        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+    )
+
+    assert resolved == "acme-4"
+
+
+class _FakeUserRepo:
+    def __init__(self, owners: dict[str, str]) -> None:
+        self._owners = owners
+
+    def get_workspace_owner(self, slug: str) -> str | None:
+        return self._owners.get(slug)
+
+    def user_owns_workspace(self, user_id: str, slug: str) -> bool:
+        return self._owners.get(slug) == user_id
+
+
+class _FakeWorkspaceRepo:
+    def __init__(self, slugs: set[str]) -> None:
+        self._slugs = slugs
+
+    async def get_by_slug(self, slug: str):
+        return SimpleNamespace(slug=slug) if slug in self._slugs else None
