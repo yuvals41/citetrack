@@ -7,9 +7,12 @@ import { Lightbulb, RefreshCw } from "lucide-react";
 import { ActionCard } from "../components/action-card";
 import { PageHeader } from "../components/page-header";
 import { useSnapshotActions } from "../lib/api-hooks";
+import { useMyWorkspaces } from "../lib/workspaces-hooks";
 
 export function ActionPlanPage() {
-  const actions = useSnapshotActions();
+  const workspacesQuery = useMyWorkspaces();
+  const workspaceSlug = workspacesQuery.data?.[0]?.slug ?? null;
+  const actions = useSnapshotActions(workspaceSlug);
 
   const actionsData = actions.data && !isDegraded(actions.data) ? actions.data : null;
   const actionsDegraded =

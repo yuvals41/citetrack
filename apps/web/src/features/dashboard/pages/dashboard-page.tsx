@@ -14,6 +14,7 @@ import {
   useSnapshotOverview,
   useSnapshotTrend,
 } from "../lib/api-hooks";
+import { useMyWorkspaces } from "../lib/workspaces-hooks";
 
 function KPISkeleton() {
   return (
@@ -34,11 +35,14 @@ function ErrorCard({ label, message }: { label: string; message: string }) {
 }
 
 export function DashboardPage() {
-  const overview = useSnapshotOverview();
-  const trend = useSnapshotTrend();
-  const findings = useSnapshotFindings();
-  const actions = useSnapshotActions();
-  const breakdowns = useSnapshotBreakdowns();
+  const workspacesQuery = useMyWorkspaces();
+  const workspaceSlug = workspacesQuery.data?.[0]?.slug ?? null;
+
+  const overview = useSnapshotOverview(workspaceSlug);
+  const trend = useSnapshotTrend(workspaceSlug);
+  const findings = useSnapshotFindings(workspaceSlug);
+  const actions = useSnapshotActions(workspaceSlug);
+  const breakdowns = useSnapshotBreakdowns(workspaceSlug);
 
   const overviewData =
     overview.data && !isDegraded(overview.data) ? overview.data : null;

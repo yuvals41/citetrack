@@ -59,47 +59,54 @@ async function runTracked<T>(
   }
 }
 
-export function useSnapshotOverview(workspace = "default") {
+export function useSnapshotOverview(workspace: string | null) {
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["snapshot", "overview", workspace],
-    queryFn: () => runTracked<OverviewSnapshotResult>("getSnapshotOverview", workspace, getToken),
+    queryFn: () =>
+      runTracked<OverviewSnapshotResult>("getSnapshotOverview", workspace!, getToken),
     staleTime: 30_000,
+    enabled: workspace !== null,
   });
 }
 
-export function useSnapshotTrend(workspace = "default") {
+export function useSnapshotTrend(workspace: string | null) {
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["snapshot", "trend", workspace],
-    queryFn: () => runTracked<TrendResult>("getSnapshotTrend", workspace, getToken),
+    queryFn: () => runTracked<TrendResult>("getSnapshotTrend", workspace!, getToken),
     staleTime: 30_000,
+    enabled: workspace !== null,
   });
 }
 
-export function useSnapshotFindings(workspace = "default") {
+export function useSnapshotFindings(workspace: string | null) {
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["snapshot", "findings", workspace],
-    queryFn: () => runTracked<FindingsResult>("getSnapshotFindings", workspace, getToken),
+    queryFn: () => runTracked<FindingsResult>("getSnapshotFindings", workspace!, getToken),
     staleTime: 30_000,
+    enabled: workspace !== null,
   });
 }
 
-export function useSnapshotActions(workspace = "default") {
+export function useSnapshotActions(workspace: string | null) {
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["snapshot", "actions", workspace],
-    queryFn: () => runTracked<ActionsResult>("getSnapshotActions", workspace, getToken),
+    queryFn: () => runTracked<ActionsResult>("getSnapshotActions", workspace!, getToken),
     staleTime: 30_000,
+    enabled: workspace !== null,
   });
 }
 
-export function useSnapshotBreakdowns(workspace = "default") {
+export function useSnapshotBreakdowns(workspace: string | null) {
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["snapshot", "breakdowns", workspace],
-    queryFn: () => runTracked<BreakdownsResult>("getSnapshotBreakdowns", workspace, getToken),
+    queryFn: () =>
+      runTracked<BreakdownsResult>("getSnapshotBreakdowns", workspace!, getToken),
     staleTime: 30_000,
+    enabled: workspace !== null,
   });
 }

@@ -72,6 +72,11 @@ function createTrend(): TrendResponse {
 
 function setDashboardQueries(findingsData: FindingsSummary | { degraded: { reason: string; message: string; recoverable: boolean } }) {
   useQueryMock
+    .mockReturnValueOnce({
+      data: [{ id: "ws-1", slug: "default", name: "Default", description: null, created_at: "", updated_at: "" }],
+      isPending: false,
+      error: null,
+    })
     .mockReturnValueOnce({ data: createOverview(), isPending: false, error: null })
     .mockReturnValueOnce({ data: createTrend(), isPending: false, error: null })
     .mockReturnValueOnce({ data: findingsData, isPending: false, error: null })
