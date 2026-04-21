@@ -4,8 +4,11 @@ import { KPICard, KPICardChange, KPICardLabel, KPICardValue } from "@citetrack/u
 import { Skeleton } from "@citetrack/ui/skeleton";
 import { ActionsQueue } from "../components/actions-queue";
 import { FindingsList } from "../components/findings-list";
+import { HistoricalMentionsChart } from "../components/historical-mentions-chart";
 import { MentionTypeDonut } from "../components/mention-type-donut";
 import { ProviderBreakdownChart } from "../components/provider-breakdown-chart";
+import { SourceAttributionChart } from "../components/source-attribution-chart";
+import { TrendIndicator } from "../components/trend-indicator";
 import { VisibilityTrendChart } from "../components/visibility-trend-chart";
 import {
   useSnapshotActions,
@@ -206,6 +209,54 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Mentions over time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdowns.isPending ? (
+              <Skeleton className="h-48 w-full" />
+            ) : breakdowns.error ? (
+              <ErrorCard label="historical mentions" message={breakdowns.error.message} />
+            ) : breakdownsDegraded ? (
+              <p className="text-sm text-muted-foreground py-2">
+                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+              </p>
+            ) : breakdownsData ? (
+              <HistoricalMentionsChart items={breakdownsData.historical_mentions ?? []} />
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top citation sources</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdowns.isPending ? (
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+            ) : breakdowns.error ? (
+              <ErrorCard label="source attribution" message={breakdowns.error.message} />
+            ) : breakdownsDegraded ? (
+              <p className="text-sm text-muted-foreground py-2">
+                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+              </p>
+            ) : breakdownsData ? (
+              <SourceAttributionChart items={breakdownsData.source_attribution ?? []} />
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      {overviewData && overviewData.run_count > 0 ? (
+        <TrendIndicator delta={overviewData.trend_delta ?? 0} />
+      ) : null}
 
       <div>
         {findings.isPending ? (

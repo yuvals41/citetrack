@@ -13,10 +13,12 @@ from ai_visibility.metrics.engine import TrendPoint, TrendSeries
 from ai_visibility.metrics.snapshot import (
     ActionQueue,
     FindingsSummary,
+    HistoricalRunItem,
     MentionTypeItem,
     OverviewSnapshot,
     ProviderBreakdownItem,
     SnapshotBreakdowns,
+    SourceAttributionItem,
 )
 
 
@@ -110,6 +112,13 @@ class _SnapshotRepoStub:
                 MentionTypeItem(label="not_mentioned", count=0),
             ],
             total_responses=3,
+            source_attribution=[
+                SourceAttributionItem(domain="example.com", count=2),
+                SourceAttributionItem(domain="acme.com", count=1),
+            ],
+            historical_mentions=[
+                HistoricalRunItem(run_id="job-1", run_date="2026-04-19T20:30:00", responses=3, mentions=3),
+            ],
         )
 
     async def get_action_queue(self, workspace: str) -> ActionQueue:
@@ -186,12 +195,12 @@ def test_breakdowns_repo_pads_missing_providers_when_scans_exist() -> None:
         class aivisscanjob:
             @staticmethod
             async def find_many(**_kwargs):
-                return [SimpleNamespace(id="job-1")]
+                return [SimpleNamespace(id="job-1", createdAt=None)]
 
         class aivisscanexecution:
             @staticmethod
             async def find_many(**_kwargs):
-                return [SimpleNamespace(id="exec-1", provider="anthropic")]
+                return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
 
         class aivispromptexecution:
             @staticmethod
@@ -205,6 +214,11 @@ def test_breakdowns_repo_pads_missing_providers_when_scans_exist() -> None:
                     SimpleNamespace(brandMentioned=True),
                     SimpleNamespace(brandMentioned=False),
                 ]
+
+        class aivispromptexecutioncitation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return []
 
     class _FakeMetricRepo:
         prisma = _FakePrisma()
@@ -263,6 +277,150 @@ def test_breakdowns_repo_returns_empty_when_no_scans_exist() -> None:
     result = asyncio.run(repo.get_breakdowns("empty-slug"))
     assert result.provider_breakdown == []
     assert result.total_responses == 0
+
+
+def test_extract_domain_handles_common_url_shapes() -> None:
+    from ai_visibility.metrics.snapshot import _extract_domain
+
+    assert _extract_domain("https://www.example.com/foo") == "example.com"
+    assert _extract_domain("http://blog.acme.com/path?q=1") == "blog.acme.com"
+    assert _extract_domain("https://docs.example.com/") == "docs.example.com"
+    assert _extract_domain("//cdn.example.net/a") == "cdn.example.net"
+    assert _extract_domain("") == ""
+
+
+def test_breakdowns_repo_aggregates_source_attribution() -> None:
+    import asyncio
+    from ai_visibility.metrics.snapshot import SnapshotRepository
+
+    class _FakePrisma:
+        class aivisscanjob:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="job-1", createdAt=None)]
+
+        class aivisscanexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
+
+        class aivispromptexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="pe-1"), SimpleNamespace(id="pe-2")]
+
+        class aivisobservation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(brandMentioned=True),
+                    SimpleNamespace(brandMentioned=True),
+                ]
+
+        class aivispromptexecutioncitation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(url="https://example.com/a"),
+                    SimpleNamespace(url="https://example.com/b"),
+                    SimpleNamespace(url="https://acme.com/x"),
+                    SimpleNamespace(url="https://www.example.com/c"),
+                ]
+
+    class _FakeMetricRepo:
+        prisma = _FakePrisma()
+
+        async def list_by_workspace(self, *_a, **_k):
+            return []
+
+    class _FakeWorkspaceRepo:
+        async def get_by_slug(self, *_a, **_k):
+            return None
+
+    repo = SnapshotRepository(
+        prisma=_FakePrisma(),
+        metric_repo=cast(object, _FakeMetricRepo()),
+        workspace_repo=cast(object, _FakeWorkspaceRepo()),
+    )
+
+    result = asyncio.run(repo.get_breakdowns("any"))
+
+    domains = [item.domain for item in result.source_attribution]
+    counts = {item.domain: item.count for item in result.source_attribution}
+    assert domains[0] == "example.com"
+    assert counts["example.com"] == 3
+    assert counts["acme.com"] == 1
+
+
+def test_breakdowns_repo_builds_historical_mentions_sorted_by_date() -> None:
+    import asyncio
+    from datetime import datetime, timezone
+    from ai_visibility.metrics.snapshot import SnapshotRepository
+
+    created_first = datetime(2026, 4, 19, 20, 0, 0, tzinfo=timezone.utc)
+    created_second = datetime(2026, 4, 20, 14, 0, 0, tzinfo=timezone.utc)
+
+    class _FakePrisma:
+        class aivisscanjob:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(id="job-b", createdAt=created_second),
+                    SimpleNamespace(id="job-a", createdAt=created_first),
+                ]
+
+        class aivisscanexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(id="exec-b", scanJobId="job-b", provider="anthropic"),
+                    SimpleNamespace(id="exec-a", scanJobId="job-a", provider="anthropic"),
+                ]
+
+        class aivispromptexecution:
+            @staticmethod
+            async def find_many(**kwargs):
+                where = kwargs.get("where", {})
+                exec_ids = where.get("scanExecutionId", {}).get("in", [])
+                if "exec-b" in exec_ids:
+                    return [SimpleNamespace(id="pe-b1"), SimpleNamespace(id="pe-b2")]
+                if "exec-a" in exec_ids:
+                    return [SimpleNamespace(id="pe-a1")]
+                return []
+
+        class aivisobservation:
+            @staticmethod
+            async def find_many(**kwargs):
+                where = kwargs.get("where", {})
+                pe_ids = where.get("promptExecutionId", {}).get("in", [])
+                return [SimpleNamespace(brandMentioned=True) for _ in pe_ids]
+
+        class aivispromptexecutioncitation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return []
+
+    class _FakeMetricRepo:
+        prisma = _FakePrisma()
+
+        async def list_by_workspace(self, *_a, **_k):
+            return []
+
+    class _FakeWorkspaceRepo:
+        async def get_by_slug(self, *_a, **_k):
+            return None
+
+    repo = SnapshotRepository(
+        prisma=_FakePrisma(),
+        metric_repo=cast(object, _FakeMetricRepo()),
+        workspace_repo=cast(object, _FakeWorkspaceRepo()),
+    )
+
+    result = asyncio.run(repo.get_breakdowns("any"))
+
+    assert [item.run_id for item in result.historical_mentions] == ["job-a", "job-b"]
+    assert result.historical_mentions[0].responses == 1
+    assert result.historical_mentions[1].responses == 2
 
 
 @pytest.mark.parametrize(

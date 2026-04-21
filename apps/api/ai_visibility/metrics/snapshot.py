@@ -14,6 +14,20 @@ from ai_visibility.storage.types import MetricSnapshotRecord, RunRecord
 
 Prisma = Any
 
+
+def _extract_domain(url: str) -> str:
+    if not url:
+        return ""
+    stripped = url.strip().lower()
+    for prefix in ("https://", "http://", "//"):
+        if stripped.startswith(prefix):
+            stripped = stripped[len(prefix) :]
+            break
+    host = stripped.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+    host = host.removeprefix("www.")
+    return host
+
+
 DISPLAY_PROVIDERS: tuple[str, ...] = (
     "openai",
     "anthropic",
@@ -62,11 +76,25 @@ class MentionTypeItem(BaseModel):
     count: int
 
 
+class SourceAttributionItem(BaseModel):
+    domain: str
+    count: int
+
+
+class HistoricalRunItem(BaseModel):
+    run_id: str
+    run_date: str
+    responses: int
+    mentions: int
+
+
 class SnapshotBreakdowns(BaseModel):
     workspace: str
     provider_breakdown: list[ProviderBreakdownItem]
     mention_types: list[MentionTypeItem]
     total_responses: int
+    source_attribution: list[SourceAttributionItem] = []
+    historical_mentions: list[HistoricalRunItem] = []
 
 
 class SnapshotRepository:
@@ -188,12 +216,86 @@ class SnapshotRepository:
             MentionTypeItem(label="not_mentioned", count=max(0, total_responses - total_mentioned)),
         ]
 
+        source_attribution = await self._build_source_attribution([j.id for j in scan_jobs])
+        historical_mentions = await self._build_historical_mentions(scan_jobs, executions)
+
         return SnapshotBreakdowns(
             workspace=workspace,
             provider_breakdown=provider_items,
             mention_types=mention_types,
             total_responses=total_responses,
+            source_attribution=source_attribution,
+            historical_mentions=historical_mentions,
         )
+
+    async def _build_source_attribution(self, scan_job_ids: list[str]) -> list[SourceAttributionItem]:
+        if not scan_job_ids:
+            return []
+        prisma = self._metric_repo.prisma
+        executions = await prisma.aivisscanexecution.find_many(
+            where={"scanJobId": {"in": scan_job_ids}},
+        )
+        if not executions:
+            return []
+        exec_ids = [e.id for e in executions]
+        prompt_execs = await prisma.aivispromptexecution.find_many(
+            where={"scanExecutionId": {"in": exec_ids}},
+        )
+        if not prompt_execs:
+            return []
+        pe_ids = [pe.id for pe in prompt_execs]
+        citations = await prisma.aivispromptexecutioncitation.find_many(
+            where={"promptExecutionId": {"in": pe_ids}},
+        )
+        domain_counts: dict[str, int] = {}
+        for citation in citations:
+            domain = _extract_domain(citation.url or "")
+            if not domain:
+                continue
+            domain_counts[domain] = domain_counts.get(domain, 0) + 1
+        ranked = sorted(domain_counts.items(), key=lambda pair: (-pair[1], pair[0]))[:10]
+        return [SourceAttributionItem(domain=domain, count=count) for domain, count in ranked]
+
+    async def _build_historical_mentions(
+        self,
+        scan_jobs: list[Any],
+        executions: list[Any],
+    ) -> list[HistoricalRunItem]:
+        if not scan_jobs or not executions:
+            return []
+        prisma = self._metric_repo.prisma
+        job_by_id: dict[str, Any] = {j.id: j for j in scan_jobs}
+        job_to_exec_ids: dict[str, list[str]] = {}
+        for exec_row in executions:
+            job_to_exec_ids.setdefault(exec_row.scanJobId, []).append(exec_row.id)
+
+        items: list[HistoricalRunItem] = []
+        for job_id, exec_ids in job_to_exec_ids.items():
+            job = job_by_id.get(job_id)
+            if job is None:
+                continue
+            prompt_execs = await prisma.aivispromptexecution.find_many(
+                where={"scanExecutionId": {"in": exec_ids}},
+            )
+            responses = len(prompt_execs)
+            mentions = 0
+            if prompt_execs:
+                pe_ids = [pe.id for pe in prompt_execs]
+                observations = await prisma.aivisobservation.find_many(
+                    where={"promptExecutionId": {"in": pe_ids}},
+                )
+                mentions = sum(1 for obs in observations if bool(obs.brandMentioned))
+            created_at = getattr(job, "createdAt", None)
+            items.append(
+                HistoricalRunItem(
+                    run_id=job_id,
+                    run_date=created_at.isoformat() if created_at is not None else "",
+                    responses=responses,
+                    mentions=mentions,
+                )
+            )
+        items.sort(key=lambda item: item.run_date)
+        return items
 
     async def get_action_queue(self, workspace: str) -> ActionQueue:
         precomputed_actions = self._actions_by_workspace.get(workspace)

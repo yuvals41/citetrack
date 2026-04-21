@@ -91,11 +91,25 @@ export interface MentionTypeItem {
   count: number;
 }
 
+export interface SourceAttributionItem {
+  domain: string;
+  count: number;
+}
+
+export interface HistoricalRunItem {
+  run_id: string;
+  run_date: string;
+  responses: number;
+  mentions: number;
+}
+
 export interface SnapshotBreakdowns {
   workspace: string;
   provider_breakdown: ProviderBreakdownItem[];
   mention_types: MentionTypeItem[];
   total_responses: number;
+  source_attribution?: SourceAttributionItem[];
+  historical_mentions?: HistoricalRunItem[];
 }
 
 export type OverviewSnapshotResult = OverviewSnapshot | DegradedResponse;
