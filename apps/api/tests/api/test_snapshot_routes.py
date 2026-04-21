@@ -423,6 +423,157 @@ def test_breakdowns_repo_builds_historical_mentions_sorted_by_date() -> None:
     assert result.historical_mentions[1].responses == 2
 
 
+def test_breakdowns_repo_builds_top_pages_filtered_to_brand_domain() -> None:
+    import asyncio
+    from ai_visibility.metrics.snapshot import SnapshotRepository
+
+    class _FakePrisma:
+        class aivisscanjob:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="job-1", createdAt=None)]
+
+        class aivisscanexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
+
+        class aivispromptexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="pe-1", rawResponse="")]
+
+        class aivisobservation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return []
+
+        class aivispromptexecutioncitation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(url="https://acme.com/pricing"),
+                    SimpleNamespace(url="https://acme.com/pricing"),
+                    SimpleNamespace(url="https://docs.acme.com/guide"),
+                    SimpleNamespace(url="https://example.com/blog"),
+                ]
+
+        class aivisbrand:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(name="Acme", domain="acme.com")]
+
+        class aiviscompetitor:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return []
+
+    class _FakeMetricRepo:
+        prisma = _FakePrisma()
+
+        async def list_by_workspace(self, *_a, **_k):
+            return []
+
+    class _FakeWorkspaceRepo:
+        async def get_by_slug(self, *_a, **_k):
+            return {"id": "ws-1"}
+
+    repo = SnapshotRepository(
+        prisma=_FakePrisma(),
+        metric_repo=cast(object, _FakeMetricRepo()),
+        workspace_repo=cast(object, _FakeWorkspaceRepo()),
+    )
+
+    result = asyncio.run(repo.get_breakdowns("any"))
+
+    urls = [item.url for item in result.top_pages]
+    counts = {item.url: item.count for item in result.top_pages}
+    assert "https://acme.com/pricing" in urls
+    assert counts["https://acme.com/pricing"] == 2
+    assert "https://docs.acme.com/guide" in urls
+    assert "https://example.com/blog" not in urls
+
+
+def test_breakdowns_repo_builds_competitor_comparison_via_text_match() -> None:
+    import asyncio
+    from ai_visibility.metrics.snapshot import SnapshotRepository
+
+    class _FakePrisma:
+        class aivisscanjob:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="job-1", createdAt=None)]
+
+        class aivisscanexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
+
+        class aivispromptexecution:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(
+                        id="pe-1",
+                        rawResponse="Acme is great. Beta is also fine. Beta again.",
+                    ),
+                    SimpleNamespace(
+                        id="pe-2",
+                        rawResponse="I recommend Acme over Gamma.",
+                    ),
+                ]
+
+        class aivisobservation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return []
+
+        class aivispromptexecutioncitation:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return []
+
+        class aivisbrand:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [SimpleNamespace(name="Acme", domain="acme.com")]
+
+        class aiviscompetitor:
+            @staticmethod
+            async def find_many(**_kwargs):
+                return [
+                    SimpleNamespace(name="Beta", domain="beta.com"),
+                    SimpleNamespace(name="Gamma", domain="gamma.com"),
+                    SimpleNamespace(name="Delta", domain="delta.com"),
+                ]
+
+    class _FakeMetricRepo:
+        prisma = _FakePrisma()
+
+        async def list_by_workspace(self, *_a, **_k):
+            return []
+
+    class _FakeWorkspaceRepo:
+        async def get_by_slug(self, *_a, **_k):
+            return {"id": "ws-1"}
+
+    repo = SnapshotRepository(
+        prisma=_FakePrisma(),
+        metric_repo=cast(object, _FakeMetricRepo()),
+        workspace_repo=cast(object, _FakeWorkspaceRepo()),
+    )
+
+    result = asyncio.run(repo.get_breakdowns("any"))
+
+    by_name = {item.name: item for item in result.competitor_comparison}
+    assert by_name["Acme"].mentions == 2
+    assert by_name["Acme"].is_brand is True
+    assert by_name["Beta"].mentions == 1
+    assert by_name["Gamma"].mentions == 1
+    assert by_name["Delta"].mentions == 0
+    assert result.competitor_comparison[0].name == "Acme"
+
+
 @pytest.mark.parametrize(
     "path",
     [

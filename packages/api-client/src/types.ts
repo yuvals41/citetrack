@@ -103,6 +103,17 @@ export interface HistoricalRunItem {
   mentions: number;
 }
 
+export interface TopPageItem {
+  url: string;
+  count: number;
+}
+
+export interface CompetitorComparisonItem {
+  name: string;
+  mentions: number;
+  is_brand: boolean;
+}
+
 export interface SnapshotBreakdowns {
   workspace: string;
   provider_breakdown: ProviderBreakdownItem[];
@@ -110,6 +121,8 @@ export interface SnapshotBreakdowns {
   total_responses: number;
   source_attribution?: SourceAttributionItem[];
   historical_mentions?: HistoricalRunItem[];
+  top_pages?: TopPageItem[];
+  competitor_comparison?: CompetitorComparisonItem[];
 }
 
 export type OverviewSnapshotResult = OverviewSnapshot | DegradedResponse;
@@ -118,13 +131,19 @@ export type FindingsResult = FindingsSummary | DegradedResponse;
 export type ActionsResult = ActionQueue | DegradedResponse;
 export type BreakdownsResult = SnapshotBreakdowns | DegradedResponse;
 
-export interface RunScanResult {
+export interface PerProviderScanResult {
+  provider: string;
   run_id: string | null;
   status: string;
   results_count: number;
-  provider: string;
-  failed_providers: string[];
   error_message: string | null;
+}
+
+export interface RunScanResult {
+  providers: PerProviderScanResult[];
+  total_results: number;
+  succeeded: number;
+  failed: number;
 }
 
 export function isDegraded(v: unknown): v is DegradedResponse {

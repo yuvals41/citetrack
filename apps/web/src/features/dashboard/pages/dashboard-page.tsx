@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@citetrack/ui/card";
 import { KPICard, KPICardChange, KPICardLabel, KPICardValue } from "@citetrack/ui/kpi-card";
 import { Skeleton } from "@citetrack/ui/skeleton";
 import { ActionsQueue } from "../components/actions-queue";
+import { CompetitorComparisonChart } from "../components/competitor-comparison-chart";
 import { FindingsList } from "../components/findings-list";
 import { HistoricalMentionsChart } from "../components/historical-mentions-chart";
 import { MentionTypeDonut } from "../components/mention-type-donut";
 import { ProviderBreakdownChart } from "../components/provider-breakdown-chart";
 import { SourceAttributionChart } from "../components/source-attribution-chart";
+import { TopPagesChart } from "../components/top-pages-chart";
 import { TrendIndicator } from "../components/trend-indicator";
 import { VisibilityTrendChart } from "../components/visibility-trend-chart";
 import {
@@ -249,6 +251,54 @@ export function DashboardPage() {
               </p>
             ) : breakdownsData ? (
               <SourceAttributionChart items={breakdownsData.source_attribution ?? []} />
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Competitor comparison</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdowns.isPending ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : breakdowns.error ? (
+              <ErrorCard label="competitor comparison" message={breakdowns.error.message} />
+            ) : breakdownsDegraded ? (
+              <p className="text-sm text-muted-foreground py-2">
+                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+              </p>
+            ) : breakdownsData ? (
+              <CompetitorComparisonChart items={breakdownsData.competitor_comparison ?? []} />
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top cited pages</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {breakdowns.isPending ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : breakdowns.error ? (
+              <ErrorCard label="top pages" message={breakdowns.error.message} />
+            ) : breakdownsDegraded ? (
+              <p className="text-sm text-muted-foreground py-2">
+                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+              </p>
+            ) : breakdownsData ? (
+              <TopPagesChart items={breakdownsData.top_pages ?? []} />
             ) : null}
           </CardContent>
         </Card>

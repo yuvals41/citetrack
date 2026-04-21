@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
@@ -88,6 +89,17 @@ class HistoricalRunItem(BaseModel):
     mentions: int
 
 
+class TopPageItem(BaseModel):
+    url: str
+    count: int
+
+
+class CompetitorComparisonItem(BaseModel):
+    name: str
+    mentions: int
+    is_brand: bool = False
+
+
 class SnapshotBreakdowns(BaseModel):
     workspace: str
     provider_breakdown: list[ProviderBreakdownItem]
@@ -95,6 +107,8 @@ class SnapshotBreakdowns(BaseModel):
     total_responses: int
     source_attribution: list[SourceAttributionItem] = []
     historical_mentions: list[HistoricalRunItem] = []
+    top_pages: list[TopPageItem] = []
+    competitor_comparison: list[CompetitorComparisonItem] = []
 
 
 class SnapshotRepository:
@@ -216,8 +230,13 @@ class SnapshotRepository:
             MentionTypeItem(label="not_mentioned", count=max(0, total_responses - total_mentioned)),
         ]
 
+        workspace_row = await self._workspace_repo.get_by_slug(workspace)
+        workspace_id = workspace_row["id"] if workspace_row else None
+
         source_attribution = await self._build_source_attribution([j.id for j in scan_jobs])
         historical_mentions = await self._build_historical_mentions(scan_jobs, executions)
+        top_pages = await self._build_top_pages([j.id for j in scan_jobs], workspace_id)
+        competitor_comparison = await self._build_competitor_comparison([j.id for j in scan_jobs], workspace_id)
 
         return SnapshotBreakdowns(
             workspace=workspace,
@@ -226,6 +245,8 @@ class SnapshotRepository:
             total_responses=total_responses,
             source_attribution=source_attribution,
             historical_mentions=historical_mentions,
+            top_pages=top_pages,
+            competitor_comparison=competitor_comparison,
         )
 
     async def _build_source_attribution(self, scan_job_ids: list[str]) -> list[SourceAttributionItem]:
@@ -255,6 +276,96 @@ class SnapshotRepository:
             domain_counts[domain] = domain_counts.get(domain, 0) + 1
         ranked = sorted(domain_counts.items(), key=lambda pair: (-pair[1], pair[0]))[:10]
         return [SourceAttributionItem(domain=domain, count=count) for domain, count in ranked]
+
+    async def _build_top_pages(self, scan_job_ids: list[str], workspace_id: str | None) -> list[TopPageItem]:
+        if not scan_job_ids or not workspace_id:
+            return []
+        prisma = self._metric_repo.prisma
+        brand_rows = await prisma.aivisbrand.find_many(where={"workspaceId": workspace_id})
+        if not brand_rows:
+            return []
+        brand_domain = _extract_domain(str(getattr(brand_rows[0], "domain", "") or ""))
+        if not brand_domain:
+            return []
+
+        executions = await prisma.aivisscanexecution.find_many(where={"scanJobId": {"in": scan_job_ids}})
+        if not executions:
+            return []
+        prompt_execs = await prisma.aivispromptexecution.find_many(
+            where={"scanExecutionId": {"in": [e.id for e in executions]}}
+        )
+        if not prompt_execs:
+            return []
+        citations = await prisma.aivispromptexecutioncitation.find_many(
+            where={"promptExecutionId": {"in": [pe.id for pe in prompt_execs]}}
+        )
+
+        url_counts: dict[str, int] = {}
+        for citation in citations:
+            url = str(getattr(citation, "url", "") or "")
+            if not url:
+                continue
+            domain = _extract_domain(url)
+            if domain == brand_domain or domain.endswith(f".{brand_domain}"):
+                url_counts[url] = url_counts.get(url, 0) + 1
+
+        ranked = sorted(url_counts.items(), key=lambda pair: (-pair[1], pair[0]))[:10]
+        return [TopPageItem(url=url, count=count) for url, count in ranked]
+
+    async def _build_competitor_comparison(
+        self, scan_job_ids: list[str], workspace_id: str | None
+    ) -> list[CompetitorComparisonItem]:
+        if not scan_job_ids or not workspace_id:
+            return []
+        prisma = self._metric_repo.prisma
+
+        brand_rows = await prisma.aivisbrand.find_many(where={"workspaceId": workspace_id})
+        competitor_rows = await prisma.aiviscompetitor.find_many(where={"workspaceId": workspace_id})
+
+        tracked: list[tuple[str, bool]] = []
+        for brand in brand_rows:
+            name = str(getattr(brand, "name", "") or "").strip()
+            if name:
+                tracked.append((name, True))
+                break
+        for competitor in competitor_rows:
+            name = str(getattr(competitor, "name", "") or "").strip()
+            if name:
+                tracked.append((name, False))
+
+        if not tracked:
+            return []
+
+        executions = await prisma.aivisscanexecution.find_many(where={"scanJobId": {"in": scan_job_ids}})
+        if not executions:
+            return []
+        prompt_execs = await prisma.aivispromptexecution.find_many(
+            where={"scanExecutionId": {"in": [e.id for e in executions]}}
+        )
+        if not prompt_execs:
+            return []
+
+        patterns: list[tuple[str, bool, re.Pattern[str]]] = []
+        for name, is_brand in tracked:
+            pattern = re.compile(rf"\b{re.escape(name)}\b", re.IGNORECASE)
+            patterns.append((name, is_brand, pattern))
+
+        counts: dict[str, int] = {name: 0 for name, _ in tracked}
+        is_brand_map: dict[str, bool] = {name: is_brand for name, is_brand in tracked}
+        for pe in prompt_execs:
+            text = str(getattr(pe, "rawResponse", "") or "")
+            if not text:
+                continue
+            for name, _is_brand, pattern in patterns:
+                if pattern.search(text):
+                    counts[name] += 1
+
+        items = [
+            CompetitorComparisonItem(name=name, mentions=counts[name], is_brand=is_brand_map[name])
+            for name, _ in tracked
+        ]
+        items.sort(key=lambda item: (not item.is_brand, -item.mentions, item.name))
+        return items
 
     async def _build_historical_mentions(
         self,

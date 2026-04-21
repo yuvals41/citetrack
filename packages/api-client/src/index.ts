@@ -45,12 +45,14 @@ export type {
   ContentAnalysisDimension,
   CrawlerBotAccessResult,
   DegradedInfo,
+  CompetitorComparisonItem,
   DegradedResponse,
   Finding,
   FindingsSummary,
   HistoricalRunItem,
   MentionTypeItem,
   OverviewSnapshot,
+  PerProviderScanResult,
   PresenceResult,
   ProviderBreakdownItem,
   PromptRecord,
@@ -58,6 +60,7 @@ export type {
   ScanScheduleValue,
   SnapshotBreakdowns,
   SourceAttributionItem,
+  TopPageItem,
   TrendPoint,
   TrendResponse,
   TrendSeries,
@@ -189,11 +192,13 @@ export function createCitetrackClient({
     },
     getMyWorkspaces: () =>
       authedRequest<WorkspaceApiResponse[]>(`/api/v1/workspaces/mine`),
-    runWorkspaceScan: (workspaceSlug: string, provider = "anthropic") =>
-      authedRequest<RunScanResult>(
-        `/api/v1/workspaces/${workspaceSlug}/scan?provider=${encodeURIComponent(provider)}`,
+    runWorkspaceScan: (workspaceSlug: string, provider: string | string[] = "anthropic") => {
+      const joined = Array.isArray(provider) ? provider.join(",") : provider;
+      return authedRequest<RunScanResult>(
+        `/api/v1/workspaces/${workspaceSlug}/scan?provider=${encodeURIComponent(joined)}`,
         { method: "POST" },
-      ),
+      );
+    },
     getPixelSnippet: (workspaceId: string) =>
       authedFetchText(`/api/v1/pixel/snippet/${workspaceId}`),
     getPixelStats: (workspaceId: string, days = 30) =>

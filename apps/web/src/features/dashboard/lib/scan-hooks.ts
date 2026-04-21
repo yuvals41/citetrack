@@ -7,7 +7,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 interface RunScanVariables {
   workspaceSlug: string;
-  provider?: string;
+  provider?: string | string[];
 }
 
 export function useRunScan() {
@@ -31,8 +31,9 @@ export function useRunScan() {
           request_id,
           workspaceSlug,
           provider,
-          status: result.status,
-          results_count: result.results_count,
+          total_results: result.total_results,
+          succeeded: result.succeeded,
+          failed: result.failed,
           duration_ms,
         });
         return result;

@@ -12,6 +12,7 @@ from ai_visibility.api.content_analysis_routes import router as content_analysis
 from ai_visibility.api.mentions_routes import router as mentions_router
 from ai_visibility.api.onboarding_routes import router as onboarding_router
 from ai_visibility.api.research_routes import router as research_router
+from ai_visibility.api.export_routes import router as export_router
 from ai_visibility.api.scans_routes import router as scans_router
 from ai_visibility.api.settings_routes import router as settings_router
 from ai_visibility.api.user_routes import router as user_router
@@ -323,6 +324,7 @@ def create_app() -> FastAPI:
     app.include_router(content_analysis_router, prefix="/api/v1")
     app.include_router(settings_router, prefix="/api/v1")
     app.include_router(scans_router, prefix="/api/v1")
+    app.include_router(export_router, prefix="/api/v1")
     app.include_router(pixel_router)
 
     return app
