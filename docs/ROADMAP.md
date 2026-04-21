@@ -2,7 +2,7 @@
 
 Single source of truth for what's shipped, what's agreed but not done, and what's explicitly out of scope. Updated as we ship.
 
-Last updated: 2026-04-21 (commit `ec68fc0`)
+Last updated: 2026-04-21 (commit `aff4743`)
 
 ---
 
@@ -52,13 +52,20 @@ Last updated: 2026-04-21 (commit `ec68fc0`)
 - **Mentions over time** (line chart) — Batch A
 - **Top citation sources** (bar chart) — Batch A
 - **Trend indicator** (+N pts card with arrow) — Batch A
+- **Competitor Comparison** (bar chart, brand vs competitors via text-matching) — Batch B
+- **Top cited pages** (bar chart, pages on your own domain) — Batch C partial
 - Findings list
+- **Export CSV** button in the dashboard header — Batch C partial
 
 ### Scan execution
 
 - Backend `RunOrchestrator` proven working (CLI + direct invocation)
-- `POST /api/v1/workspaces/{slug}/scan?provider=anthropic|openai` endpoint
+- `POST /api/v1/workspaces/{slug}/scan?provider=<comma,separated,list>` — multi-provider fan-out
+  - Whitelist: `anthropic`, `openai`, `gemini`, `perplexity`, `grok`
+  - Response shape: `{ providers: PerProviderScanResult[], total_results, succeeded, failed }`
 - "Run scan" button on the dashboard header, spinner state, auto-invalidates queries on success
+- **Auto-fire first scan on onboarding completion** via FastAPI BackgroundTasks
+  - User finishes step 4 → workspace created → scan queued → HTTP 200 returned → scan runs in background → dashboard populates ~30-60s later
 
 ### Backend endpoints (auth-protected unless noted)
 
@@ -66,21 +73,22 @@ Last updated: 2026-04-21 (commit `ec68fc0`)
 - `POST /pixel/event` (public)
 - `GET /me`
 - `GET/POST /workspaces` (legacy kept) · `GET /workspaces/mine`
-- `POST /onboarding/complete`
+- `POST /onboarding/complete` (now schedules first scan via BackgroundTask)
 - `GET /runs/latest` · `/runs` · `/prompts`
 - `GET /snapshot/overview` · `/trend` · `/findings` · `/actions`
-- `GET /snapshot/breakdowns` (provider breakdown + mention types + source attribution + historical mentions)
+- `GET /snapshot/breakdowns` (provider breakdown + mention types + source attribution + historical mentions + top pages + competitor comparison)
 - `GET /workspaces/{slug}/responses` (AI responses viewer)
 - `GET/POST/DELETE /workspaces/{slug}/competitors`
 - `GET/PUT /workspaces/{slug}/settings`
 - `GET/PUT /workspaces/{slug}/brand`
-- `POST /workspaces/{slug}/scan`
+- `POST /workspaces/{slug}/scan?provider=<a,b,c>` — multi-provider fan-out
+- `GET /workspaces/{slug}/export.csv` — attachment response
 - `POST /analyzers/extractability` · `/crawler-sim` · `/query-fanout` · `/entity` · `/shopping`
 
 ### Testing baseline
 
-- pytest (tests/api/ + tests/services/) — **155 passing**
-- vitest (apps/web) — **141 passing**
+- pytest (tests/api/ + tests/services/) — **165 passing**
+- vitest (apps/web) — **145 passing**
 - Playwright E2E — **14 passing** (public + authenticated + full onboarding flow)
 
 ---
@@ -89,22 +97,24 @@ Last updated: 2026-04-21 (commit `ec68fc0`)
 
 ### Scan lifecycle — step 3 of the incremental plan
 
-- [ ] **Auto-fire first scan on onboarding completion.** The `complete_onboarding` handler creates the workspace but doesn't queue a scan. Every new user lands on an empty dashboard until they click "Run scan" (which requires them to know what that is). Trigger one scan automatically, show a "First scan in progress…" banner.
+- [x] **Auto-fire first scan on onboarding completion.** Shipped (`1865782`). BackgroundTasks schedules an Anthropic scan after workspace creation.
 - [ ] **Persist the onboarding engines choice.** Currently stored in `_workspace_metadata` — an in-memory Python dict that evaporates on container restart. Needs a real DB column (requires Prisma migration — user owns that per AGENTS.md §7).
+- [ ] **"First scan running…" banner + polling on the dashboard.** Auto-fire is in place, but the dashboard doesn't signal the user that a scan is running. Should poll `/snapshot/overview` every ~10s while `run_count === 0` and show a banner.
 
 ### Reflex parity — Batch B + C
 
-- [ ] **Batch B: Competitor Comparison bar chart.** Requires counting competitor-name mentions across `rawResponse` text. Either text-matching (imperfect) or a new `competitor_mentions` observation column (needs migration).
-- [ ] **Batch C: Sentiment breakdown.** Per-response positive/neutral/negative. Needs a sentiment analyzer (extra LLM call or API) and a new column on observations.
-- [ ] **Batch C: Top Pages.** Subset of Source Attribution filtered to the user's own domain. Cheap if Source Attribution is populated.
+- [x] **Batch B: Competitor Comparison bar chart.** Shipped (`aff4743`) via text-matching. Imperfect but works.
+- [x] **Batch C partial: Top Pages.** Shipped (`aff4743`). Filters citations to URLs on the user's own brand domain.
+- [x] **Batch C partial: Export CSV.** Shipped (`aff4743`). `/workspaces/{slug}/export.csv` + `<ExportCsvButton/>`.
+- [ ] **Batch C: Sentiment breakdown.** Per-response positive/neutral/negative. Needs a sentiment analyzer (extra LLM call or API) and a new column on observations. BLOCKED on migration.
 - [ ] **Batch C: Social Visibility.** Social platform data. Totally new integration — out-of-scope for parity.
-- [ ] **Batch C: Export CSV / PDF.** Not a chart — a serialization pipeline. Non-trivial.
+- [ ] **Batch C: Export PDF.** Needs a real rendering pipeline (html → pdf via wkhtmltopdf or Puppeteer). CSV covers most reporting use cases.
 
 ### Multi-provider fan-out
 
-- [ ] **Add `OPENAI_API_KEY`, `GEMINI_API_KEY`, `PERPLEXITY_API_KEY`, `XAI_API_KEY` to `apps/api/.env`.** Currently only Anthropic is configured. Without the keys, the "Run scan" button is Claude-only.
-- [ ] **Fan-out scan across providers.** Once keys exist, the scan endpoint should accept a list (or loop over the workspace's engines list) and run each provider sequentially or in parallel.
-- [ ] **AI Overviews scan integration.** The backend has a `google_ai_overview` provider adapter, but needs a SERP vendor (DataForSEO / SerpApi / Bright Data) — pick one + add its API key.
+- [x] **Fan-out scan across providers.** Shipped (`aff4743`). Endpoint accepts `?provider=a,b,c` and runs sequentially.
+- [ ] **Add `OPENAI_API_KEY`, `GEMINI_API_KEY`, `PERPLEXITY_API_KEY`, `XAI_API_KEY` to `apps/api/.env`.** Currently only Anthropic is configured. Fan-out works but the extra providers fail with "Missing API key" until you add them. BLOCKED on you.
+- [ ] **AI Overviews scan integration.** The backend has a `google_ai_overview` provider adapter, but needs a SERP vendor (DataForSEO / SerpApi / Bright Data) — pick one + add its API key. BLOCKED on vendor choice + key.
 
 ---
 
@@ -126,22 +136,25 @@ These are called out in `docs/AUTH_DASHBOARD_ONBOARDING_COMPLETE.md` and AGENTS.
 
 ## Deferred / not yet discussed
 
-- **Async scans.** Current `POST /workspaces/{slug}/scan` is synchronous (30-60s HTTP). BullMQ/arq job queue needed for real multi-provider fan-out.
-- **Multi-workspace switcher.** The sidebar WorkspaceSwitcher shows the first workspace in `useMyWorkspaces()` — there's no real switcher UI yet.
-- **User sign-out UI.** No sign-out button exists anywhere in the app (a gap we found during the e2e session).
-- **Real-time scan progress.** Currently a spinner — no percentage, no "3 of 6 providers done" indicator.
+- **Async scans.** Current `POST /workspaces/{slug}/scan` is synchronous (30-60s × providers). For real multi-provider fan-out (6 providers = up to 6 minutes of HTTP), we need an arq job queue — worker container, status polling endpoint, job result persistence.
+- **Multi-workspace switcher.** The sidebar WorkspaceSwitcher shows the first workspace in `useMyWorkspaces()`. Making it a real switcher requires app-wide "current workspace" state (URL-based is cleanest) and updates to every hook that takes a slug (~15 places).
+- **Real-time scan progress.** Currently a spinner — no percentage, no "3 of 6 providers done" indicator. Depends on async scans.
 - **Scheduled scans.** `worker.py` has an arq cron at 06:00 UTC daily, but no worker container is running in the stack.
-- **`docs/AUTH_DASHBOARD_ONBOARDING_COMPLETE.md`** — captures the initial scaffold state but is now partially stale after the 20+ commits on top. Either promote this file as the authoritative "current state" (kept in sync) or freeze it as a historical snapshot.
+- **Sign-out UI — correction**: Clerk's `<UserButton />` in the sidebar footer DOES provide a sign-out menu via avatar click. Earlier "missing sign-out" claim was wrong.
+- **`docs/AUTH_DASHBOARD_ONBOARDING_COMPLETE.md`** — captures the initial scaffold state but is now partially stale after the 30+ commits on top. Either promote this file as the authoritative "current state" (kept in sync) or freeze it as a historical snapshot.
 
 ---
 
 ## Open questions
 
-- When do we tackle step 3 (auto-fire scan on onboarding)?
-- When do we get the missing provider API keys in place?
-- Batch B vs Batch C — which next?
+- When do we get the missing provider API keys in place (OpenAI / Gemini / Perplexity / xAI)?
+- Which SERP vendor for AI Overviews (DataForSEO vs SerpApi vs Bright Data)?
 - Do we need a workspace-switcher UI now, or can it wait until multi-workspace becomes a real use case?
-- Who owns the Prisma migrations we've been deferring? (Per AGENTS.md: the user. But when?)
+- Async scans + arq worker — when? (Blocks real-time scan progress, scheduled scans.)
+- Who owns the Prisma migrations we've been deferring? (Per AGENTS.md: the user. But when?) Specifically needed for:
+  - Persisting onboarding engines choice
+  - Sentiment breakdown (new observation column)
+  - Real users + user_workspaces tables (removes file-backed stub at `.cache/user_associations.json`)
 
 ---
 
