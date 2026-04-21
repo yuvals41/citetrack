@@ -49,8 +49,7 @@ function LoadingSkeleton() {
             <TableHead>Provider</TableHead>
             <TableHead>Model</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Started</TableHead>
-            <TableHead>Completed</TableHead>
+            <TableHead>When</TableHead>
             <TableHead>Error</TableHead>
           </TableRow>
         </TableHeader>
@@ -61,7 +60,6 @@ function LoadingSkeleton() {
               <TableCell><Skeleton className="h-5 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-32" /></TableCell>
               <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-36" /></TableCell>
               <TableCell><Skeleton className="h-4 w-36" /></TableCell>
               <TableCell><Skeleton className="h-4 w-24" /></TableCell>
             </TableRow>
@@ -99,8 +97,7 @@ function RunsTable({ items }: { items: RunRecord[] }) {
             <TableHead>Provider</TableHead>
             <TableHead>Model</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Started</TableHead>
-            <TableHead>Completed</TableHead>
+            <TableHead>When</TableHead>
             <TableHead>Error</TableHead>
           </TableRow>
         </TableHeader>
@@ -118,9 +115,6 @@ function RunsTable({ items }: { items: RunRecord[] }) {
               <TableCell>{statusBadge(run.status)}</TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {formatTs(run.started_at ?? run.created_at)}
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
-                {formatTs(run.completed_at)}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {run.status === "failed" && run.error_message

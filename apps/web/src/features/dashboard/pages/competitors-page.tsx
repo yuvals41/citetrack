@@ -92,6 +92,7 @@ function getCreateErrorMessage(error: unknown): string {
 export function CompetitorsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<{ id: string; name: string } | null>(null);
   const workspacesQuery = useMyWorkspaces();
   const workspace = workspacesQuery.data?.[0] ?? null;
   const workspaceSlug = workspace?.slug ?? "";
@@ -125,11 +126,14 @@ export function CompetitorsPage() {
     }
   }
 
-  async function handleRemove(id: string, name: string) {
-    const confirmed = window.confirm(`Remove ${name} from tracking?`);
-    if (!confirmed) {
-      return;
-    }
+  function requestRemove(id: string, name: string) {
+    setPendingRemove({ id, name });
+  }
+
+  async function confirmRemove() {
+    if (!pendingRemove) return;
+    const { id } = pendingRemove;
+    setPendingRemove(null);
     await deleteCompetitor.mutateAsync(id);
   }
 
@@ -193,7 +197,7 @@ export function CompetitorsPage() {
                     isLast={index === competitors.length - 1}
                     isRemoving={deleteCompetitor.isPending && deleteCompetitor.variables === competitor.id}
                     onRemove={(item) => {
-                      void handleRemove(item.id, item.name);
+                      requestRemove(item.id, item.name);
                     }}
                   />
                 ))}
@@ -253,6 +257,34 @@ export function CompetitorsPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={pendingRemove !== null} onOpenChange={(open) => !open && setPendingRemove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove competitor</DialogTitle>
+            <DialogDescription>
+              {pendingRemove
+                ? `Remove ${pendingRemove.name} from tracking? This does not delete past scan data.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setPendingRemove(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                void confirmRemove();
+              }}
+              isLoading={deleteCompetitor.isPending}
+            >
+              Remove
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

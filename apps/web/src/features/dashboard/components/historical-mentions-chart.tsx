@@ -67,10 +67,10 @@ export function HistoricalMentionsChart({ items }: HistoricalMentionsChartProps)
       role="img"
       aria-label="Historical mentions chart"
     >
-      {gridLines.map((value) => {
+      {gridLines.map((value, index) => {
         const y = toY(value, maxMentions);
         return (
-          <g key={value}>
+          <g key={`gridline-${index}`}>
             <line
               x1={PAD.left}
               y1={y}

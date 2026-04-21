@@ -180,12 +180,14 @@ describe("CompetitorsPage", () => {
       },
     ];
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
 
     await user.click(await screen.findByRole("button", { name: /remove delete me/i }));
+    expect(await screen.findByRole("heading", { name: "Remove competitor" })).toBeInTheDocument();
+    expect(screen.getByText(/Remove Delete Me from tracking/)).toBeInTheDocument();
 
-    expect(confirmSpy).toHaveBeenCalledWith("Remove Delete Me from tracking?");
+    await user.click(screen.getByRole("button", { name: /^Remove$/ }));
+
     await waitFor(() => {
       expect(screen.queryByText("Delete Me")).not.toBeInTheDocument();
     });

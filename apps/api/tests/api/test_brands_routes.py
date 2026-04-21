@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
+from ai_visibility.storage.repositories.brand_alias_repo import BrandAliasRepository
 from ai_visibility.storage.repositories.user_repo import UserRepository
 
 
@@ -40,6 +41,16 @@ def _user_owns_slug(monkeypatch: pytest.MonkeyPatch) -> None:
         return user_id == TEST_USER_ID and workspace_slug == SLUG
 
     monkeypatch.setattr(UserRepository, "user_owns_workspace", _owns)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_alias_storage(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    storage = tmp_path / "brand_aliases.json"
+    monkeypatch.setattr(
+        "ai_visibility.storage.repositories.brand_alias_repo._storage_path",
+        storage,
+    )
+    return storage
 
 
 @pytest.fixture
@@ -132,8 +143,9 @@ def test_get_brand_existing_returns_200(auth_client: TestClient, patched_prisma:
         workspace_id="ws_1",
         name="Acme",
         domain="acme.com",
-        aliases=["Acme AI"],
+        aliases=[],
     )
+    _ = BrandAliasRepository().set_aliases("ws_1", ["Acme AI"])
 
     response = auth_client.get(f"/api/v1/workspaces/{SLUG}/brand")
 

@@ -119,6 +119,8 @@ def mock_prisma() -> MagicMock:
     prisma.aivismention = _make_model_mock()
     prisma.aivismetricsnapshot = _make_model_mock()
     prisma.aivisscanevidence = _make_model_mock()
+    prisma.aivisbrand = _make_model_mock()
+    prisma.aiviscompetitor = _make_model_mock()
 
     prisma.aivisscanjob = _make_model_mock()
     prisma.aivisscanexecution = _make_model_mock()
@@ -227,6 +229,7 @@ def mock_jwks(
 @pytest.fixture
 def auth_client(clerk_test_token: str, mock_jwks, patch_get_prisma) -> TestClient:
     _ = patch_get_prisma
+    _ = mock_jwks
     from ai_visibility.api import create_app
 
     client = TestClient(create_app())
