@@ -147,9 +147,17 @@ def test_snapshot_routes_return_precomputed_models(
     async def _stub_repo() -> _SnapshotRepoStub:
         return _SnapshotRepoStub()
 
+    class _AlwaysOwnsUserRepo:
+        def user_owns_workspace(self, user_id: str, slug: str) -> bool:  # noqa: ARG002
+            return True
+
+        def list_workspaces_for_user(self, user_id: str) -> list[str]:  # noqa: ARG002
+            return []
+
     monkeypatch.setattr(routes_module, "_snapshot_repository", _stub_repo)
     monkeypatch.setattr(routes_module, "RunRepository", _ForbiddenRepository)
     monkeypatch.setattr(routes_module, "WorkspaceRepository", _ForbiddenRepository)
+    monkeypatch.setattr(routes_module, "UserRepository", lambda: _AlwaysOwnsUserRepo())
 
     overview = auth_client.get("/api/v1/snapshot/overview?workspace=default")
     trend = auth_client.get("/api/v1/snapshot/trend?workspace=default")

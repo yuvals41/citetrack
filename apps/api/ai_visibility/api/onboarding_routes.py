@@ -15,6 +15,8 @@ from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
 from ai_visibility.models.onboarding import OnboardingCompleteResponse, OnboardingPayload
 from ai_visibility.runs.orchestrator import RunOrchestrator
 from ai_visibility.storage.prisma_connection import get_prisma
+from ai_visibility.storage.repositories.brand_repo import BrandRepository
+from ai_visibility.storage.repositories.competitor_repo import CompetitorRepository
 from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 from ai_visibility.storage.types import WorkspaceRecord
@@ -99,15 +101,39 @@ async def complete_onboarding(
         }
         created = await workspace_repo.create(workspace_record)
         user_repo.add_workspace_to_user(user_id, workspace_slug)
+
+        await BrandRepository(prisma).upsert_primary(
+            created["id"],
+            name=payload.brand.name,
+            domain=payload.brand.domain,
+            aliases=[],
+        )
+
+        competitor_repo = CompetitorRepository(prisma)
+        for competitor in payload.competitors:
+            try:
+                await competitor_repo.create(
+                    created["id"],
+                    competitor.name,
+                    competitor.domain,
+                )
+            except Exception:
+                logger.exception(
+                    "onboarding.competitor_create_failed slug={} name={}",
+                    workspace_slug,
+                    competitor.name,
+                )
+
         _workspace_metadata[created["id"]] = {
             "brand": payload.brand.model_dump(),
             "competitors": [competitor.model_dump() for competitor in payload.competitors],
             "engines": [engine.value for engine in payload.engines],
         }
         logger.info(
-            "onboarding.complete workspace_id={} slug={}",
+            "onboarding.complete workspace_id={} slug={} competitors={}",
             created["id"],
             workspace_slug,
+            len(payload.competitors),
         )
         background_tasks.add_task(_fire_first_scan, workspace_slug, _FIRST_SCAN_PROVIDER)
         return OnboardingCompleteResponse(workspace_slug=workspace_slug)

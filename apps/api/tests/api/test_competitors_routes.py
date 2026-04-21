@@ -126,16 +126,20 @@ def competitor_store(monkeypatch: pytest.MonkeyPatch, mock_prisma: MagicMock):
     async def competitor_create(*, data: dict[str, object]):
         competitor_id = cast(str, data["id"])
         created_at = cast(datetime, data["createdAt"])
+        ws_val = data.get("workspaceId")
+        if ws_val is None:
+            ws_val = cast(dict[str, object], cast(dict[str, object], data["workspace"])["connect"])["id"]
+        workspace_id = cast(str, ws_val)
         competitors[competitor_id] = {
             "id": competitor_id,
-            "workspace_id": cast(str, data["workspaceId"]),
+            "workspace_id": workspace_id,
             "name": cast(str, data["name"]),
             "domain": cast(str, data["domain"]),
             "created_at": created_at,
         }
         return _competitor_row(
             competitor_id=competitor_id,
-            workspace_id=cast(str, data["workspaceId"]),
+            workspace_id=workspace_id,
             name=cast(str, data["name"]),
             domain=cast(str, data["domain"]),
             created_at=created_at,

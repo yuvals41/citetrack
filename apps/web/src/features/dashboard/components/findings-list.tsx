@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@citetrack/ui/card";
 
 const SEVERITY_CLASSES: Record<string, string> = {
   high: "bg-foreground/10 text-foreground",
-  medium: "bg-foreground/6 text-foreground/80",
-  low: "bg-foreground/4 text-foreground/60",
+  medium: "bg-foreground/5 text-foreground/80",
+  low: "bg-muted text-muted-foreground",
 };
 
 interface FindingsListProps {

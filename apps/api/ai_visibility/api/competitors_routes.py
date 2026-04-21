@@ -5,15 +5,24 @@ from typing import Annotated, cast
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse, Response
 
+from loguru import logger
+
 from ai_visibility.api.auth import get_current_user_id
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
 from ai_visibility.models.competitor import CompetitorCreate, CompetitorListResponse, CompetitorRecord
 from ai_visibility.storage.prisma_connection import get_prisma
 from ai_visibility.storage.repositories.competitor_repo import CompetitorRepository
+from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 
 router = APIRouter(tags=["competitors"])
 CurrentUserId = Annotated[str, Depends(get_current_user_id)]
+
+
+def _require_ownership(user_id: str, workspace_slug: str) -> None:
+    if not UserRepository().user_owns_workspace(user_id, workspace_slug):
+        logger.warning("competitors.forbidden user={} slug={}", user_id, workspace_slug)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace not accessible")
 
 
 @router.get("/workspaces/{workspace_slug}/competitors", response_model=CompetitorListResponse)
@@ -21,7 +30,7 @@ async def list_competitors(
     workspace_slug: str,
     user_id: CurrentUserId,
 ) -> CompetitorListResponse | JSONResponse:
-    _ = user_id
+    _require_ownership(user_id, workspace_slug)
     try:
         prisma = cast(object, await get_prisma())
         workspace = await WorkspaceRepository(prisma).get_by_slug(workspace_slug)
@@ -53,7 +62,7 @@ async def create_competitor(
     payload: CompetitorCreate,
     user_id: CurrentUserId,
 ) -> CompetitorRecord:
-    _ = user_id
+    _require_ownership(user_id, workspace_slug)
     try:
         prisma = cast(object, await get_prisma())
         workspace = await WorkspaceRepository(prisma).get_by_slug(workspace_slug)
@@ -78,7 +87,7 @@ async def delete_competitor(
     competitor_id: str,
     user_id: CurrentUserId,
 ) -> Response:
-    _ = user_id
+    _require_ownership(user_id, workspace_slug)
     try:
         prisma = cast(object, await get_prisma())
         workspace = await WorkspaceRepository(prisma).get_by_slug(workspace_slug)

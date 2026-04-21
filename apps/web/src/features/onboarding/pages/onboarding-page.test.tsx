@@ -17,6 +17,13 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({
+    invalidateQueries: vi.fn(async () => undefined),
+    refetchQueries: vi.fn(async () => undefined),
+  }),
+}));
+
 import { OnboardingPage } from "./onboarding-page";
 
 import type { ResearchResponse } from "#/features/onboarding/lib/research";

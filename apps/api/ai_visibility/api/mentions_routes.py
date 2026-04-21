@@ -9,6 +9,8 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Query
 from loguru import logger
 
+from fastapi import HTTPException, status
+
 from ai_visibility.api.auth import CurrentUserId
 from ai_visibility.models.response_view import (
     AIResponseItem,
@@ -17,6 +19,7 @@ from ai_visibility.models.response_view import (
     ResponseMentionType,
 )
 from ai_visibility.storage.prisma_connection import get_prisma
+from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 
 router = APIRouter(tags=["responses"])
@@ -91,7 +94,9 @@ async def list_workspace_responses(
     limit: int = Query(default=200, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> AIResponsesList:
-    _ = user_id
+    if not UserRepository().user_owns_workspace(user_id, workspace_slug):
+        logger.warning("responses.forbidden user={} slug={}", user_id, workspace_slug)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace not accessible")
 
     try:
         prisma = await get_prisma()

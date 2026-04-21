@@ -3,7 +3,7 @@
 import os
 from typing import Annotated, TypeAlias
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 
 from ai_visibility.api.auth import get_current_user_id
 from ai_visibility.api.brands_routes import router as brands_router
@@ -11,11 +11,12 @@ from ai_visibility.api.competitors_routes import router as competitors_router
 from ai_visibility.api.content_analysis_routes import router as content_analysis_router
 from ai_visibility.api.mentions_routes import router as mentions_router
 from ai_visibility.api.onboarding_routes import router as onboarding_router
-from ai_visibility.api.research_routes import router as research_router
 from ai_visibility.api.export_routes import router as export_router
+from ai_visibility.api.research_routes import router as research_router
 from ai_visibility.api.scans_routes import router as scans_router
 from ai_visibility.api.settings_routes import router as settings_router
 from ai_visibility.api.user_routes import router as user_router
+from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
 from ai_visibility.metrics.snapshot import SnapshotRepository
 from ai_visibility.pixel.router import router as pixel_router
@@ -198,26 +199,32 @@ async def health() -> ApiPayload:
     return await _health_payload()
 
 
+def _require_workspace_ownership(user_id: str, workspace: str) -> None:
+    if not UserRepository().user_owns_workspace(user_id, workspace):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace not accessible")
+
+
 async def list_workspaces(user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
-    return await _workspaces_payload()
+    owned_slugs = set(UserRepository().list_workspaces_for_user(user_id))
+    payload = await _workspaces_payload()
+    items = payload.get("items") if isinstance(payload, dict) else None
+    if isinstance(items, list):
+        filtered = [w for w in items if isinstance(w, dict) and w.get("slug") in owned_slugs]
+        return {"items": filtered}
+    return payload
 
 
 async def latest_run(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    _require_workspace_ownership(user_id, workspace)
     return await _latest_run_payload(workspace)
 
 
 async def list_runs(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    _require_workspace_ownership(user_id, workspace)
     return await _runs_payload(workspace)
 
 
 async def list_prompts(user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
     _ = user_id
     try:
         return _prompts_payload()
@@ -232,31 +239,27 @@ async def list_prompts(user_id: CurrentUserId) -> ApiPayload:
 
 
 async def snapshot_overview(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    _require_workspace_ownership(user_id, workspace)
     return await _snapshot_overview_payload(workspace)
 
 
 async def snapshot_trend(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    _require_workspace_ownership(user_id, workspace)
     return await _snapshot_trend_payload(workspace)
 
 
 async def snapshot_findings(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    _require_workspace_ownership(user_id, workspace)
     return await _snapshot_findings_payload(workspace)
 
 
 async def snapshot_actions(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    _require_workspace_ownership(user_id, workspace)
     return await _snapshot_actions_payload(workspace)
 
 
 async def snapshot_breakdowns(workspace: str = "default", *, user_id: CurrentUserId) -> ApiPayload:
-    _ = user_id
+    _require_workspace_ownership(user_id, workspace)
     return await _snapshot_breakdowns_payload(workspace)
 
 

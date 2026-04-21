@@ -1,6 +1,5 @@
 import { Alert } from "@citetrack/ui/alert";
 import { Badge } from "@citetrack/ui/badge";
-import { Button } from "@citetrack/ui/button";
 import { Card } from "@citetrack/ui/card";
 import { Skeleton } from "@citetrack/ui/skeleton";
 import {
@@ -11,9 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@citetrack/ui/table";
-import { Clock, Play, Plus } from "lucide-react";
+import { Clock } from "lucide-react";
 import { PageHeader } from "../components/page-header";
+import { RunScanButton } from "../components/run-scan-button";
 import { useRuns } from "../lib/runs-hooks";
+import { useMyWorkspaces } from "../lib/workspaces-hooks";
 import type { RunRecord } from "@citetrack/api-client";
 
 type RunStatus = RunRecord["status"];
@@ -32,9 +33,11 @@ function statusBadge(status: RunStatus) {
   }
 }
 
-function formatTs(ts: string | null): string {
+function formatTs(ts: string | null | undefined): string {
   if (!ts) return "—";
-  return new Date(ts).toLocaleString();
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString();
 }
 
 function LoadingSkeleton() {
@@ -81,10 +84,7 @@ function EmptyState() {
             Results take about 30 seconds.
           </p>
         </div>
-        <Button disabled title="Coming soon">
-          <Play className="size-4" />
-          Run your first scan
-        </Button>
+        <RunScanButton />
       </div>
     </div>
   );
@@ -117,7 +117,7 @@ function RunsTable({ items }: { items: RunRecord[] }) {
               </TableCell>
               <TableCell>{statusBadge(run.status)}</TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {formatTs(run.started_at)}
+                {formatTs(run.started_at ?? run.created_at)}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {formatTs(run.completed_at)}
@@ -136,18 +136,15 @@ function RunsTable({ items }: { items: RunRecord[] }) {
 }
 
 export function ScansPage() {
-  const { data, isPending, error } = useRuns();
+  const workspacesQuery = useMyWorkspaces();
+  const workspaceSlug = workspacesQuery.data?.[0]?.slug ?? "default";
+  const { data, isPending, error } = useRuns(workspaceSlug);
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <PageHeader
         title="Scans"
-        actions={
-          <Button disabled title="Coming soon">
-            <Plus className="size-4" />
-            New scan
-          </Button>
-        }
+        actions={<RunScanButton />}
       />
       <main className="flex-1 overflow-auto p-6 space-y-6">
         {isPending ? (

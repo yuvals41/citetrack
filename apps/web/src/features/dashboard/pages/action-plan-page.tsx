@@ -6,6 +6,7 @@ import { Skeleton } from "@citetrack/ui/skeleton";
 import { Lightbulb, RefreshCw } from "lucide-react";
 import { ActionCard } from "../components/action-card";
 import { PageHeader } from "../components/page-header";
+import { RunScanButton } from "../components/run-scan-button";
 import { useSnapshotActions } from "../lib/api-hooks";
 import { useMyWorkspaces } from "../lib/workspaces-hooks";
 
@@ -59,9 +60,7 @@ export function ActionPlanPage() {
                   Run a scan to get personalized action items based on your visibility data.
                 </p>
               </div>
-              <Button disabled title="Coming soon">
-                Run scan
-              </Button>
+              <RunScanButton />
             </Card>
           ) : actionsData ? (
             <div className="space-y-3">

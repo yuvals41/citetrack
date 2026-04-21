@@ -1,5 +1,6 @@
 import { useAuth } from "@clerk/react";
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@citetrack/ui/card";
 import { useState } from "react";
 import type { OnboardingData } from "../lib/schema";
@@ -21,12 +22,15 @@ export function OnboardingPage() {
 
   const { getToken } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const runSubmit = async (finalData: OnboardingData) => {
     setSubmitting(true);
     setError(null);
     try {
       await submitOnboarding(finalData, getToken);
+      await queryClient.invalidateQueries({ queryKey: ["workspaces", "mine"] });
+      await queryClient.refetchQueries({ queryKey: ["workspaces", "mine"] });
       setSubmitting(false);
       setTimeout(() => {
         void navigate({ to: "/dashboard" });

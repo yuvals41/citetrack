@@ -12,6 +12,8 @@ vi.mock("@clerk/react", () => ({
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: useQueryMock,
+  useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 
 vi.mock("@citetrack/ui/sidebar", () => ({
@@ -44,6 +46,7 @@ function makeRun(partial: Partial<RunRecord> = {}): RunRecord {
     prompt_version: "pv_1",
     parser_version: "parser_v1",
     status: "completed",
+    created_at: "2026-04-19T10:00:00Z",
     started_at: "2026-04-19T10:00:00Z",
     completed_at: "2026-04-19T10:00:30Z",
     error_message: null,
@@ -51,19 +54,33 @@ function makeRun(partial: Partial<RunRecord> = {}): RunRecord {
   };
 }
 
+const WORKSPACE_MOCK = {
+  data: [{ id: "ws-1", slug: "default", name: "Default", description: null, created_at: "", updated_at: "" }],
+  isPending: false,
+  isFetching: false,
+  error: null,
+  refetch: vi.fn(),
+};
+
+function setupMocks(runsQuery: MockQuery) {
+  useQueryMock.mockImplementation((options: { queryKey: unknown[] }) => {
+    const [scope] = options.queryKey;
+    if (scope === "workspaces") return WORKSPACE_MOCK;
+    return runsQuery;
+  });
+}
+
 describe("ScansPage", () => {
   it("loading: renders 5 skeleton rows", () => {
-    useQueryMock.mockReturnValue(makeQuery({ isPending: true }));
+    setupMocks(makeQuery({ isPending: true }));
     render(<ScansPage />);
 
     const rows = screen.getAllByRole("row");
     expect(rows).toHaveLength(6);
   });
 
-  it("empty: renders 'No scans yet' heading and disabled Run button", () => {
-    useQueryMock.mockReturnValue(
-      makeQuery({ data: { workspace: "default", items: [] } }),
-    );
+  it("empty: renders 'No scans yet' heading", () => {
+    setupMocks(makeQuery({ data: { workspace: "default", items: [] } }));
     render(<ScansPage />);
 
     expect(screen.getByText("No scans yet")).toBeInTheDocument();
@@ -72,8 +89,6 @@ describe("ScansPage", () => {
         /A scan asks AI assistants about your industry and checks if they mention your brand/,
       ),
     ).toBeInTheDocument();
-    const runBtn = screen.getByRole("button", { name: /run your first scan/i });
-    expect(runBtn).toBeDisabled();
   });
 
   it("populated: renders a row for each run with provider, model, and status", () => {
@@ -82,7 +97,7 @@ describe("ScansPage", () => {
       makeRun({ id: "run_2", provider: "anthropic", model: "claude-3-5-sonnet", status: "failed", error_message: "Timeout exceeded" }),
       makeRun({ id: "run_3", provider: "perplexity", model: "sonar", status: "running" }),
     ];
-    useQueryMock.mockReturnValue(makeQuery({ data: { workspace: "default", items } }));
+    setupMocks(makeQuery({ data: { workspace: "default", items } }));
     render(<ScansPage />);
 
     expect(screen.getByText("Openai")).toBeInTheDocument();
@@ -104,7 +119,7 @@ describe("ScansPage", () => {
       makeRun({ id: "r4", status: "running" }),
       makeRun({ id: "r5", status: "pending" }),
     ];
-    useQueryMock.mockReturnValue(makeQuery({ data: { workspace: "default", items } }));
+    setupMocks(makeQuery({ data: { workspace: "default", items } }));
     render(<ScansPage />);
 
     expect(screen.getByText("Done")).toBeInTheDocument();
@@ -114,7 +129,7 @@ describe("ScansPage", () => {
   });
 
   it("error: renders alert with the error message", () => {
-    useQueryMock.mockReturnValue(makeQuery({ error: new Error("Network error") }));
+    setupMocks(makeQuery({ error: new Error("Network error") }));
     render(<ScansPage />);
 
     expect(screen.getByRole("alert")).toHaveTextContent(

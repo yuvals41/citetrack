@@ -65,9 +65,12 @@ def patched_prisma(monkeypatch: pytest.MonkeyPatch, mock_workspace_record: dict[
         return store["brand"]
 
     async def create(*, data: dict[str, object]):
+        ws_val = data.get("workspaceId")
+        if ws_val is None:
+            ws_val = cast(dict[str, object], cast(dict[str, object], data["workspace"])["connect"])["id"]
         row = _brand_row(
             brand_id=str(data["id"]),
-            workspace_id=str(data["workspaceId"]),
+            workspace_id=str(ws_val),
             name=str(data["name"]),
             domain=str(data["domain"]),
             aliases=[str(alias) for alias in cast(list[object], data.get("aliases", []))],

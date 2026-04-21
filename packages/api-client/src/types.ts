@@ -158,9 +158,11 @@ export interface RunRecord {
   prompt_version: string;
   parser_version: string;
   status: "pending" | "running" | "completed" | "completed_with_partial_failures" | "failed";
-  started_at: string;
-  completed_at: string | null;
-  error_message: string | null;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  error?: string | null;
+  error_message?: string | null;
 }
 
 export interface RunsResult {

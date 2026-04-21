@@ -23,13 +23,15 @@ class CompetitorRepository:
         return [_competitor_from_model(row) for row in rows]
 
     async def create(self, workspace_id: str, name: str, domain: str) -> CompetitorRecord:
+        now = datetime.now(timezone.utc)
         created = await self.prisma.aiviscompetitor.create(
             data={
                 "id": str(uuid4()),
-                "workspaceId": workspace_id,
+                "workspace": {"connect": {"id": workspace_id}},
                 "name": name.strip(),
                 "domain": normalize_domain(domain),
-                "createdAt": datetime.now(timezone.utc),
+                "createdAt": now,
+                "updatedAt": now,
             }
         )
         return _competitor_from_model(created)

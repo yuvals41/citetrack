@@ -121,10 +121,49 @@ def workspace_store(mock_prisma, clean_user_repo):
             schedules[cast(str, params[0])] = cast(str, params[1])
         return None
 
+    async def brand_find_many(**_kwargs):
+        return []
+
+    def _ws_id_from(data: dict[str, object]) -> str:
+        flat = data.get("workspaceId")
+        if flat:
+            return cast(str, flat)
+        ws = data.get("workspace")
+        if isinstance(ws, dict):
+            connect = ws.get("connect")
+            if isinstance(connect, dict):
+                return cast(str, connect.get("id", ""))
+        return ""
+
+    async def brand_create(**kwargs):
+        data = kwargs.get("data", {})
+        return SimpleNamespace(
+            id=cast(str, data.get("id", "brand-1")),
+            workspaceId=_ws_id_from(data),
+            name=cast(str, data.get("name", "")),
+            domain=cast(str, data.get("domain", "")),
+            aliases=[],
+            createdAt=cast(datetime, data.get("createdAt", datetime.now())),
+        )
+
+    async def competitor_create(**kwargs):
+        data = kwargs.get("data", {})
+        return SimpleNamespace(
+            id=cast(str, data.get("id", "comp-1")),
+            workspaceId=_ws_id_from(data),
+            name=cast(str, data.get("name", "")),
+            domain=cast(str, data.get("domain", "")),
+            createdAt=cast(datetime, data.get("createdAt", datetime.now())),
+            updatedAt=cast(datetime, data.get("createdAt", datetime.now())),
+        )
+
     mock_prisma.aivisworkspace.create.side_effect = create
     mock_prisma.aivisworkspace.find_unique.side_effect = find_unique
     mock_prisma.query_raw.side_effect = query_raw
     mock_prisma.execute_raw.side_effect = execute_raw
+    mock_prisma.aivisbrand.find_many.side_effect = brand_find_many
+    mock_prisma.aivisbrand.create.side_effect = brand_create
+    mock_prisma.aiviscompetitor.create.side_effect = competitor_create
 
     return workspaces
 

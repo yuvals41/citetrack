@@ -1,6 +1,22 @@
 """Tests for FastAPI routes."""
 
+import pytest
 from fastapi.testclient import TestClient
+
+from ai_visibility.api import routes as routes_module
+
+
+class _AlwaysOwnsUserRepo:
+    def user_owns_workspace(self, user_id: str, slug: str) -> bool:
+        return True
+
+    def list_workspaces_for_user(self, user_id: str) -> list[str]:
+        return []
+
+
+@pytest.fixture(autouse=True)
+def _patch_ownership(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(routes_module, "UserRepository", lambda: _AlwaysOwnsUserRepo())
 
 
 class TestHealth:

@@ -12,6 +12,8 @@ vi.mock("@clerk/react", () => ({
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: useQueryMock,
+  useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 
 vi.mock("@citetrack/ui/sidebar", () => ({
@@ -39,9 +41,25 @@ function makeQuery(overrides: Partial<MockQuery>): MockQuery {
   };
 }
 
+const WORKSPACE_MOCK = {
+  data: [{ id: "ws-1", slug: "default", name: "Default", description: null, created_at: "", updated_at: "" }],
+  isPending: false,
+  isFetching: false,
+  error: null,
+  refetch: vi.fn(),
+};
+
+function setupMocks(actionsQuery: MockQuery) {
+  useQueryMock.mockImplementation((options: { queryKey: unknown[] }) => {
+    const [scope] = options.queryKey;
+    if (scope === "workspaces") return WORKSPACE_MOCK;
+    return actionsQuery;
+  });
+}
+
 describe("ActionPlanPage", () => {
   it("renders loading skeletons when query is pending", () => {
-    useQueryMock.mockReturnValue(makeQuery({ isPending: true, isFetching: true }));
+    setupMocks(makeQuery({ isPending: true, isFetching: true }));
     render(<ActionPlanPage />);
 
     expect(screen.getByTestId("loading-skeletons")).toBeInTheDocument();
@@ -49,9 +67,7 @@ describe("ActionPlanPage", () => {
   });
 
   it("renders empty state with Run scan button when items is empty", () => {
-    useQueryMock.mockReturnValue(
-      makeQuery({ data: { workspace: "default", total_actions: 0, items: [] } }),
-    );
+    setupMocks(makeQuery({ data: { workspace: "default", total_actions: 0, items: [] } }));
     render(<ActionPlanPage />);
 
     expect(screen.getByText("No recommendations yet")).toBeInTheDocument();
@@ -60,11 +76,11 @@ describe("ActionPlanPage", () => {
         "Run a scan to get personalized action items based on your visibility data.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Run scan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /run scan/i })).toBeInTheDocument();
   });
 
   it("renders N cards when items has N entries", () => {
-    useQueryMock.mockReturnValue(
+    setupMocks(
       makeQuery({
         data: {
           workspace: "default",
@@ -102,7 +118,7 @@ describe("ActionPlanPage", () => {
   });
 
   it("renders degraded alert when response has .degraded", () => {
-    useQueryMock.mockReturnValue(
+    setupMocks(
       makeQuery({
         data: {
           degraded: {

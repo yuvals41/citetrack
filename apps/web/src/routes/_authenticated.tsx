@@ -1,6 +1,7 @@
 import { SidebarInset, SidebarProvider } from "@citetrack/ui/sidebar";
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { Navigate, Outlet, createFileRoute, useLocation } from "@tanstack/react-router";
 import { AppSidebar } from "#/features/dashboard/components/app-sidebar";
+import { useMyWorkspaces } from "#/features/dashboard/lib/workspaces-hooks";
 import { requireSignedIn } from "#/lib/require-auth";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -9,6 +10,16 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedShell() {
+  const location = useLocation();
+  const workspacesQuery = useMyWorkspaces();
+  const hasLoadedWorkspaces = workspacesQuery.data !== undefined;
+  const hasWorkspace = hasLoadedWorkspaces && workspacesQuery.data.length > 0;
+  const onOnboarding = location.pathname.startsWith("/onboarding");
+
+  if (hasLoadedWorkspaces && !hasWorkspace && !onOnboarding) {
+    return <Navigate to="/onboarding" />;
+  }
+
   return (
     <SidebarProvider className="h-svh">
       <AppSidebar />

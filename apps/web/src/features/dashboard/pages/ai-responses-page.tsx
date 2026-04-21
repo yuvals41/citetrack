@@ -9,11 +9,19 @@ import { PageHeader } from "../components/page-header";
 import { ResponseCard } from "../components/response-card";
 import { useResponses } from "../lib/responses-hooks";
 import { useRuns } from "../lib/runs-hooks";
+import { useMyWorkspaces } from "../lib/workspaces-hooks";
 
 const ALL_RUNS = "__all__";
 
 interface AIResponsesPageProps {
   workspaceSlug?: string;
+}
+
+function formatRunDate(value: string | null | undefined): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString();
 }
 
 function readRunIdFromUrl(): string {
@@ -54,7 +62,9 @@ function ResponseCardSkeleton({ index }: { index: number }) {
   );
 }
 
-export function AIResponsesPage({ workspaceSlug = "default" }: AIResponsesPageProps) {
+export function AIResponsesPage({ workspaceSlug: propSlug }: AIResponsesPageProps) {
+  const workspacesQuery = useMyWorkspaces();
+  const workspaceSlug = propSlug ?? workspacesQuery.data?.[0]?.slug ?? "default";
   const [selectedRunId, setSelectedRunId] = useState<string>(readRunIdFromUrl);
 
   const runs = useRuns(workspaceSlug);
@@ -80,7 +90,7 @@ export function AIResponsesPage({ workspaceSlug = "default" }: AIResponsesPagePr
       seen.add(run.id);
       options.push({
         value: run.id,
-        label: `${run.provider} · ${run.model} · ${new Date(run.started_at).toLocaleString()}`,
+        label: `${run.provider} · ${run.model} · ${formatRunDate(run.created_at ?? run.started_at)}`,
       });
     }
 

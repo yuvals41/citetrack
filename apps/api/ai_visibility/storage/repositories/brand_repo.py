@@ -36,21 +36,23 @@ class BrandRepository:
         *,
         name: str,
         domain: str,
-        aliases: list[str],
+        aliases: list[str] | None = None,
     ) -> BrandRecord:
+        _ = aliases
         existing = await self.get_primary_for_workspace(workspace_id)
         payload = {
             "name": name.strip(),
             "domain": normalize_domain(domain),
-            "aliases": [alias.strip() for alias in aliases if alias.strip()],
         }
 
         if existing is None:
+            now = datetime.now(timezone.utc)
             created = await self.prisma.aivisbrand.create(
                 data={
                     "id": str(uuid4()),
-                    "workspaceId": workspace_id,
-                    "createdAt": datetime.now(timezone.utc),
+                    "workspace": {"connect": {"id": workspace_id}},
+                    "createdAt": now,
+                    "updatedAt": now,
                     **payload,
                 }
             )
@@ -64,11 +66,10 @@ class BrandRepository:
 
 
 def _brand_from_model(row: Any) -> BrandRecord:
-    aliases = cast(list[object] | None, getattr(row, "aliases", None))
     return BrandRecord(
         id=str(row.id),
         workspace_id=str(row.workspaceId),
         name=str(row.name),
         domain=str(row.domain),
-        aliases=[str(alias) for alias in aliases] if isinstance(aliases, list) else [],
+        aliases=[],
     )

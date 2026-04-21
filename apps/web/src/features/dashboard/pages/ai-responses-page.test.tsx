@@ -46,6 +46,15 @@ function mockQueryState(
 ) {
   useQueryMock.mockImplementation((options: { queryKey: unknown[] }) => {
     const [scope] = options.queryKey;
+    if (scope === "workspaces") {
+      return {
+        data: [{ id: "ws-1", slug: "default", name: "Default", description: null, created_at: "", updated_at: "" }],
+        isPending: false,
+        isFetching: false,
+        error: null,
+        refetch: vi.fn(),
+      };
+    }
     if (scope === "runs") {
       return runsQuery;
     }
@@ -68,6 +77,7 @@ function runsData(): RunsResult {
         prompt_version: "v1",
         parser_version: "p1",
         status: "completed",
+        created_at: "2026-01-01T00:00:00Z",
         started_at: "2026-01-01T00:00:00Z",
         completed_at: "2026-01-01T00:01:00Z",
         error_message: null,
@@ -80,6 +90,7 @@ function runsData(): RunsResult {
         prompt_version: "v1",
         parser_version: "p1",
         status: "completed",
+        created_at: "2026-01-02T00:00:00Z",
         started_at: "2026-01-02T00:00:00Z",
         completed_at: "2026-01-02T00:01:00Z",
         error_message: null,

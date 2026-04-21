@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, cast
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 
 from ai_visibility.api.auth import get_current_user_id
@@ -14,10 +14,23 @@ from ai_visibility.pixel.events import VALID_PIXEL_SOURCES
 from ai_visibility.pixel.events import get_pixel_stats
 from ai_visibility.pixel.events import store_pixel_event
 from ai_visibility.pixel.snippet import generate_pixel_snippet
+from ai_visibility.storage.prisma_connection import get_prisma
+from ai_visibility.storage.repositories.user_repo import UserRepository
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/pixel", tags=["pixel"])
+
+
+async def _require_pixel_ownership(user_id: str, workspace_id: str) -> None:
+    prisma = cast(object, await get_prisma())
+    row = await cast(Any, prisma).aivisworkspace.find_unique(where={"id": workspace_id})
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
+    slug = getattr(row, "slug", None)
+    if slug is None or not UserRepository().user_owns_workspace(user_id, slug):
+        logger.warning("pixel.forbidden user=%s workspace_id=%s", user_id, workspace_id)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace not accessible")
 
 
 @router.post("/event")
@@ -38,8 +51,7 @@ async def receive_pixel_event(request: Request) -> Response:
 
 @router.get("/snippet/{workspace_id}")
 async def get_snippet(workspace_id: str, request: Request, user_id: str = Depends(get_current_user_id)) -> Response:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    await _require_pixel_ownership(user_id, workspace_id)
     api_base_url = f"{request.url.scheme}://{request.url.netloc}"
     snippet = generate_pixel_snippet(workspace_id=workspace_id, api_base_url=api_base_url)
     return Response(content=snippet, media_type="application/javascript")
@@ -47,8 +59,7 @@ async def get_snippet(workspace_id: str, request: Request, user_id: str = Depend
 
 @router.get("/stats/{workspace_id}")
 async def get_stats(workspace_id: str, days: int = 30, user_id: str = Depends(get_current_user_id)) -> dict[str, Any]:
-    # TODO Phase 3d: scope query by user_id via workspace ownership.
-    _ = user_id
+    await _require_pixel_ownership(user_id, workspace_id)
     return await get_pixel_stats(workspace_id=workspace_id, days=days)
 
 

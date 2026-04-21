@@ -33,7 +33,12 @@ def patch_mentions_dependencies(monkeypatch: pytest.MonkeyPatch, mock_prisma):
             }
         return None
 
+    class _AlwaysOwnsUserRepo:
+        def user_owns_workspace(self, user_id: str, slug: str) -> bool:  # noqa: ARG002
+            return True
+
     monkeypatch.setattr(mentions_routes, "get_prisma", _fake_get_prisma)
+    monkeypatch.setattr(mentions_routes, "UserRepository", lambda: _AlwaysOwnsUserRepo())
     monkeypatch.setattr(WorkspaceRepository, "get_by_slug", _fake_get_by_slug)
     return mock_prisma
 
