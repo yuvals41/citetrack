@@ -6,13 +6,14 @@ from typing import Annotated, cast
 from typing import TypedDict
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 
 from ai_visibility.api.auth import get_current_user_id
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
 from ai_visibility.models.onboarding import OnboardingCompleteResponse, OnboardingPayload
+from ai_visibility.runs.orchestrator import RunOrchestrator
 from ai_visibility.storage.prisma_connection import get_prisma
 from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
@@ -20,6 +21,8 @@ from ai_visibility.storage.types import WorkspaceRecord
 
 router = APIRouter(tags=["onboarding"])
 CurrentUserId = Annotated[str, Depends(get_current_user_id)]
+
+_FIRST_SCAN_PROVIDER = "anthropic"
 
 
 class WorkspaceOnboardingMetadata(TypedDict):
@@ -31,10 +34,26 @@ class WorkspaceOnboardingMetadata(TypedDict):
 _workspace_metadata: dict[str, WorkspaceOnboardingMetadata] = {}
 
 
+async def _fire_first_scan(workspace_slug: str, provider: str) -> None:
+    try:
+        orchestrator = RunOrchestrator(workspace_slug=workspace_slug, provider=provider)
+        result = await orchestrator.scan()
+        logger.info(
+            "onboarding.first_scan.done slug={} provider={} status={} results={}",
+            workspace_slug,
+            provider,
+            result.status,
+            result.results_count,
+        )
+    except Exception:
+        logger.exception("onboarding.first_scan.failed slug={} provider={}", workspace_slug, provider)
+
+
 @router.post("/onboarding/complete", response_model=OnboardingCompleteResponse)
 async def complete_onboarding(
     payload: OnboardingPayload,
     user_id: CurrentUserId,
+    background_tasks: BackgroundTasks,
 ) -> OnboardingCompleteResponse | JSONResponse:
     user_repo = UserRepository()
     base_slug = _slugify(payload.brand.name)
@@ -90,6 +109,7 @@ async def complete_onboarding(
             created["id"],
             workspace_slug,
         )
+        background_tasks.add_task(_fire_first_scan, workspace_slug, _FIRST_SCAN_PROVIDER)
         return OnboardingCompleteResponse(workspace_slug=workspace_slug)
     except HTTPException:
         raise

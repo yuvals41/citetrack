@@ -54,9 +54,15 @@ def clean_user_repo(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, mock_prisma
     async def _fake_get_prisma():
         return mock_prisma
 
+    scheduled_scans: list[tuple[str, str]] = []
+
+    async def _fake_first_scan(workspace_slug: str, provider: str) -> None:
+        scheduled_scans.append((workspace_slug, provider))
+
     monkeypatch.setattr(user_routes, "get_prisma", _fake_get_prisma)
     monkeypatch.setattr(onboarding_routes, "get_prisma", _fake_get_prisma)
-    return storage_path
+    monkeypatch.setattr(onboarding_routes, "_fire_first_scan", _fake_first_scan)
+    return SimpleNamespace(storage_path=storage_path, scheduled_scans=scheduled_scans)
 
 
 @pytest.fixture
@@ -151,6 +157,28 @@ def test_onboarding_idempotent(
     assert first.status_code == 200
     assert second.status_code == 200
     assert first.json() == second.json() == {"workspace_slug": "acme-corp"}
+
+
+def test_onboarding_schedules_first_scan(
+    auth_client: TestClient,
+    workspace_store,
+    clean_user_repo,
+    onboarding_payload,
+) -> None:
+    response = auth_client.post("/api/v1/onboarding/complete", json=onboarding_payload)
+    assert response.status_code == 200
+    assert clean_user_repo.scheduled_scans == [("acme-corp", "anthropic")]
+
+
+def test_onboarding_idempotent_does_not_schedule_second_scan(
+    auth_client: TestClient,
+    workspace_store,
+    clean_user_repo,
+    onboarding_payload,
+) -> None:
+    auth_client.post("/api/v1/onboarding/complete", json=onboarding_payload)
+    auth_client.post("/api/v1/onboarding/complete", json=onboarding_payload)
+    assert clean_user_repo.scheduled_scans == [("acme-corp", "anthropic")]
 
 
 def test_onboarding_invalid_domain(
