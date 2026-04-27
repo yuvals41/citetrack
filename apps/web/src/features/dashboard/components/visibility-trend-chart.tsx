@@ -1,26 +1,32 @@
 import type { TrendPoint } from "@citetrack/api-client";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@citetrack/ui/chart";
 
 interface VisibilityTrendChartProps {
   points: TrendPoint[];
 }
 
-const CHART_W = 600;
-const CHART_H = 180;
-const PAD = { top: 12, right: 16, bottom: 32, left: 36 };
+const chartConfig = {
+  visibility: {
+    label: "Visibility",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
 
-const plotW = CHART_W - PAD.left - PAD.right;
-const plotH = CHART_H - PAD.top - PAD.bottom;
-
-const GRID_LINES = [0, 25, 50, 75, 100];
-
-function toX(index: number, total: number): number {
-  if (total <= 1) return PAD.left;
-  return PAD.left + (index / (total - 1)) * plotW;
-}
-
-function toY(score: number): number {
-  const clamped = Math.min(100, Math.max(0, score * 100));
-  return PAD.top + plotH - (clamped / 100) * plotH;
+function formatRunId(runId: string): string {
+  return runId.slice(0, 8);
 }
 
 export function VisibilityTrendChart({ points }: VisibilityTrendChartProps) {
@@ -32,97 +38,61 @@ export function VisibilityTrendChart({ points }: VisibilityTrendChartProps) {
     );
   }
 
-  const coords = points.map((pt, i) => ({
-    x: toX(i, points.length),
-    y: toY(pt.visibility_score),
+  const data = points.map((pt) => ({
+    name: formatRunId(pt.run_id),
+    visibility: Math.round(pt.visibility_score * 100),
   }));
-
-  const polylinePoints = coords.map((c) => `${c.x},${c.y}`).join(" ");
-  const firstCoord = coords[0];
-  const lastCoord = coords[coords.length - 1];
-  const areaPath =
-    firstCoord !== undefined && lastCoord !== undefined
-      ? `M ${firstCoord.x},${firstCoord.y} ${coords
-          .slice(1)
-          .map((c) => `L ${c.x},${c.y}`)
-          .join(" ")} L ${lastCoord.x},${PAD.top + plotH} L ${firstCoord.x},${PAD.top + plotH} Z`
-      : "";
 
   const firstPoint = points[0];
   const lastPoint = points[points.length - 1];
 
   return (
-    <svg
-      viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-      className="w-full h-48"
-      aria-label="Visibility trend chart"
-      role="img"
-    >
-      {GRID_LINES.map((val) => {
-        const y = toY(val / 100);
-        return (
-          <g key={val}>
-            <line
-              x1={PAD.left}
-              y1={y}
-              x2={PAD.left + plotW}
-              y2={y}
-              stroke="currentColor"
-              strokeOpacity={0.08}
-              strokeWidth={1}
+    <div role="img" aria-label="Visibility trend chart" className="w-full">
+      <ChartContainer config={chartConfig} className="h-48 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} accessibilityLayer>
+            <defs>
+              <linearGradient id="visibilityFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeOpacity={0.08} vertical={false} />
+            <XAxis
+              dataKey="name"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.6 }}
+              interval="preserveStartEnd"
             />
-            <text
-              x={PAD.left - 6}
-              y={y}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fontSize={10}
-              className="fill-muted-foreground"
-              fillOpacity={0.6}
-            >
-              {val}
-            </text>
-          </g>
-        );
-      })}
-
-      {areaPath && (
-        <path d={areaPath} fill="currentColor" fillOpacity={0.05} />
+            <YAxis
+              domain={[0, 100]}
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.6 }}
+              width={30}
+            />
+            <Tooltip content={<ChartTooltipContent />} />
+            <Area
+              type="monotone"
+              dataKey="visibility"
+              stroke="var(--chart-1)"
+              strokeWidth={2}
+              fill="url(#visibilityFill)"
+              dot={{ r: 2.5, fill: "var(--chart-1)", strokeWidth: 0 }}
+              activeDot={{ r: 4 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+      {firstPoint !== undefined && (
+        <div className="flex justify-between mt-1 px-1 text-[10px] text-muted-foreground/60 select-none">
+          <span>{formatRunId(firstPoint.run_id)}</span>
+          {lastPoint !== undefined && points.length > 1 && (
+            <span>{formatRunId(lastPoint.run_id)}</span>
+          )}
+        </div>
       )}
-
-      <polyline
-        points={polylinePoints}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-
-      {firstPoint !== undefined && firstCoord !== undefined && (
-        <text
-          x={firstCoord.x}
-          y={CHART_H - 6}
-          textAnchor="start"
-          fontSize={10}
-          className="fill-muted-foreground"
-          fillOpacity={0.6}
-        >
-          {firstPoint.run_id.slice(0, 8)}
-        </text>
-      )}
-      {lastPoint !== undefined && lastCoord !== undefined && points.length > 1 && (
-        <text
-          x={lastCoord.x}
-          y={CHART_H - 6}
-          textAnchor="end"
-          fontSize={10}
-          className="fill-muted-foreground"
-          fillOpacity={0.6}
-        >
-          {lastPoint.run_id.slice(0, 8)}
-        </text>
-      )}
-    </svg>
+    </div>
   );
 }

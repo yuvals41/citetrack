@@ -1,4 +1,6 @@
 import type { ProviderBreakdownItem } from "@citetrack/api-client";
+import { Bar, BarChart, Cell, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { ChartContainer, type ChartConfig } from "@citetrack/ui/chart";
 
 interface ProviderBreakdownChartProps {
   items: ProviderBreakdownItem[];
@@ -18,6 +20,13 @@ function providerLabel(key: string): string {
   return PROVIDER_LABELS[key] ?? key;
 }
 
+const chartConfig = {
+  visibility: {
+    label: "Visibility %",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
+
 export function ProviderBreakdownChart({ items }: ProviderBreakdownChartProps) {
   if (items.length === 0) {
     return (
@@ -27,36 +36,60 @@ export function ProviderBreakdownChart({ items }: ProviderBreakdownChartProps) {
     );
   }
 
+  const data = items.map((item) => {
+    const rate = item.responses === 0 ? 0 : item.mentions / item.responses;
+    const pct = Math.round(rate * 100);
+    const noData = item.responses === 0;
+    return {
+      name: providerLabel(item.provider),
+      provider: item.provider,
+      visibility: pct,
+      noData,
+      valueLabel: noData
+        ? "not scanned"
+        : `${item.mentions}/${item.responses} · ${pct}%`,
+    };
+  });
+
   return (
     <div className="space-y-3" aria-label="Provider visibility breakdown">
-      {items.map((item) => {
-        const rate = item.responses === 0 ? 0 : item.mentions / item.responses;
-        const pct = Math.round(rate * 100);
-        const noData = item.responses === 0;
-        return (
-          <div key={item.provider} className="space-y-1.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium">{providerLabel(item.provider)}</span>
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {noData ? "not scanned" : `${item.mentions}/${item.responses} · ${pct}%`}
-              </span>
-            </div>
-            <div
-              className="h-2 w-full overflow-hidden rounded-full bg-foreground/5"
-              role="progressbar"
-              aria-valuenow={pct}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`${providerLabel(item.provider)} visibility ${pct}%`}
-            >
-              <div
-                className="h-full rounded-full bg-foreground/70 transition-all"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
+      {data.map((item) => (
+        <div key={item.provider} className="space-y-1.5">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-sm font-medium">{item.name}</span>
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {item.valueLabel}
+            </span>
           </div>
-        );
-      })}
+        </div>
+      ))}
+      <ChartContainer
+        config={chartConfig}
+        className="w-full"
+        style={{ height: Math.max(data.length * 20, 40) }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            barSize={8}
+            accessibilityLayer
+          >
+            <XAxis type="number" hide domain={[0, 100]} />
+            <YAxis type="category" dataKey="name" hide />
+            <Bar dataKey="visibility" radius={[0, 3, 3, 0]}>
+              {data.map((entry) => (
+                <Cell
+                  key={entry.provider}
+                  fill="var(--chart-1)"
+                  fillOpacity={entry.noData ? 0.15 : 0.7}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartContainer>
     </div>
   );
 }

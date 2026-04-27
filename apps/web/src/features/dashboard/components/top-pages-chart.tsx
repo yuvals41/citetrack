@@ -1,4 +1,6 @@
 import type { TopPageItem } from "@citetrack/api-client";
+import { Bar, BarChart, Cell, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { ChartContainer, type ChartConfig } from "@citetrack/ui/chart";
 
 interface TopPagesChartProps {
   items: TopPageItem[];
@@ -14,6 +16,13 @@ function shortenUrl(url: string): string {
   }
 }
 
+const chartConfig = {
+  count: {
+    label: "Citations",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
+
 export function TopPagesChart({ items }: TopPagesChartProps) {
   if (items.length === 0) {
     return (
@@ -23,12 +32,15 @@ export function TopPagesChart({ items }: TopPagesChartProps) {
     );
   }
 
-  const maxCount = Math.max(...items.map((item) => item.count), 1);
+  const data = items.map((item) => ({
+    name: shortenUrl(item.url),
+    url: item.url,
+    count: item.count,
+  }));
 
   return (
     <div className="space-y-2.5" aria-label="Top cited pages">
       {items.map((item) => {
-        const pct = Math.round((item.count / maxCount) * 100);
         const label = shortenUrl(item.url);
         return (
           <div key={item.url} className="space-y-1">
@@ -46,18 +58,32 @@ export function TopPagesChart({ items }: TopPagesChartProps) {
                 {item.count} {item.count === 1 ? "citation" : "citations"}
               </span>
             </div>
-            <div
-              className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/5"
-              role="progressbar"
-              aria-valuenow={item.count}
-              aria-valuemin={0}
-              aria-valuemax={maxCount}
-            >
-              <div className="h-full rounded-full bg-foreground/70" style={{ width: `${pct}%` }} />
-            </div>
           </div>
         );
       })}
+      <ChartContainer
+        config={chartConfig}
+        className="w-full"
+        style={{ height: Math.max(data.length * 20, 40) }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            barSize={6}
+            accessibilityLayer
+          >
+            <XAxis type="number" hide domain={[0, "dataMax"]} />
+            <YAxis type="category" dataKey="name" hide />
+            <Bar dataKey="count" radius={[0, 3, 3, 0]}>
+              {data.map((entry) => (
+                <Cell key={entry.url} fill="var(--chart-1)" fillOpacity={0.7} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartContainer>
     </div>
   );
 }

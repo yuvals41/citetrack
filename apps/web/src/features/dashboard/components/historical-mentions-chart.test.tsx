@@ -8,7 +8,7 @@ describe("HistoricalMentionsChart", () => {
     expect(screen.getByText(/no run history yet/i)).toBeInTheDocument();
   });
 
-  it("renders a chart svg when items are present", () => {
+  it("renders a chart when items are present", () => {
     const { container } = render(
       <HistoricalMentionsChart
         items={[
@@ -17,8 +17,8 @@ describe("HistoricalMentionsChart", () => {
         ]}
       />,
     );
-    const svg = container.querySelector("svg");
-    expect(svg).not.toBeNull();
-    expect(svg?.getAttribute("aria-label")).toMatch(/historical mentions/i);
+    const chartWrapper = container.querySelector('[aria-label="Historical mentions chart"]');
+    expect(chartWrapper).not.toBeNull();
+    expect(chartWrapper?.getAttribute("aria-label")).toMatch(/historical mentions/i);
   });
 });

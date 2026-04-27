@@ -1,14 +1,18 @@
 import type { MentionTypeItem } from "@citetrack/api-client";
+import { RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
+import { ChartContainer, type ChartConfig } from "@citetrack/ui/chart";
 
 interface MentionTypeDonutProps {
   items: MentionTypeItem[];
   totalResponses: number;
 }
 
-const SIZE = 160;
-const STROKE = 14;
-const RADIUS = (SIZE - STROKE) / 2;
-const CIRC = 2 * Math.PI * RADIUS;
+const chartConfig = {
+  mentioned: {
+    label: "Mentioned",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
 
 export function MentionTypeDonut({ items, totalResponses }: MentionTypeDonutProps) {
   if (totalResponses === 0) {
@@ -22,38 +26,30 @@ export function MentionTypeDonut({ items, totalResponses }: MentionTypeDonutProp
   const mentioned = items.find((i) => i.label === "mentioned")?.count ?? 0;
   const rate = mentioned / totalResponses;
   const pct = Math.round(rate * 100);
-  const offset = CIRC * (1 - rate);
+
+  const data = [{ name: "mentioned", value: pct, fill: "var(--chart-1)" }];
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="relative">
-        <svg
-          viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="h-40 w-40 -rotate-90"
-          role="img"
+      <div className="relative h-40 w-40">
+        <ChartContainer
+          config={chartConfig}
+          className="h-full w-full"
           aria-label={`${pct}% of responses mentioned brand`}
         >
-          <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
-            stroke="currentColor"
-            strokeOpacity={0.08}
-            strokeWidth={STROKE}
-            fill="none"
-          />
-          <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
-            stroke="currentColor"
-            strokeWidth={STROKE}
-            fill="none"
-            strokeDasharray={CIRC}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-          />
-        </svg>
+          <ResponsiveContainer width="100%" height="100%">
+            <RadialBarChart
+              data={data}
+              innerRadius="68%"
+              outerRadius="90%"
+              startAngle={90}
+              endAngle={90 - 360 * (pct / 100)}
+              barSize={14}
+            >
+              <RadialBar dataKey="value" background isAnimationActive={false} />
+            </RadialBarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <div className="text-2xl font-semibold tabular-nums">{pct}%</div>
           <div className="text-xs text-muted-foreground">mentioned</div>
