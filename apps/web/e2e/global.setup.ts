@@ -4,31 +4,29 @@ import { fileURLToPath } from "node:url";
 import { createClerkClient } from "@clerk/backend";
 import { clerkSetup } from "@clerk/testing/playwright";
 import { test as setup } from "@playwright/test";
-import { signInViaUI } from "./helpers/clerk-sign-in";
+import { getClerkTestingEnv, hasClerkTestingEnv } from "./helpers/clerk-env";
+import { signInAsTestUser } from "./helpers/auth";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const authFile = path.resolve(__dirname, "../playwright/.clerk/user.json");
+export const authFile = path.resolve(__dirname, "../playwright/.clerk/user.json");
 const ephemeralFile = path.resolve(__dirname, "../playwright/.clerk/ephemeral-users.json");
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is required for E2E. Set it in apps/web/.env.local`);
-  }
-  return value;
-}
 
 setup.describe.configure({ mode: "serial" });
 
+setup("prepare auth state file", async () => {
+  fs.mkdirSync(path.dirname(authFile), { recursive: true });
+  fs.writeFileSync(authFile, JSON.stringify({ cookies: [], origins: [] }, null, 2));
+});
+
 setup("clerk setup (fetch testing token)", async () => {
+  setup.skip(!hasClerkTestingEnv(), "Clerk test-mode env vars are not configured.");
   await clerkSetup();
 });
 
 setup("ensure persistent test user", async () => {
-  const email = requireEnv("E2E_CLERK_USER_EMAIL");
-  const password = requireEnv("E2E_CLERK_USER_PASSWORD");
-  const secretKey = requireEnv("CLERK_SECRET_KEY");
+  setup.skip(!hasClerkTestingEnv(), "Clerk test-mode env vars are not configured.");
+  const { email, password, secretKey } = getClerkTestingEnv();
 
   if (!email.includes("+clerk_test@")) {
     throw new Error(`E2E_CLERK_USER_EMAIL must use +clerk_test subaddress (got ${email})`);
@@ -62,7 +60,8 @@ setup("ensure persistent test user", async () => {
 });
 
 setup("authenticate + save storage state", async ({ page }) => {
-  await signInViaUI(page, requireEnv("E2E_CLERK_USER_EMAIL"), requireEnv("E2E_CLERK_USER_PASSWORD"));
+  setup.skip(!hasClerkTestingEnv(), "Clerk test-mode env vars are not configured.");
+  await signInAsTestUser(page);
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
   await page.context().storageState({ path: authFile });
 });

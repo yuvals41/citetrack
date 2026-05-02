@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false, reportMissingTypeArgument=false
+
 """
 RabbitMQ worker for AI Visibility scan jobs.
 

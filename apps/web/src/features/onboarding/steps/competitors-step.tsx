@@ -77,7 +77,7 @@ export function CompetitorsStep({
   };
 
   return (
-    <div className="space-y-6">
+    <div data-testid="onboarding-step-2" className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-base font-medium">Who are your top competitors?</h2>
         <p className="text-sm text-muted-foreground">
@@ -119,10 +119,11 @@ export function CompetitorsStep({
       {onResearchAgain &&
         (researchState.status === "success" || researchState.status === "error") && (
           <div className="flex">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
+              <Button
+                data-testid="onboarding-step-2-research-again"
+                type="button"
+                variant="outline"
+                size="sm"
               onClick={handleRunAgain}
             >
               <RotateCw />
@@ -186,6 +187,7 @@ export function CompetitorsStep({
 
           {fields.length < 5 && (
             <Button
+              data-testid="onboarding-step-2-add-competitor"
               type="button"
               variant="outline"
               onClick={() => append({ name: "", domain: "" })}
@@ -197,11 +199,11 @@ export function CompetitorsStep({
           )}
 
           <div className="flex justify-between pt-2">
-            <Button type="button" variant="ghost" onClick={onBack}>
+            <Button data-testid="onboarding-step-2-back" type="button" variant="ghost" onClick={onBack}>
               <ArrowLeft />
               Back
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button data-testid="onboarding-step-2-continue" type="submit" disabled={isLoading}>
               Continue
             </Button>
           </div>

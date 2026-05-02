@@ -4,11 +4,14 @@ import asyncio
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel
 
 from .config import LLMConfig
+
+if TYPE_CHECKING:
+    from ai_visibility.runs.scan_strategy import ProviderConfig
 
 
 class ProviderResponse(BaseModel):

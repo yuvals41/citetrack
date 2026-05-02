@@ -6,7 +6,7 @@ import asyncio
 import concurrent.futures
 from collections.abc import Callable, Coroutine, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from loguru import logger
 
@@ -125,8 +125,8 @@ def build_adapters(
     providers: Sequence[str],
     run_async: Callable[[Coroutine[object, object, ProviderResponse]], ProviderResponse],
     strategy_version: str,
-) -> dict[str, ScanAdapter]:
-    adapters: dict[str, ScanAdapter] = {}
+) -> dict[str, object]:
+    adapters: dict[str, object] = {}
 
     for provider in providers:
         provider_key = resolve_provider_key(provider)
@@ -209,11 +209,11 @@ def build_citation_candidates(
         )
         candidates.append(CitationCandidate(url=url, title=title or url, cited_text=cited_text))
 
-    for citation in extracted_citations:
-        if citation.url is None or not citation.url.strip():
+    for extracted_citation in extracted_citations:
+        if extracted_citation.url is None or not extracted_citation.url.strip():
             continue
-        url = citation.url.strip()
-        title = (citation.domain or url).strip()
+        url = extracted_citation.url.strip()
+        title = (extracted_citation.domain or url).strip()
         candidates.append(CitationCandidate(url=url, title=title, cited_text=None))
 
     deduped: dict[tuple[str, str, str | None], CitationCandidate] = {}
@@ -260,7 +260,7 @@ async def execute_scan_pipeline(
     competitors: Sequence[str],
     location: LocationContext,
     strategy: ScanStrategy,
-    adapters: Mapping[str, ScanAdapter],
+    adapters: Mapping[str, object],
     workspace_slug: str,
     prompt_renderer: PromptRenderer | None = None,
     extractor: ExtractionPipeline | None = None,
@@ -377,7 +377,7 @@ async def _execute_provider_prompts(
     provider: str,
     provider_key: str,
     provider_config: ProviderConfig,
-    adapter: ScanAdapter,
+    adapter: object,
     prompts: Sequence[PipelinePrompt],
     brand_names: Sequence[str],
     competitors: Sequence[str],
@@ -398,12 +398,21 @@ async def _execute_provider_prompts(
                 )
                 rendered_with_location = inject_location_prompt(rendered, provider_key, location)
 
-                adapter_result = adapter.execute(
-                    rendered_with_location,
-                    workspace_slug,
-                    provider_config,
-                    location,
-                )
+                if provider_key == "google_ai_mode_serpapi":
+                    from ai_visibility.providers.adapters.google_ai_mode_serpapi import GoogleAIModeSerpAPIAdapter
+
+                    adapter_result = await cast(GoogleAIModeSerpAPIAdapter, adapter).execute(
+                        rendered_with_location,
+                        brand_names[0],
+                        location,
+                    )
+                else:
+                    adapter_result = cast(ScanAdapter, adapter).execute(
+                        rendered_with_location,
+                        workspace_slug,
+                        provider_config,
+                        location,
+                    )
                 validated = AdapterResult.model_validate(adapter_result)
 
                 parser_result = extractor.extract(validated.raw_response)

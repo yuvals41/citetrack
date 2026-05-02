@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false
+
 import os
 
 import httpx
@@ -22,6 +24,7 @@ async def send_webhook(alerts: list[dict[str, str]], workspace_slug: str) -> boo
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            payload: dict[str, object]
             if "hooks.slack.com" in webhook_url:
                 payload = {"text": text}
             elif "discord.com" in webhook_url:

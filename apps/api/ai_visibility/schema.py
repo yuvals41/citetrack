@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false
+
 """
 Golden Contract for AI Visibility scan service.
 
@@ -5,14 +7,23 @@ These Pydantic models define the job input/output/progress shapes.
 Both the worker (worker_job.py) and the SDK stay in sync with these definitions.
 """
 
-from typing import Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-try:
-    from solaraai_job_sdk import BaseJobInput
-except ImportError:
-    BaseJobInput = BaseModel  # type: ignore[assignment,misc]
+if TYPE_CHECKING:
+    from solaraai_job_sdk import BaseJobInput as _SDKBaseJobInput
+else:
+    try:
+        from solaraai_job_sdk import BaseJobInput as _SDKBaseJobInput
+    except ImportError:
+        class _SDKBaseJobInput(BaseModel):
+            job_id: str | None = None
+            metadata: dict[str, Any] | None = None
+
+
+class BaseJobInput(_SDKBaseJobInput):
+    pass
 
 
 class PromptDefinition(BaseModel):

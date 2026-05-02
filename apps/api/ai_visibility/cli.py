@@ -1,5 +1,7 @@
 """CLI interface for AI Visibility."""
 
+# pyright: reportMissingImports=false
+
 from dotenv import load_dotenv
 
 _ = load_dotenv(override=False)
@@ -1043,7 +1045,8 @@ def main() -> None:
             logger.info(f"[cli] Status: {prompts_result['status']}")
             logger.info(f"[cli] Total Prompts: {prompts_result['total_count']}")
             logger.info(f"[cli] Categories: {', '.join(prompts_result['categories'])}")
-            for category, prompts in prompts_result.get("by_category", {}).items():
+            by_category = prompts_result.get("by_category", {})
+            for category, prompts in cast(dict[str, list[object]], by_category).items():
                 logger.info(f"[cli]   {category}: {len(prompts)} prompts")
     elif command == "list-workspaces":
         workspaces_result = asyncio.run(list_workspaces(_format_arg=format_arg))

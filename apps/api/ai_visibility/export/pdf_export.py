@@ -115,8 +115,8 @@ async def generate_dashboard_pdf(data: list[dict[str, object]], workspace_name: 
         ["Average Position", _coalesce(normalized_data, "position", _coalesce(normalized_data, "avg_position", "0"))],
         ["Sentiment", _coalesce(normalized_data, "sentiment", "n/a")],
     ]
-    for row in summary_rows:
-        _table_row(pdf, row, [70, 120])
+    for summary_row in summary_rows:
+        _table_row(pdf, summary_row, [70, 120])
 
     pdf.ln(4)
     pdf.set_font("Helvetica", "B", 12)
@@ -126,14 +126,14 @@ async def generate_dashboard_pdf(data: list[dict[str, object]], workspace_name: 
     if not normalized_data:
         _table_row(pdf, ["-", "-", "-", "No scans"], [40, 35, 55, 60])
     else:
-        for row in normalized_data[:50]:
+        for scan_row in normalized_data[:50]:
             _table_row(
                 pdf,
                 [
-                    _safe_text(row.get("provider", "")),
-                    _safe_text(row.get("status", "")),
-                    _safe_text(row.get("model", "")),
-                    _safe_text(row.get("created_at", "")),
+                    _safe_text(scan_row.get("provider", "")),
+                    _safe_text(scan_row.get("status", "")),
+                    _safe_text(scan_row.get("model", "")),
+                    _safe_text(scan_row.get("created_at", "")),
                 ],
                 [40, 35, 55, 60],
             )

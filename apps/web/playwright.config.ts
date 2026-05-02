@@ -11,6 +11,7 @@ loadEnv({ path: path.resolve(__dirname, ".env"), override: false });
 
 const PORT = 3002;
 const baseURL = `http://localhost:${PORT}`;
+const authFile = path.resolve(__dirname, "playwright/.clerk/user.json");
 
 export default defineConfig({
   testDir: "./e2e",
@@ -22,6 +23,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "retry-with-trace",
+    screenshot: "only-on-failure",
   },
   webServer: {
     command: `bunx vite dev --port ${PORT}`,
@@ -31,28 +33,23 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "global setup",
+      name: "setup",
       testMatch: /global\.setup\.ts$/,
-      teardown: "global teardown",
+      teardown: "teardown",
     },
     {
-      name: "global teardown",
+      name: "teardown",
       testMatch: /global\.teardown\.ts$/,
     },
     {
-      name: "public",
-      testMatch: /.*\.public\.spec\.ts$/,
-      use: { ...devices["Desktop Chrome"] },
-    },
-    {
-      name: "authenticated",
-      testIgnore: [/global\.(setup|teardown)\.ts$/, /.*\.public\.spec\.ts$/],
+      name: "chromium",
       testMatch: /.*\.spec\.ts$/,
       use: {
         ...devices["Desktop Chrome"],
-        storageState: "playwright/.clerk/user.json",
+        storageState: authFile,
       },
-      dependencies: ["global setup"],
+      testIgnore: [/global\.(setup|teardown)\.ts$/],
+      dependencies: ["setup"],
     },
   ],
 });

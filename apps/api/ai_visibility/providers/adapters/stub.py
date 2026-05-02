@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
+
+from typing_extensions import override
 
 from .base import AdapterResult, ScanAdapter
 

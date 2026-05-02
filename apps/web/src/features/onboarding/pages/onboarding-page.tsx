@@ -1,8 +1,8 @@
 import { useAuth } from "@clerk/react";
-import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@citetrack/ui/card";
-import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import type { OnboardingData } from "../lib/schema";
 import { submitOnboarding } from "#/features/onboarding/lib/submit";
 import { researchCompetitors } from "#/features/onboarding/lib/research";
@@ -24,6 +24,20 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (step !== 4 || submitting || error) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void navigate({ to: "/dashboard" });
+    }, 1500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [error, navigate, step, submitting]);
+
   const runSubmit = async (finalData: OnboardingData) => {
     setSubmitting(true);
     setError(null);
@@ -32,9 +46,6 @@ export function OnboardingPage() {
       await queryClient.invalidateQueries({ queryKey: ["workspaces", "mine"] });
       await queryClient.refetchQueries({ queryKey: ["workspaces", "mine"] });
       setSubmitting(false);
-      setTimeout(() => {
-        void navigate({ to: "/dashboard" });
-      }, 1500);
     } catch (err) {
       setSubmitting(false);
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -88,6 +99,7 @@ export function OnboardingPage() {
   const handleBack = () => {
     if (step === 2) setStep(1);
     else if (step === 3) setStep(2);
+    else if (step === 4) setStep(3);
   };
 
   const handleRetry = () => {
@@ -123,6 +135,7 @@ export function OnboardingPage() {
               submitting={submitting}
               error={error}
               onRetry={handleRetry}
+              onBack={handleBack}
             />
           )}
         </Card>

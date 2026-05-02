@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Coroutine
-from typing import TYPE_CHECKING, cast, override
+from typing import TYPE_CHECKING, cast
+
+from typing_extensions import override
 
 from ai_visibility.providers.gateway import ProviderGateway, ProviderResponse
 

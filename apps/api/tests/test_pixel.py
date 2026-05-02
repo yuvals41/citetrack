@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false
+
 from __future__ import annotations
 
 from typing import Any
@@ -6,6 +8,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from ai_visibility.api.auth import get_current_user_id
 from ai_visibility.pixel import events as events_module
 from ai_visibility.pixel import router as router_module
 from ai_visibility.pixel.events import PixelEvent
@@ -14,9 +17,11 @@ from ai_visibility.pixel.events import store_pixel_event
 from ai_visibility.pixel.snippet import generate_pixel_snippet
 
 
-def _pixel_app() -> FastAPI:
+def _pixel_app(*, authenticated: bool = False) -> FastAPI:
     app = FastAPI()
     app.include_router(router_module.router)
+    if authenticated:
+        app.dependency_overrides[get_current_user_id] = lambda: "user_test"
     return app
 
 
@@ -227,8 +232,17 @@ def test_event_endpoint_ignores_invalid_payload(monkeypatch: pytest.MonkeyPatch)
 
 
 def test_snippet_endpoint_returns_javascript_content_type() -> None:
-    client = TestClient(_pixel_app())
-    response = client.get("/api/v1/pixel/snippet/ws-abc")
+    async def _allow_ownership(_user_id: str, workspace_id: str) -> None:
+        assert workspace_id == "ws-abc"
+
+    original = router_module._require_pixel_ownership
+    router_module._require_pixel_ownership = _allow_ownership
+    try:
+        client = TestClient(_pixel_app(authenticated=True))
+        response = client.get("/api/v1/pixel/snippet/ws-abc")
+    finally:
+        router_module._require_pixel_ownership = original
+
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/javascript")
     assert "<script>" in response.text
@@ -250,8 +264,17 @@ def test_stats_endpoint_returns_mocked_payload(monkeypatch: pytest.MonkeyPatch) 
 
     monkeypatch.setattr(router_module, "get_pixel_stats", _fake_stats)
 
-    client = TestClient(_pixel_app())
-    response = client.get("/api/v1/pixel/stats/ws-abc?days=7")
+    async def _allow_ownership(_user_id: str, workspace_id: str) -> None:
+        assert workspace_id == "ws-abc"
+
+    original = router_module._require_pixel_ownership
+    router_module._require_pixel_ownership = _allow_ownership
+    try:
+        client = TestClient(_pixel_app(authenticated=True))
+        response = client.get("/api/v1/pixel/stats/ws-abc?days=7")
+    finally:
+        router_module._require_pixel_ownership = original
+
     assert response.status_code == 200
     assert response.json()["total_visits"] == 5
     assert response.json()["daily_visits"][0]["source"] == "chatgpt"

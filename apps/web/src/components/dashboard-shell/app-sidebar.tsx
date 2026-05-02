@@ -31,31 +31,32 @@ import {
 import { WorkspaceSwitcher } from "#/features/workspaces/workspace-switcher";
 
 interface NavItem {
+  testId: string;
   label: string;
   to: string;
   icon: LucideIcon;
 }
 
 const personalNavItems: NavItem[] = [
-  { label: "My Tracking", to: "/dashboard", icon: LayoutDashboard },
+  { testId: "dashboard", label: "My Tracking", to: "/dashboard", icon: LayoutDashboard },
 ];
 
 const dataNavItems: NavItem[] = [
-  { label: "Scans", to: "/dashboard/scans", icon: Activity },
-  { label: "Prompts", to: "/dashboard/prompts", icon: MessageSquareQuote },
-  { label: "AI Responses", to: "/dashboard/citations", icon: Quote },
+  { testId: "scans", label: "Scans", to: "/dashboard/scans", icon: Activity },
+  { testId: "prompts", label: "Prompts", to: "/dashboard/prompts", icon: MessageSquareQuote },
+  { testId: "citations", label: "AI Responses", to: "/dashboard/citations", icon: Quote },
 ];
 
 const insightsNavItems: NavItem[] = [
-  { label: "Action Plan", to: "/dashboard/actions", icon: Lightbulb },
-  { label: "Content Analysis", to: "/dashboard/content-analysis", icon: FileSearch },
-  { label: "Pixel", to: "/dashboard/pixel", icon: BarChart3 },
+  { testId: "actions", label: "Action Plan", to: "/dashboard/actions", icon: Lightbulb },
+  { testId: "content-analysis", label: "Content Analysis", to: "/dashboard/content-analysis", icon: FileSearch },
+  { testId: "pixel", label: "Pixel", to: "/dashboard/pixel", icon: BarChart3 },
 ];
 
 const configureNavItems: NavItem[] = [
-  { label: "Brands", to: "/dashboard/brands", icon: Tag },
-  { label: "Competitors", to: "/dashboard/competitors", icon: Swords },
-  { label: "Settings", to: "/dashboard/settings", icon: Settings },
+  { testId: "brands", label: "Brands", to: "/dashboard/brands", icon: Tag },
+  { testId: "competitors", label: "Competitors", to: "/dashboard/competitors", icon: Swords },
+  { testId: "settings", label: "Settings", to: "/dashboard/settings", icon: Settings },
 ];
 
 function NavGroup({
@@ -77,7 +78,7 @@ function NavGroup({
             const isActive = currentPathname === item.to;
             return (
               <SidebarMenuItem key={item.to}>
-                <SidebarMenuButton asChild isActive={isActive}>
+                <SidebarMenuButton asChild isActive={isActive} data-testid={`sidebar-link-${item.testId}`}>
                   <Link to={item.to}>
                     <Icon className="size-4" />
                     <span>{item.label}</span>

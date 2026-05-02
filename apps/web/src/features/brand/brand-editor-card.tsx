@@ -92,7 +92,7 @@ export function BrandEditorCard({ brand, mode, isSaving, onSave }: BrandEditorCa
   );
 
   return (
-    <Card className={`p-6 shadow-none ${mode === "create" ? "mx-auto max-w-2xl text-center" : ""}`}>
+    <Card data-testid="brand-editor-card" className={`p-6 shadow-none ${mode === "create" ? "mx-auto max-w-2xl text-center" : ""}`}>
       <div className={mode === "create" ? "space-y-3" : "space-y-4"}>
         <div className={mode === "create" ? "flex justify-center" : ""}>
           <div className="flex h-11 w-11 items-center justify-center rounded-full ring-1 ring-foreground/10">
@@ -136,13 +136,13 @@ export function BrandEditorCard({ brand, mode, isSaving, onSave }: BrandEditorCa
       >
         <div className="space-y-2">
           <Label htmlFor="brand-name">Name</Label>
-          <Input id="brand-name" {...register("name")} />
+                  <Input data-testid="brand-name-input" id="brand-name" {...register("name")} />
           {errors.name ? <p className="text-xs text-destructive">{errors.name.message}</p> : null}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="brand-domain">Domain</Label>
-          <Input id="brand-domain" {...register("domain")} />
+                  <Input data-testid="brand-domain-input" id="brand-domain" {...register("domain")} />
           {errors.domain ? (
             <p className="text-xs text-destructive">{errors.domain.message}</p>
           ) : null}
@@ -151,9 +151,10 @@ export function BrandEditorCard({ brand, mode, isSaving, onSave }: BrandEditorCa
         <div className="space-y-2">
           <Label htmlFor="brand-alias">Aliases</Label>
           <div className="flex gap-2">
-            <Input
-              id="brand-alias"
-              value={aliasInput}
+              <Input
+                data-testid="brand-alias-input"
+                id="brand-alias"
+                value={aliasInput}
               onChange={(event) => setAliasInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
@@ -163,10 +164,11 @@ export function BrandEditorCard({ brand, mode, isSaving, onSave }: BrandEditorCa
               }}
               placeholder="Type an alias and press Enter"
             />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addAlias}
+              <Button
+                data-testid="brand-alias-add-button"
+                type="button"
+                variant="outline"
+                onClick={addAlias}
               disabled={!aliasInput.trim() || aliases.length >= 10}
             >
               <Plus className="size-4" />
@@ -182,6 +184,7 @@ export function BrandEditorCard({ brand, mode, isSaving, onSave }: BrandEditorCa
                 {alias}
                 <button
                   type="button"
+                  data-testid={`brand-alias-remove-${alias}`}
                   aria-label={`Remove alias ${alias}`}
                   onClick={() => removeAlias(alias)}
                   className="text-muted-foreground transition-colors hover:text-foreground"
@@ -202,16 +205,18 @@ export function BrandEditorCard({ brand, mode, isSaving, onSave }: BrandEditorCa
         {saveError ? <Alert variant="error">{saveError}</Alert> : null}
 
         <div className="flex items-center gap-3">
-          <Button
-            type="submit"
-            disabled={!isDirty || isSubmitting || isSaving}
-            isLoading={isSubmitting || isSaving}
+            <Button
+              data-testid="brand-save-button"
+              type="submit"
+              disabled={!isDirty || isSubmitting || isSaving}
+              isLoading={isSubmitting || isSaving}
             loadingText="Saving…"
           >
             Save
           </Button>
           {savedMessage ? (
             <span
+              data-testid="brand-saved-message"
               aria-live="polite"
               className="text-xs text-muted-foreground transition-opacity duration-300 opacity-100"
             >

@@ -28,7 +28,7 @@ export function BrandStep({ onNext, initial }: BrandStepProps) {
   });
 
   return (
-    <div className="space-y-6">
+    <div data-testid="onboarding-step-1" className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-base font-medium">Your brand</h2>
         <p className="text-sm text-muted-foreground">
@@ -48,7 +48,7 @@ export function BrandStep({ onNext, initial }: BrandStepProps) {
               <FormItem>
                 <FormLabel>Brand name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Acme Inc." {...field} />
+                  <Input data-testid="onboarding-step-1-brand-input" placeholder="Acme Inc." {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -61,14 +61,14 @@ export function BrandStep({ onNext, initial }: BrandStepProps) {
               <FormItem>
                 <FormLabel>Website</FormLabel>
                 <FormControl>
-                  <Input type="text" placeholder="example.com" {...field} />
+                  <Input data-testid="onboarding-step-1-domain-input" type="text" placeholder="example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <div className="flex justify-end pt-2">
-            <Button type="submit">Continue</Button>
+            <Button data-testid="onboarding-step-1-continue" type="submit">Continue</Button>
           </div>
         </form>
       </Form>

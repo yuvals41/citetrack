@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-# pyright: reportIncompatibleMethodOverride=false, reportImplicitOverride=false, reportAny=false, reportExplicitAny=false, reportUnknownMemberType=false, reportUnknownArgumentType=false, reportUnknownVariableType=false, reportOperatorIssue=false, reportArgumentType=false
+# pyright: reportIncompatibleMethodOverride=false, reportImplicitOverride=false, reportAny=false, reportExplicitAny=false, reportUnknownMemberType=false, reportUnknownArgumentType=false, reportUnknownVariableType=false, reportOperatorIssue=false, reportArgumentType=false, reportMissingImports=false, reportImportCycles=false
 
-import logging
 import os
 from typing import TYPE_CHECKING, Any
 
 import httpx
+from loguru import logger
 
 from ai_visibility.providers.gateway import ProviderError
 
-from .base import AdapterResult, ScanAdapter
+from .base import AdapterResult
 
 if TYPE_CHECKING:
     from ai_visibility.providers.gateway import LocationContext
@@ -19,10 +19,7 @@ SERPAPI_URL = "https://serpapi.com/search"
 REQUEST_TIMEOUT_SECONDS = 45.0
 LOG_PREFIX = "[serpapi-ai-mode]"
 
-logger = logging.getLogger(__name__)
-
-
-class GoogleAIModeSerpAPIAdapter(ScanAdapter):
+class GoogleAIModeSerpAPIAdapter:
     def __init__(self) -> None:
         self._last_subsequent_request_token: str | None = None
 
@@ -78,6 +75,8 @@ class GoogleAIModeSerpAPIAdapter(ScanAdapter):
             self._last_subsequent_request_token = subsequent_request_token
 
             brand_info = self.extract_brand_mentions(parsed["response_text"], parsed["references"], brand)
+            citation_count = brand_info.get("citation_count")
+            parsed_citation_count = citation_count if isinstance(citation_count, int) else 0
 
             turn_results.append(
                 {
@@ -85,8 +84,8 @@ class GoogleAIModeSerpAPIAdapter(ScanAdapter):
                     "query": question,
                     "response_text": parsed["response_text"],
                     "references": parsed["references"],
-                    "brand_mentioned": bool(brand_info["mentioned_in_answer"] or brand_info["citation_count"] > 0),
-                    "citation_count": int(brand_info["citation_count"]),
+                    "brand_mentioned": bool(brand_info.get("mentioned_in_answer") or parsed_citation_count > 0),
+                    "citation_count": parsed_citation_count,
                     "has_shopping": bool(parsed["shopping_results"]),
                     "has_local": bool(parsed["local_results"]),
                 }

@@ -1,7 +1,7 @@
 # pyright: reportUnknownVariableType=false, reportUnknownMemberType=false, reportUnknownArgumentType=false, reportAny=false, reportUnusedCallResult=false, reportMissingTypeArgument=false, reportUnknownParameterType=false, reportExplicitAny=false, reportImplicitStringConcatenation=false
 import asyncio
 import os
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 from urllib.parse import quote, urlparse
 
 import httpx
@@ -15,6 +15,17 @@ _HTTP_HEADERS = {
     "User-Agent": "AIVisibility/1.0 (https://solaraai.com; contact@solaraai.com)",
     "Accept": "application/json",
 }
+
+
+class KnowledgeGraphMatch(TypedDict):
+    entity_id: object
+    name: object
+    types: list[object]
+    description: object
+    result_score: float
+    url: object
+    wikipedia_url: object
+    domain_match: bool
 
 
 def _normalize_domain(domain: str) -> str:
@@ -65,7 +76,7 @@ async def _fetch_knowledge_graph(brand_name: str, domain: str) -> dict[str, Any]
         logger.debug("[entity] GOOGLE_API_KEY missing, skipping Knowledge Graph check")
         return _base_kg_result()
 
-    params = {
+    params: dict[str, str | int] = {
         "query": brand_name,
         "types": "Organization",
         "key": api_key,
@@ -83,8 +94,8 @@ async def _fetch_knowledge_graph(brand_name: str, domain: str) -> dict[str, Any]
     if not isinstance(item_list, list) or not item_list:
         return _base_kg_result()
 
-    best_match: dict[str, Any] | None = None
-    fallback_match: dict[str, Any] | None = None
+    best_match: KnowledgeGraphMatch | None = None
+    fallback_match: KnowledgeGraphMatch | None = None
 
     for raw_item in item_list:
         if not isinstance(raw_item, dict):
@@ -95,10 +106,10 @@ async def _fetch_knowledge_graph(brand_name: str, domain: str) -> dict[str, Any]
 
         url = str(result.get("url", "")).lower()
         domain_match = bool(normalized_domain and normalized_domain in url)
-        parsed_item = {
+        parsed_item: KnowledgeGraphMatch = {
             "entity_id": result.get("@id"),
             "name": result.get("name"),
-            "types": result.get("@type") if isinstance(result.get("@type"), list) else [],
+            "types": cast(list[object], result.get("@type")) if isinstance(result.get("@type"), list) else [],
             "description": result.get("description"),
             "result_score": float(raw_item.get("resultScore", 0.0) or 0.0),
             "url": result.get("url"),
@@ -130,7 +141,7 @@ async def _fetch_knowledge_graph(brand_name: str, domain: str) -> dict[str, Any]
 
 
 async def _fetch_wikidata(brand_name: str) -> dict[str, Any]:
-    params = {
+    params: dict[str, str | int] = {
         "action": "wbsearchentities",
         "search": brand_name,
         "language": "en",

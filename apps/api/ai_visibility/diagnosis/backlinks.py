@@ -335,9 +335,9 @@ def _grounded_provider_names(section: Mapping[str, object]) -> list[str]:
                     providers.append(provider_name)
 
     provider_modes = _mapping(section.get("provider_modes"))
-    for provider_name, mode in provider_modes.items():
-        if _is_grounded_mode(mode):
-            providers.append(provider_name)
+    for raw_provider_name, provider_mode in provider_modes.items():
+        if _is_grounded_mode(provider_mode):
+            providers.append(str(raw_provider_name))
 
     unique_providers: list[str] = []
     seen: set[str] = set()

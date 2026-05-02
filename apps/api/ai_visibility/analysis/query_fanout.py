@@ -6,6 +6,7 @@ from typing import cast
 
 import httpx
 from dotenv import load_dotenv
+from loguru import logger
 
 _ = load_dotenv()
 

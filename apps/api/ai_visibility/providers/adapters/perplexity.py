@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, cast, override
+from typing import TYPE_CHECKING, Any, cast
+
+from typing_extensions import override
 
 import openai
 
@@ -50,7 +52,7 @@ class PerplexityAdapter(ScanAdapter):
             else:
                 response = client.chat.completions.create(
                     model=MODEL_NAME,
-                    messages=messages,
+                    messages=cast(Any, messages),
                     stream=False,
                 )
             raw_response = response.choices[0].message.content or ""

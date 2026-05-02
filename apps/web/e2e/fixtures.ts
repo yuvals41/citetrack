@@ -28,4 +28,8 @@ export const test = base.extend<ErrorFixtures>({
   },
 });
 
+export function expectNoConsoleErrors(consoleErrors: string[]) {
+  expect(consoleErrors, consoleErrors.join("\n") || "No console errors captured").toEqual([]);
+}
+
 export { expect };

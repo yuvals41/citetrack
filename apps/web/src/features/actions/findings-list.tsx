@@ -13,7 +13,7 @@ interface FindingsListProps {
 
 export function FindingsList({ findings }: FindingsListProps) {
   return (
-    <Card>
+    <Card data-testid="findings-list-card">
       <CardHeader>
         <CardTitle>Findings</CardTitle>
       </CardHeader>

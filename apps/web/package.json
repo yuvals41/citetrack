@@ -13,7 +13,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "e2e:smoke": "playwright test e2e/smoke.spec.ts",
+    "e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@citetrack/api-client": "workspace:*",

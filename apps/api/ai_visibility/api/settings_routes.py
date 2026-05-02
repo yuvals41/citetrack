@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import cast
 
 from fastapi import APIRouter, HTTPException, status
@@ -19,6 +20,18 @@ from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 
 router = APIRouter(tags=["settings"])
+
+
+def _coerce_created_at(value: object) -> datetime | None:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str) and value.strip():
+        normalized = value.strip().replace("Z", "+00:00")
+        try:
+            return datetime.fromisoformat(normalized)
+        except ValueError:
+            return None
+    return None
 
 
 def _degraded(reason: str, message: str) -> dict[str, object]:
@@ -51,7 +64,7 @@ async def get_settings(workspace_slug: str, user_id: CurrentUserId) -> JSONRespo
             workspace_slug=workspace["slug"],
             name=workspace["brand_name"],
             scan_schedule=ScanSchedule(schedule),
-            created_at=workspace.get("created_at"),
+            created_at=_coerce_created_at(workspace.get("created_at")),
         )
         return JSONResponse(content=response.model_dump(mode="json"))
     except HTTPException:
@@ -88,5 +101,5 @@ async def update_settings(
         workspace_slug=updated["slug"],
         name=updated["brand_name"],
         scan_schedule=ScanSchedule(schedule),
-        created_at=updated.get("created_at"),
+        created_at=_coerce_created_at(updated.get("created_at")),
     )

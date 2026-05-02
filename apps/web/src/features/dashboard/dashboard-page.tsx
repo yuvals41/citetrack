@@ -69,7 +69,7 @@ export function DashboardPage() {
   const allTrendPoints = trendData?.items.flatMap((s) => s.points) ?? [];
 
   return (
-    <main className="flex-1 overflow-auto p-6 space-y-6">
+    <main data-testid="dashboard-page" className="flex-1 overflow-auto p-6 space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {overview.isPending ? (
           <>
@@ -90,7 +90,7 @@ export function DashboardPage() {
           </div>
         ) : overviewData ? (
           <>
-            <KPICard>
+            <KPICard data-testid="dashboard-kpi-visibility-score">
               <KPICardLabel>Visibility Score</KPICardLabel>
               <KPICardValue>{(overviewData.visibility_score * 100).toFixed(1)}</KPICardValue>
               <KPICardChange
@@ -99,17 +99,17 @@ export function DashboardPage() {
                 label="vs prev"
               />
             </KPICard>
-            <KPICard>
+            <KPICard data-testid="dashboard-kpi-citation-coverage">
               <KPICardLabel>Citation Coverage</KPICardLabel>
               <KPICardValue>{(overviewData.citation_coverage * 100).toFixed(1)}%</KPICardValue>
               <KPICardChange value={0} direction="flat" />
             </KPICard>
-            <KPICard>
+            <KPICard data-testid="dashboard-kpi-competitor-wins">
               <KPICardLabel>Competitor Wins</KPICardLabel>
               <KPICardValue>{overviewData.competitor_wins}</KPICardValue>
               <KPICardChange value={0} direction="flat" />
             </KPICard>
-            <KPICard>
+            <KPICard data-testid="dashboard-kpi-total-prompts">
               <KPICardLabel>Total Prompts</KPICardLabel>
               <KPICardValue>{overviewData.total_prompts}</KPICardValue>
               <KPICardChange value={0} direction="flat" />
@@ -119,7 +119,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
+        <Card data-testid="dashboard-visibility-trend" className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Visibility trend</CardTitle>
           </CardHeader>
@@ -138,7 +138,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <div>
+        <div data-testid="dashboard-actions-queue">
           {actions.isPending ? (
             <Card>
               <CardHeader>
@@ -170,7 +170,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
+        <Card data-testid="dashboard-provider-breakdown" className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Visibility by AI engine</CardTitle>
           </CardHeader>
@@ -193,7 +193,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="dashboard-brand-presence">
           <CardHeader>
             <CardTitle>Brand presence</CardTitle>
           </CardHeader>
@@ -217,7 +217,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
+        <Card data-testid="dashboard-historical-mentions" className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Mentions over time</CardTitle>
           </CardHeader>
@@ -236,7 +236,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="dashboard-top-sources">
           <CardHeader>
             <CardTitle>Top citation sources</CardTitle>
           </CardHeader>
@@ -261,7 +261,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
+        <Card data-testid="dashboard-competitor-comparison">
           <CardHeader>
             <CardTitle>Competitor comparison</CardTitle>
           </CardHeader>
@@ -284,7 +284,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="dashboard-top-pages">
           <CardHeader>
             <CardTitle>Top cited pages</CardTitle>
           </CardHeader>
@@ -312,7 +312,7 @@ export function DashboardPage() {
         <TrendIndicator delta={overviewData.trend_delta ?? 0} />
       ) : null}
 
-      <div>
+      <div data-testid="dashboard-findings-list">
         {findings.isPending ? (
           <Card>
             <CardHeader>

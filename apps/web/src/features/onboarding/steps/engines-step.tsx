@@ -64,7 +64,7 @@ export function EnginesStep({ onNext, onBack, initial }: EnginesStepProps) {
   });
 
   return (
-    <div className="space-y-6">
+    <div data-testid="onboarding-step-3" className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-base font-medium">
           Which AI engines should we track?
@@ -87,16 +87,18 @@ export function EnginesStep({ onNext, onBack, initial }: EnginesStepProps) {
                 {ENGINE_OPTIONS.map((engine) => {
                   const checked = field.value.includes(engine.value);
                   return (
-                    <label
-                      key={engine.value}
-                      className={cn(
+                      <label
+                        key={engine.value}
+                        data-testid={`onboarding-engine-option-${engine.value}`}
+                        className={cn(
                         "flex cursor-pointer items-center gap-3 rounded-lg p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/50",
                         "has-[:checked]:bg-muted has-[:checked]:ring-foreground/30",
                       )}
                     >
-                      <input
-                        type="checkbox"
-                        className="sr-only"
+                        <input
+                          data-testid={`onboarding-engine-checkbox-${engine.value}`}
+                          type="checkbox"
+                          className="sr-only"
                         checked={checked}
                         onChange={(e) => {
                           const next = e.target.checked
@@ -136,13 +138,13 @@ export function EnginesStep({ onNext, onBack, initial }: EnginesStepProps) {
           )}
         />
         <div className="flex justify-between pt-2">
-          <Button type="button" variant="ghost" onClick={onBack}>
-            <ArrowLeft />
-            Back
-          </Button>
-          <Button type="submit">Finish setup</Button>
-        </div>
-      </form>
-    </div>
+            <Button data-testid="onboarding-step-3-back" type="button" variant="ghost" onClick={onBack}>
+              <ArrowLeft />
+              Back
+            </Button>
+            <Button data-testid="onboarding-step-3-finish" type="submit">Finish setup</Button>
+          </div>
+        </form>
+      </div>
   );
 }

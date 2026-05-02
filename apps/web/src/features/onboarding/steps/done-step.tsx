@@ -5,12 +5,13 @@ interface DoneStepProps {
   submitting: boolean;
   error: string | null;
   onRetry: () => void;
+  onBack: () => void;
 }
 
-export function DoneStep({ submitting, error, onRetry }: DoneStepProps) {
+export function DoneStep({ submitting, error, onRetry, onBack }: DoneStepProps) {
   if (submitting) {
     return (
-      <div className="flex flex-col items-center gap-4 py-10">
+      <div data-testid="onboarding-step-4-pending" className="flex flex-col items-center gap-4 py-10">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
           Setting up your workspace…
@@ -21,7 +22,7 @@ export function DoneStep({ submitting, error, onRetry }: DoneStepProps) {
 
   if (error) {
     return (
-      <div className="space-y-4 py-4">
+      <div data-testid="onboarding-step-4-error" className="space-y-4 py-4">
         <div className="rounded-lg bg-destructive/5 p-4 ring-1 ring-destructive/30">
           <p className="text-sm font-medium text-destructive">Setup failed</p>
           <p className="mt-1 text-xs text-muted-foreground">{error}</p>
@@ -30,13 +31,16 @@ export function DoneStep({ submitting, error, onRetry }: DoneStepProps) {
           <Button variant="outline" onClick={onRetry}>
             Try again
           </Button>
+          <Button type="button" variant="ghost" onClick={onBack}>
+            Back
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 py-10">
+    <div data-testid="onboarding-step-4" className="flex flex-col items-center gap-4 py-10">
       <div className="flex size-12 items-center justify-center rounded-full bg-muted ring-1 ring-foreground/10">
         <Check className="size-6" />
       </div>
@@ -46,6 +50,9 @@ export function DoneStep({ submitting, error, onRetry }: DoneStepProps) {
           Redirecting you to your dashboard…
         </p>
       </div>
+      <Button type="button" variant="ghost" onClick={onBack}>
+        Back
+      </Button>
     </div>
   );
 }

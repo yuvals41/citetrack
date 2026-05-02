@@ -15,7 +15,7 @@ export function ActionsQueue({ actions }: ActionsQueueProps) {
   const topActions = actions.slice(0, 5);
 
   return (
-    <Card>
+    <Card data-testid="actions-queue-card">
       <CardHeader>
         <CardTitle>Top actions</CardTitle>
       </CardHeader>

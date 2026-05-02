@@ -5,20 +5,20 @@ import { DoneStep } from "./done-step";
 
 describe("DoneStep", () => {
   it("shows the submitting state", () => {
-    render(<DoneStep submitting error={null} onRetry={vi.fn()} />);
+    render(<DoneStep submitting error={null} onRetry={vi.fn()} onBack={vi.fn()} />);
 
     expect(screen.getByText(/setting up your workspace/i)).toBeInTheDocument();
   });
 
   it("shows the success state when submission finishes", () => {
-    render(<DoneStep submitting={false} error={null} onRetry={vi.fn()} />);
+    render(<DoneStep submitting={false} error={null} onRetry={vi.fn()} onBack={vi.fn()} />);
 
     expect(screen.getByText(/all set!/i)).toBeInTheDocument();
     expect(screen.getByText(/redirecting you to your dashboard/i)).toBeInTheDocument();
   });
 
   it("shows the error state with retry action", () => {
-    render(<DoneStep submitting={false} error="oops" onRetry={vi.fn()} />);
+    render(<DoneStep submitting={false} error="oops" onRetry={vi.fn()} onBack={vi.fn()} />);
 
     expect(screen.getByText(/setup failed/i)).toBeInTheDocument();
     expect(screen.getByText("oops")).toBeInTheDocument();
@@ -29,7 +29,7 @@ describe("DoneStep", () => {
     const user = userEvent.setup();
     const onRetry = vi.fn();
 
-    render(<DoneStep submitting={false} error="oops" onRetry={onRetry} />);
+    render(<DoneStep submitting={false} error="oops" onRetry={onRetry} onBack={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /try again/i }));
 

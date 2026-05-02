@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false, reportPrivateLocalImportUsage=false, reportUnknownMemberType=false, reportUntypedFunctionDecorator=false, reportUnknownVariableType=false
+
 import os
 from collections.abc import Awaitable, Callable
 from typing import cast
@@ -279,17 +281,14 @@ def test_openai_alias_maps_to_chatgpt_strategy_provider():
 
 def test_location_injection_only_for_gemini_and_grok():
     from ai_visibility.providers.gateway import LocationContext
-    from ai_visibility.runs.orchestrator import RunOrchestrator
+    from ai_visibility.runs.execution_core import inject_location_prompt
 
     location = LocationContext(city="San Jose", region="California", country="US")
     prompt = "What is the best service?"
 
-    injector = cast(Callable[[str, str, LocationContext], str], getattr(RunOrchestrator, "_inject_location_prompt"))
-    assert callable(injector)
-
-    openai_prompt = injector(prompt, "openai", location)
-    gemini_prompt = injector(prompt, "gemini", location)
-    grok_prompt = injector(prompt, "grok", location)
+    openai_prompt = inject_location_prompt(prompt, "openai", location)
+    gemini_prompt = inject_location_prompt(prompt, "gemini", location)
+    grok_prompt = inject_location_prompt(prompt, "grok", location)
 
     assert openai_prompt == prompt
     assert gemini_prompt != prompt
