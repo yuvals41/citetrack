@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/pixel", tags=["pixel"])
 
 async def _require_pixel_ownership(user_id: str, workspace_id: str) -> None:
     prisma = cast(object, await get_prisma())
-    row = await cast(Any, prisma).aivisworkspace.find_unique(where={"id": workspace_id})
+    row = await cast(Any, prisma).workspace.find_unique(where={"id": workspace_id})
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
     slug = getattr(row, "slug", None)

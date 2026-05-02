@@ -1,0 +1,27 @@
+{
+  "name": "@citetrack/prisma-client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "client-node/index.js",
+  "types": "client-node/index.d.ts",
+  "files": [
+    "client-node"
+  ],
+  "scripts": {
+    "build": "bash scripts/generatenodejs.sh",
+    "prisma:generate-node": "bash scripts/generatenodejs.sh",
+    "prisma:generate-python": "bash scripts/generatepython.sh",
+    "prisma:migrate-dev": "npx prisma migrate dev --schema=prisma/schema",
+    "prisma:migrate-deploy": "npx prisma migrate deploy --schema=prisma/schema",
+    "prisma:studio": "npx prisma studio --schema=prisma/schema"
+  },
+  "prisma": {
+    "schema": "prisma/schema"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}

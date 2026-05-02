@@ -173,13 +173,13 @@ def competitor_store(monkeypatch: pytest.MonkeyPatch, mock_prisma: MagicMock):
         _ = (query, params)
         return None
 
-    mock_prisma.aivisworkspace.create.side_effect = workspace_create
-    mock_prisma.aivisworkspace.find_unique.side_effect = workspace_find_unique
-    mock_prisma.aiviscompetitor.find_many.side_effect = competitor_find_many
-    mock_prisma.aiviscompetitor.find_first.side_effect = competitor_find_first
-    mock_prisma.aiviscompetitor.create.side_effect = competitor_create
-    mock_prisma.aiviscompetitor.find_unique.side_effect = competitor_find_unique
-    mock_prisma.aiviscompetitor.delete.side_effect = competitor_delete
+    mock_prisma.workspace.create.side_effect = workspace_create
+    mock_prisma.workspace.find_unique.side_effect = workspace_find_unique
+    mock_prisma.competitor.find_many.side_effect = competitor_find_many
+    mock_prisma.competitor.find_first.side_effect = competitor_find_first
+    mock_prisma.competitor.create.side_effect = competitor_create
+    mock_prisma.competitor.find_unique.side_effect = competitor_find_unique
+    mock_prisma.competitor.delete.side_effect = competitor_delete
     mock_prisma.query_raw.side_effect = query_raw
     mock_prisma.execute_raw.side_effect = execute_raw
 

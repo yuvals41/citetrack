@@ -19,7 +19,7 @@ class BrandRepository:
         self._alias_repo: BrandAliasRepository = alias_repo or BrandAliasRepository()
 
     async def get_primary_for_workspace(self, workspace_id: str) -> BrandRecord | None:
-        row = await self.prisma.aivisbrand.find_first(
+        row = await self.prisma.brand.find_first(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "asc"}, {"id": "asc"}],
         )
@@ -29,7 +29,7 @@ class BrandRepository:
         return _brand_from_model(row, aliases=aliases)
 
     async def list_by_workspace(self, workspace_id: str) -> list[BrandRecord]:
-        rows = await self.prisma.aivisbrand.find_many(
+        rows = await self.prisma.brand.find_many(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "asc"}, {"id": "asc"}],
         )
@@ -52,7 +52,7 @@ class BrandRepository:
 
         if existing is None:
             now = datetime.now(timezone.utc)
-            created = await self.prisma.aivisbrand.create(
+            created = await self.prisma.brand.create(
                 data={
                     "id": str(uuid4()),
                     "workspace": {"connect": {"id": workspace_id}},
@@ -64,7 +64,7 @@ class BrandRepository:
             stored_aliases = self._alias_repo.set_aliases(workspace_id, aliases or [])
             return _brand_from_model(created, aliases=stored_aliases)
 
-        updated = await self.prisma.aivisbrand.update(
+        updated = await self.prisma.brand.update(
             where={"id": existing.id},
             data=payload,
         )

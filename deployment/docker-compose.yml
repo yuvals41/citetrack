@@ -30,9 +30,13 @@ services:
       - -c
       - |
         set -e
-        uv sync --frozen
-        VENV_PURELIB=$$(uv run python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-        ln -sfn /home/yuval/Documents/solaraai/stanley/repos/prisma/dist/client-python "$$VENV_PURELIB/prisma"
+        uv sync --all-packages --frozen
+        if [ ! -f /home/yuval/Documents/solaraai/citetrack/prisma/client-python/prisma/client.py ]; then
+          echo "ERROR: prisma/client-python/prisma/client.py not found." >&2
+          echo "Run 'bash prisma/scripts/generatepython.sh' from the citetrack repo on the host first." >&2
+          exit 1
+        fi
+        uv pip install -e /home/yuval/Documents/solaraai/citetrack/prisma/client-python
         exec uv run uvicorn ai_visibility.api.routes:app --host 0.0.0.0 --port 8000
     depends_on:
       postgres:

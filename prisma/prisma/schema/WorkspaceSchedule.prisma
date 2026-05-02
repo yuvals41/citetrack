@@ -1,0 +1,10 @@
+model WorkspaceSchedule {
+  workspaceId  String   @id @map("workspace_id")
+  scanSchedule String   @map("scan_schedule")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([scanSchedule], map: "idx_ai_vis_workspace_schedules_schedule")
+  @@map("ai_vis_workspace_schedules")
+}

@@ -101,8 +101,8 @@ def workspace_store(mock_prisma, clean_user_repo):
             schedules[cast(str, params[0])] = cast(str, params[1])
         return None
 
-    mock_prisma.aivisworkspace.create.side_effect = create
-    mock_prisma.aivisworkspace.find_unique.side_effect = find_unique
+    mock_prisma.workspace.create.side_effect = create
+    mock_prisma.workspace.find_unique.side_effect = find_unique
     mock_prisma.query_raw.side_effect = query_raw
     mock_prisma.execute_raw.side_effect = execute_raw
 

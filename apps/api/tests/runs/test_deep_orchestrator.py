@@ -32,8 +32,8 @@ async def _create_workspace(mock_prisma: MagicMock, slug: str) -> WorkspaceRecor
         country=workspace["country"],
         createdAt=created_at,
     )
-    mock_prisma.aivisworkspace.create.return_value = workspace_row  # pyright: ignore[reportAny]
-    mock_prisma.aivisworkspace.find_unique.return_value = workspace_row  # pyright: ignore[reportAny]
+    mock_prisma.workspace.create.return_value = workspace_row  # pyright: ignore[reportAny]
+    mock_prisma.workspace.find_unique.return_value = workspace_row  # pyright: ignore[reportAny]
 
     _ = await WorkspaceRepository(mock_prisma).create(workspace)
     return workspace
@@ -59,7 +59,7 @@ async def test_scan_persists_run_and_list_runs(
     _ = patch_get_prisma
     workspace = await _create_workspace(mock_prisma, "acme")
 
-    mock_prisma.aivisrun.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
 
     orchestrator = RunOrchestrator(
         workspace_slug="acme",
@@ -86,7 +86,7 @@ async def test_scan_persists_run_and_list_runs(
         rawResponse="Acme appears with source https://example.com/docs",
         error=None,
     )
-    mock_prisma.aivisrun.find_many.return_value = [mock_run_row]  # pyright: ignore[reportAny]
+    mock_prisma.run.find_many.return_value = [mock_run_row]  # pyright: ignore[reportAny]
 
     run_repo = RunRepository(mock_prisma)
     runs = await run_repo.list_by_workspace(workspace["id"])

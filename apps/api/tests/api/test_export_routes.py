@@ -20,10 +20,10 @@ class _FakeUserRepo:
 
 class _FakePrisma:
     def __init__(self, *, jobs=None, executions=None, prompt_execs=None, observations=None) -> None:
-        self.aivisscanjob = SimpleNamespace(find_many=self._async_fixed(jobs or []))
-        self.aivisscanexecution = SimpleNamespace(find_many=self._async_fixed(executions or []))
-        self.aivispromptexecution = SimpleNamespace(find_many=self._async_fixed(prompt_execs or []))
-        self.aivisobservation = SimpleNamespace(find_many=self._async_fixed(observations or []))
+        self.scanjob = SimpleNamespace(find_many=self._async_fixed(jobs or []))
+        self.scanexecution = SimpleNamespace(find_many=self._async_fixed(executions or []))
+        self.promptexecution = SimpleNamespace(find_many=self._async_fixed(prompt_execs or []))
+        self.observation = SimpleNamespace(find_many=self._async_fixed(observations or []))
 
     @staticmethod
     def _async_fixed(value):

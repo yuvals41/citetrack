@@ -211,19 +211,19 @@ def seeded_repositories(mock_prisma):
             ]
         return []
 
-    mock_prisma.aivisworkspace.create.side_effect = workspace_create
-    mock_prisma.aivisworkspace.find_unique.side_effect = workspace_find_unique
-    mock_prisma.aivisworkspace.find_many.side_effect = workspace_find_many
+    mock_prisma.workspace.create.side_effect = workspace_create
+    mock_prisma.workspace.find_unique.side_effect = workspace_find_unique
+    mock_prisma.workspace.find_many.side_effect = workspace_find_many
 
-    mock_prisma.aivisrun.create.side_effect = run_create
-    mock_prisma.aivisrun.find_many.side_effect = run_find_many
-    mock_prisma.aivisrun.find_first.side_effect = run_find_first
+    mock_prisma.run.create.side_effect = run_create
+    mock_prisma.run.find_many.side_effect = run_find_many
+    mock_prisma.run.find_first.side_effect = run_find_first
 
-    mock_prisma.aivismention.create.side_effect = mention_create
-    mock_prisma.aivismention.find_many.side_effect = mention_find_many
+    mock_prisma.mention.create.side_effect = mention_create
+    mock_prisma.mention.find_many.side_effect = mention_find_many
 
-    mock_prisma.aivismetricsnapshot.upsert.side_effect = metric_upsert
-    mock_prisma.aivismetricsnapshot.find_first.side_effect = metric_find_first
+    mock_prisma.metricsnapshot.upsert.side_effect = metric_upsert
+    mock_prisma.metricsnapshot.find_first.side_effect = metric_find_first
 
     mock_prisma.execute_raw.side_effect = execute_raw
     mock_prisma.query_raw.side_effect = query_raw

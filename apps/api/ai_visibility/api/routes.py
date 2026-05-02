@@ -32,7 +32,7 @@ CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 async def _health_payload() -> ApiPayload:
     try:
         prisma = await get_prisma()
-        await prisma.aivisworkspace.count()
+        await prisma.workspace.count()
     except Exception as exc:
         return _degraded_response(
             DegradedState(

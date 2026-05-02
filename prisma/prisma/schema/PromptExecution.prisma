@@ -1,0 +1,17 @@
+model PromptExecution {
+  id              String   @id @default(uuid())
+  scanExecutionId String   @map("scan_execution_id")
+  promptId        String   @map("prompt_id")
+  promptText      String   @map("prompt_text")
+  rawResponse     String   @map("raw_response")
+  executedAt      DateTime @map("executed_at")
+  idempotencyKey  String   @unique @map("idempotency_key")
+  parserVersion   String   @map("parser_version")
+
+  scanExecution ScanExecution             @relation(fields: [scanExecutionId], references: [id], onDelete: Cascade)
+  observations  Observation[]
+  citations     PromptExecutionCitation[]
+
+  @@index([scanExecutionId])
+  @@map("ai_vis_prompt_executions")
+}

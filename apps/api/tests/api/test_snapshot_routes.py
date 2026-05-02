@@ -200,22 +200,22 @@ def test_breakdowns_repo_pads_missing_providers_when_scans_exist() -> None:
     from ai_visibility.metrics.snapshot import DISPLAY_PROVIDERS, SnapshotRepository
 
     class _FakePrisma:
-        class aivisscanjob:
+        class scanjob:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="job-1", createdAt=None)]
 
-        class aivisscanexecution:
+        class scanexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
 
-        class aivispromptexecution:
+        class promptexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="pe-1"), SimpleNamespace(id="pe-2")]
 
-        class aivisobservation:
+        class observation:
             @staticmethod
             async def find_many(**_kwargs):
                 return [
@@ -223,7 +223,7 @@ def test_breakdowns_repo_pads_missing_providers_when_scans_exist() -> None:
                     SimpleNamespace(brandMentioned=False),
                 ]
 
-        class aivispromptexecutioncitation:
+        class promptexecutioncitation:
             @staticmethod
             async def find_many(**_kwargs):
                 return []
@@ -261,7 +261,7 @@ def test_breakdowns_repo_returns_empty_when_no_scans_exist() -> None:
     from ai_visibility.metrics.snapshot import SnapshotRepository
 
     class _FakePrisma:
-        class aivisscanjob:
+        class scanjob:
             @staticmethod
             async def find_many(**_kwargs):
                 return []
@@ -302,22 +302,22 @@ def test_breakdowns_repo_aggregates_source_attribution() -> None:
     from ai_visibility.metrics.snapshot import SnapshotRepository
 
     class _FakePrisma:
-        class aivisscanjob:
+        class scanjob:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="job-1", createdAt=None)]
 
-        class aivisscanexecution:
+        class scanexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
 
-        class aivispromptexecution:
+        class promptexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="pe-1"), SimpleNamespace(id="pe-2")]
 
-        class aivisobservation:
+        class observation:
             @staticmethod
             async def find_many(**_kwargs):
                 return [
@@ -325,7 +325,7 @@ def test_breakdowns_repo_aggregates_source_attribution() -> None:
                     SimpleNamespace(brandMentioned=True),
                 ]
 
-        class aivispromptexecutioncitation:
+        class promptexecutioncitation:
             @staticmethod
             async def find_many(**_kwargs):
                 return [
@@ -369,7 +369,7 @@ def test_breakdowns_repo_builds_historical_mentions_sorted_by_date() -> None:
     created_second = datetime(2026, 4, 20, 14, 0, 0, tzinfo=timezone.utc)
 
     class _FakePrisma:
-        class aivisscanjob:
+        class scanjob:
             @staticmethod
             async def find_many(**_kwargs):
                 return [
@@ -377,7 +377,7 @@ def test_breakdowns_repo_builds_historical_mentions_sorted_by_date() -> None:
                     SimpleNamespace(id="job-a", createdAt=created_first),
                 ]
 
-        class aivisscanexecution:
+        class scanexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [
@@ -385,7 +385,7 @@ def test_breakdowns_repo_builds_historical_mentions_sorted_by_date() -> None:
                     SimpleNamespace(id="exec-a", scanJobId="job-a", provider="anthropic"),
                 ]
 
-        class aivispromptexecution:
+        class promptexecution:
             @staticmethod
             async def find_many(**kwargs):
                 where = kwargs.get("where", {})
@@ -396,14 +396,14 @@ def test_breakdowns_repo_builds_historical_mentions_sorted_by_date() -> None:
                     return [SimpleNamespace(id="pe-a1")]
                 return []
 
-        class aivisobservation:
+        class observation:
             @staticmethod
             async def find_many(**kwargs):
                 where = kwargs.get("where", {})
                 pe_ids = where.get("promptExecutionId", {}).get("in", [])
                 return [SimpleNamespace(brandMentioned=True) for _ in pe_ids]
 
-        class aivispromptexecutioncitation:
+        class promptexecutioncitation:
             @staticmethod
             async def find_many(**_kwargs):
                 return []
@@ -436,27 +436,27 @@ def test_breakdowns_repo_builds_top_pages_filtered_to_brand_domain() -> None:
     from ai_visibility.metrics.snapshot import SnapshotRepository
 
     class _FakePrisma:
-        class aivisscanjob:
+        class scanjob:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="job-1", createdAt=None)]
 
-        class aivisscanexecution:
+        class scanexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
 
-        class aivispromptexecution:
+        class promptexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="pe-1", rawResponse="")]
 
-        class aivisobservation:
+        class observation:
             @staticmethod
             async def find_many(**_kwargs):
                 return []
 
-        class aivispromptexecutioncitation:
+        class promptexecutioncitation:
             @staticmethod
             async def find_many(**_kwargs):
                 return [
@@ -466,12 +466,12 @@ def test_breakdowns_repo_builds_top_pages_filtered_to_brand_domain() -> None:
                     SimpleNamespace(url="https://example.com/blog"),
                 ]
 
-        class aivisbrand:
+        class brand:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(name="Acme", domain="acme.com")]
 
-        class aiviscompetitor:
+        class competitor:
             @staticmethod
             async def find_many(**_kwargs):
                 return []
@@ -507,17 +507,17 @@ def test_breakdowns_repo_builds_competitor_comparison_via_text_match() -> None:
     from ai_visibility.metrics.snapshot import SnapshotRepository
 
     class _FakePrisma:
-        class aivisscanjob:
+        class scanjob:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="job-1", createdAt=None)]
 
-        class aivisscanexecution:
+        class scanexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(id="exec-1", scanJobId="job-1", provider="anthropic")]
 
-        class aivispromptexecution:
+        class promptexecution:
             @staticmethod
             async def find_many(**_kwargs):
                 return [
@@ -531,22 +531,22 @@ def test_breakdowns_repo_builds_competitor_comparison_via_text_match() -> None:
                     ),
                 ]
 
-        class aivisobservation:
+        class observation:
             @staticmethod
             async def find_many(**_kwargs):
                 return []
 
-        class aivispromptexecutioncitation:
+        class promptexecutioncitation:
             @staticmethod
             async def find_many(**_kwargs):
                 return []
 
-        class aivisbrand:
+        class brand:
             @staticmethod
             async def find_many(**_kwargs):
                 return [SimpleNamespace(name="Acme", domain="acme.com")]
 
-        class aiviscompetitor:
+        class competitor:
             @staticmethod
             async def find_many(**_kwargs):
                 return [

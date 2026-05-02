@@ -16,7 +16,7 @@ class CompetitorRepository:
         self.prisma: Prisma = prisma
 
     async def list_by_workspace(self, workspace_id: str) -> list[CompetitorRecord]:
-        rows = await self.prisma.aiviscompetitor.find_many(
+        rows = await self.prisma.competitor.find_many(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "asc"}, {"id": "asc"}],
         )
@@ -24,7 +24,7 @@ class CompetitorRepository:
 
     async def create(self, workspace_id: str, name: str, domain: str) -> CompetitorRecord:
         now = datetime.now(timezone.utc)
-        created = await self.prisma.aiviscompetitor.create(
+        created = await self.prisma.competitor.create(
             data={
                 "id": str(uuid4()),
                 "workspace": {"connect": {"id": workspace_id}},
@@ -37,14 +37,14 @@ class CompetitorRepository:
         return _competitor_from_model(created)
 
     async def delete(self, competitor_id: str) -> bool:
-        existing = await self.prisma.aiviscompetitor.find_unique(where={"id": competitor_id})
+        existing = await self.prisma.competitor.find_unique(where={"id": competitor_id})
         if existing is None:
             return False
-        await self.prisma.aiviscompetitor.delete(where={"id": competitor_id})
+        await self.prisma.competitor.delete(where={"id": competitor_id})
         return True
 
     async def get_by_domain(self, workspace_id: str, domain: str) -> CompetitorRecord | None:
-        row = await self.prisma.aiviscompetitor.find_first(
+        row = await self.prisma.competitor.find_first(
             where={
                 "workspaceId": workspace_id,
                 "domain": normalize_domain(domain),

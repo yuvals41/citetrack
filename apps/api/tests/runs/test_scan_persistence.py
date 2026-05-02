@@ -39,14 +39,14 @@ async def _create_workspace(mock_prisma: MagicMock, slug: str) -> WorkspaceRecor
         createdAt=created_at,
     )
 
-    mock_prisma.aivisworkspace.create.return_value = workspace_model
+    mock_prisma.workspace.create.return_value = workspace_model
 
     def _workspace_lookup(*, where: dict[str, str]):
         if where.get("slug") == slug or where.get("id") == workspace["id"]:
             return workspace_model
         return None
 
-    mock_prisma.aivisworkspace.find_unique.side_effect = _workspace_lookup
+    mock_prisma.workspace.find_unique.side_effect = _workspace_lookup
 
     repository = WorkspaceRepository(mock_prisma)
     return await repository.create(workspace)
@@ -82,20 +82,20 @@ async def test_scan_persists_append_only_evidence_rows(
 
     first = await orchestrator.scan()
     first_counts = {
-        "scan_jobs": mock_prisma.aivisscanjob.upsert.call_count,
-        "scan_executions": mock_prisma.aivisscanexecution.upsert.call_count,
-        "prompt_executions": mock_prisma.aivispromptexecution.upsert.call_count,
-        "observations": mock_prisma.aivisobservation.upsert.call_count,
-        "prompt_execution_citations": mock_prisma.aivispromptexecutioncitation.upsert.call_count,
+        "scan_jobs": mock_prisma.scanjob.upsert.call_count,
+        "scan_executions": mock_prisma.scanexecution.upsert.call_count,
+        "prompt_executions": mock_prisma.promptexecution.upsert.call_count,
+        "observations": mock_prisma.observation.upsert.call_count,
+        "prompt_execution_citations": mock_prisma.promptexecutioncitation.upsert.call_count,
     }
 
     second = await orchestrator.scan()
     second_counts = {
-        "scan_jobs": mock_prisma.aivisscanjob.upsert.call_count,
-        "scan_executions": mock_prisma.aivisscanexecution.upsert.call_count,
-        "prompt_executions": mock_prisma.aivispromptexecution.upsert.call_count,
-        "observations": mock_prisma.aivisobservation.upsert.call_count,
-        "prompt_execution_citations": mock_prisma.aivispromptexecutioncitation.upsert.call_count,
+        "scan_jobs": mock_prisma.scanjob.upsert.call_count,
+        "scan_executions": mock_prisma.scanexecution.upsert.call_count,
+        "prompt_executions": mock_prisma.promptexecution.upsert.call_count,
+        "observations": mock_prisma.observation.upsert.call_count,
+        "prompt_execution_citations": mock_prisma.promptexecutioncitation.upsert.call_count,
     }
 
     assert first.status == "completed"
@@ -107,8 +107,8 @@ async def test_scan_persists_append_only_evidence_rows(
     assert second_counts["observations"] > first_counts["observations"]
     assert second_counts["prompt_execution_citations"] > first_counts["prompt_execution_citations"]
 
-    run_create_calls = mock_prisma.aivisrun.create.await_args_list
-    prompt_upsert_calls = mock_prisma.aivispromptexecution.upsert.await_args_list
+    run_create_calls = mock_prisma.run.create.await_args_list
+    prompt_upsert_calls = mock_prisma.promptexecution.upsert.await_args_list
 
     assert all(call.kwargs["data"]["rawResponse"] for call in run_create_calls)
     assert all(call.kwargs["data"]["create"]["rawResponse"] for call in prompt_upsert_calls)
@@ -166,28 +166,28 @@ async def test_scan_evidence_repository_writes_are_idempotent(mock_prisma: Magic
         "idempotency_key": "citation-key-1",
     }
 
-    mock_prisma.aivisscanjob.find_unique.side_effect = [None, MagicMock()]
+    mock_prisma.scanjob.find_unique.side_effect = [None, MagicMock()]
     assert await repository.create_scan_job(scan_job) is True
     assert await repository.create_scan_job({**scan_job, "id": "scan-job-duplicate"}) is False
 
-    mock_prisma.aivisscanexecution.find_unique.side_effect = [None, MagicMock()]
+    mock_prisma.scanexecution.find_unique.side_effect = [None, MagicMock()]
     assert await repository.create_scan_execution(scan_execution) is True
     assert await repository.create_scan_execution({**scan_execution, "id": "scan-exec-duplicate"}) is False
 
-    mock_prisma.aivispromptexecution.find_unique.side_effect = [None, MagicMock()]
+    mock_prisma.promptexecution.find_unique.side_effect = [None, MagicMock()]
     assert await repository.create_prompt_execution(prompt_execution) is True
     assert await repository.create_prompt_execution({**prompt_execution, "id": "prompt-exec-duplicate"}) is False
 
-    mock_prisma.aivisobservation.find_unique.side_effect = [None, MagicMock()]
+    mock_prisma.observation.find_unique.side_effect = [None, MagicMock()]
     assert await repository.create_observation(observation) is True
     assert await repository.create_observation({**observation, "id": "observation-duplicate"}) is False
 
-    mock_prisma.aivispromptexecutioncitation.find_unique.side_effect = [None, MagicMock()]
+    mock_prisma.promptexecutioncitation.find_unique.side_effect = [None, MagicMock()]
     assert await repository.create_prompt_execution_citation(citation) is True
     assert await repository.create_prompt_execution_citation({**citation, "id": "citation-duplicate"}) is False
 
-    assert mock_prisma.aivisscanjob.upsert.call_count == 1
-    assert mock_prisma.aivisscanexecution.upsert.call_count == 1
-    assert mock_prisma.aivispromptexecution.upsert.call_count == 1
-    assert mock_prisma.aivisobservation.upsert.call_count == 1
-    assert mock_prisma.aivispromptexecutioncitation.upsert.call_count == 1
+    assert mock_prisma.scanjob.upsert.call_count == 1
+    assert mock_prisma.scanexecution.upsert.call_count == 1
+    assert mock_prisma.promptexecution.upsert.call_count == 1
+    assert mock_prisma.observation.upsert.call_count == 1
+    assert mock_prisma.promptexecutioncitation.upsert.call_count == 1

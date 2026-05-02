@@ -17,7 +17,7 @@ dependencies = [
     "cryptography>=42.0.0",
     "solaraai-llm[agent]==0.0.35",
     "mirascope<2",
-    "solaraai-prisma-client",
+    "citetrack-prisma-client",
     "arq>=0.27.0",
     "fpdf2",
     "svix>=1.40.0",
@@ -25,7 +25,7 @@ dependencies = [
 
 [tool.uv.sources]
 solaraai-llm = { path = "/home/yuval/Documents/solaraai/stanley/repos/solaraai-packages/packages/python/solaraai-llm", editable = true }
-solaraai-prisma-client = { path = "/home/yuval/Documents/solaraai/stanley/repos/prisma/dist/client-python", editable = true }
+citetrack-prisma-client = { path = "../../prisma/client-python", editable = true }
 
 [dependency-groups]
 dev = [

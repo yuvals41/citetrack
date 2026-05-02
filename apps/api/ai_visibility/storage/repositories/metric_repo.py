@@ -36,7 +36,7 @@ class MetricRepository:
         }
 
         _ = conn
-        result = await self.prisma.aivismetricsnapshot.upsert(
+        result = await self.prisma.metricsnapshot.upsert(
             where={"id": payload["id"]},
             data={
                 "create": {
@@ -66,7 +66,7 @@ class MetricRepository:
         return _metric_from_model(result)
 
     async def get_latest_by_workspace(self, workspace_id: str) -> MetricSnapshotRecord | None:
-        row = await self.prisma.aivismetricsnapshot.find_first(
+        row = await self.prisma.metricsnapshot.find_first(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "desc"}, {"id": "desc"}],
         )
@@ -74,7 +74,7 @@ class MetricRepository:
         return _metric_from_model(row) if row else None
 
     async def get_previous_by_workspace(self, workspace_id: str) -> MetricSnapshotRecord | None:
-        row = await self.prisma.aivismetricsnapshot.find_first(
+        row = await self.prisma.metricsnapshot.find_first(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "desc"}, {"id": "desc"}],
             skip=1,
@@ -83,7 +83,7 @@ class MetricRepository:
         return _metric_from_model(row) if row else None
 
     async def list_by_workspace(self, workspace_id: str) -> list[MetricSnapshotRecord]:
-        rows = await self.prisma.aivismetricsnapshot.find_many(
+        rows = await self.prisma.metricsnapshot.find_many(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "asc"}, {"id": "asc"}],
         )

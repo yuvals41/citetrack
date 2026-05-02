@@ -23,11 +23,11 @@ class ScanEvidenceRepository:
 
     async def create_scan_job(self, scan_job: ScanJobRecord, *, conn: sqlite3.Connection | None = None) -> bool:
         _ = conn
-        existing = await self.prisma.aivisscanjob.find_unique(where={"idempotencyKey": scan_job["idempotency_key"]})
+        existing = await self.prisma.scanjob.find_unique(where={"idempotencyKey": scan_job["idempotency_key"]})
         if existing is not None:
             return False
 
-        await self.prisma.aivisscanjob.upsert(
+        await self.prisma.scanjob.upsert(
             where={"idempotencyKey": scan_job["idempotency_key"]},
             data={
                 "create": {
@@ -52,13 +52,13 @@ class ScanEvidenceRepository:
         conn: sqlite3.Connection | None = None,
     ) -> bool:
         _ = conn
-        existing = await self.prisma.aivisscanexecution.find_unique(
+        existing = await self.prisma.scanexecution.find_unique(
             where={"idempotencyKey": scan_execution["idempotency_key"]}
         )
         if existing is not None:
             return False
 
-        await self.prisma.aivisscanexecution.upsert(
+        await self.prisma.scanexecution.upsert(
             where={"idempotencyKey": scan_execution["idempotency_key"]},
             data={
                 "create": {
@@ -83,13 +83,13 @@ class ScanEvidenceRepository:
         conn: sqlite3.Connection | None = None,
     ) -> bool:
         _ = conn
-        existing = await self.prisma.aivispromptexecution.find_unique(
+        existing = await self.prisma.promptexecution.find_unique(
             where={"idempotencyKey": prompt_execution["idempotency_key"]}
         )
         if existing is not None:
             return False
 
-        await self.prisma.aivispromptexecution.upsert(
+        await self.prisma.promptexecution.upsert(
             where={"idempotencyKey": prompt_execution["idempotency_key"]},
             data={
                 "create": {
@@ -111,13 +111,13 @@ class ScanEvidenceRepository:
         self, observation: ObservationRecord, *, conn: sqlite3.Connection | None = None
     ) -> bool:
         _ = conn
-        existing = await self.prisma.aivisobservation.find_unique(
+        existing = await self.prisma.observation.find_unique(
             where={"idempotencyKey": observation["idempotency_key"]}
         )
         if existing is not None:
             return False
 
-        await self.prisma.aivisobservation.upsert(
+        await self.prisma.observation.upsert(
             where={"idempotencyKey": observation["idempotency_key"]},
             data={
                 "create": {
@@ -141,13 +141,13 @@ class ScanEvidenceRepository:
         conn: sqlite3.Connection | None = None,
     ) -> bool:
         _ = conn
-        existing = await self.prisma.aivispromptexecutioncitation.find_unique(
+        existing = await self.prisma.promptexecutioncitation.find_unique(
             where={"idempotencyKey": citation["idempotency_key"]}
         )
         if existing is not None:
             return False
 
-        await self.prisma.aivispromptexecutioncitation.upsert(
+        await self.prisma.promptexecutioncitation.upsert(
             where={"idempotencyKey": citation["idempotency_key"]},
             data={
                 "create": {
@@ -164,21 +164,21 @@ class ScanEvidenceRepository:
         return True
 
     async def list_prompt_executions(self, scan_execution_id: str) -> list[PromptExecutionRecord]:
-        rows = await self.prisma.aivispromptexecution.find_many(
+        rows = await self.prisma.promptexecution.find_many(
             where={"scanExecutionId": scan_execution_id},
             order=[{"executedAt": "asc"}, {"id": "asc"}],
         )
         return [_prompt_execution_from_model(row) for row in rows]
 
     async def list_observations(self, prompt_execution_id: str) -> list[ObservationRecord]:
-        rows = await self.prisma.aivisobservation.find_many(
+        rows = await self.prisma.observation.find_many(
             where={"promptExecutionId": prompt_execution_id},
             order={"id": "asc"},
         )
         return [_observation_from_model(row) for row in rows]
 
     async def list_prompt_execution_citations(self, prompt_execution_id: str) -> list[PromptExecutionCitationRecord]:
-        rows = await self.prisma.aivispromptexecutioncitation.find_many(
+        rows = await self.prisma.promptexecutioncitation.find_many(
             where={"promptExecutionId": prompt_execution_id},
             order={"id": "asc"},
         )

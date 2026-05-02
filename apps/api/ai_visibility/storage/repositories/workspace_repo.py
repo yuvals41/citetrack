@@ -29,7 +29,7 @@ class WorkspaceRepository:
             "created_at": workspace["created_at"],
         }
 
-        created = await self.prisma.aivisworkspace.create(
+        created = await self.prisma.workspace.create(
             data={
                 "id": payload["id"],
                 "slug": payload["slug"],
@@ -52,30 +52,30 @@ class WorkspaceRepository:
         scan_schedule: ScanSchedule | None = None,
     ) -> WorkspaceRecord | None:
         await self._ensure_schedule_table()
-        existing = await self.prisma.aivisworkspace.find_unique(where={"slug": slug})
+        existing = await self.prisma.workspace.find_unique(where={"slug": slug})
         if existing is None:
             return None
         data: dict[str, Any] = {}
         if brand_name is not None:
             data["brandName"] = brand_name
         if data:
-            await self.prisma.aivisworkspace.update(where={"slug": slug}, data=data)
+            await self.prisma.workspace.update(where={"slug": slug}, data=data)
         if scan_schedule is not None:
             await self.set_scan_schedule(str(existing.id), scan_schedule)
-        refreshed = await self.prisma.aivisworkspace.find_unique(where={"slug": slug})
+        refreshed = await self.prisma.workspace.find_unique(where={"slug": slug})
         resolved_schedule = await self.get_scan_schedule(str(existing.id))
         return _workspace_from_model(refreshed, resolved_schedule) if refreshed else None
 
     async def get_by_slug(self, slug: str) -> WorkspaceRecord | None:
         await self._ensure_schedule_table()
-        row = await self.prisma.aivisworkspace.find_unique(where={"slug": slug})
+        row = await self.prisma.workspace.find_unique(where={"slug": slug})
         schedule = await self.get_scan_schedule(str(row.id)) if row else DEFAULT_SCAN_SCHEDULE
 
         return _workspace_from_model(row, schedule) if row else None
 
     async def list_all(self) -> list[WorkspaceRecord]:
         await self._ensure_schedule_table()
-        rows = await self.prisma.aivisworkspace.find_many(
+        rows = await self.prisma.workspace.find_many(
             order=[{"createdAt": "asc"}, {"id": "asc"}],
         )
         schedule_map = await self._get_schedule_map()

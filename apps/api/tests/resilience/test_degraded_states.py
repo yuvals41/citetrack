@@ -76,10 +76,10 @@ def test_is_degraded_helper() -> None:
 
 
 def test_health_returns_degraded_json_when_db_unavailable(monkeypatch: MonkeyPatchLike) -> None:
-    def broken_connect(_database: Database):
+    async def broken_get_prisma() -> object:
         raise sqlite3.OperationalError("db offline")
 
-    monkeypatch.setattr(Database, "connect", broken_connect)
+    monkeypatch.setattr("ai_visibility.api.routes.get_prisma", broken_get_prisma)
 
     client = TestClient(create_app())
     response = client.get("/api/v1/health")

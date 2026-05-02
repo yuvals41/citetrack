@@ -64,7 +64,7 @@ def _configure_workspace_state(
         state[str(data["slug"])] = row
         return row
 
-    workspace_model = cast(MagicMock, getattr(mock_prisma, "aivisworkspace"))
+    workspace_model = cast(MagicMock, getattr(mock_prisma, "workspace"))
     setattr(workspace_model, "find_unique", AsyncMock(side_effect=_find_unique))
     setattr(workspace_model, "create", AsyncMock(side_effect=_create))
     return state

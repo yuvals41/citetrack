@@ -1,0 +1,16 @@
+model MetricSnapshot {
+  id               String   @id @default(uuid())
+  workspaceId      String   @map("workspace_id")
+  brandId          String   @map("brand_id")
+  formulaVersion   String   @map("formula_version")
+  visibilityScore  Float    @map("visibility_score")
+  citationCoverage Float    @default(0.0) @map("citation_coverage")
+  competitorWins   Int      @default(0) @map("competitor_wins")
+  mentionCount     Int      @map("mention_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@map("ai_vis_metric_snapshots")
+}

@@ -41,8 +41,8 @@ def mock_workspace_record() -> dict[str, Any]:
 @pytest.fixture
 def patched_prisma(mock_workspace_record: dict[str, Any]) -> AsyncIterator[MagicMock]:
     mock_prisma = MagicMock()
-    mock_prisma.aivisworkspace.find_unique = AsyncMock(return_value=MagicMock(**mock_workspace_record))
-    mock_prisma.aivisworkspace.update = AsyncMock()
+    mock_prisma.workspace.find_unique = AsyncMock(return_value=MagicMock(**mock_workspace_record))
+    mock_prisma.workspace.update = AsyncMock()
     mock_prisma.query_raw = AsyncMock(return_value=[])
     mock_prisma.execute_raw = AsyncMock(return_value=None)
     with patch("ai_visibility.api.settings_routes.get_prisma", new=AsyncMock(return_value=mock_prisma)):

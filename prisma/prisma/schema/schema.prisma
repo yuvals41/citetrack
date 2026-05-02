@@ -1,0 +1,18 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator nodejs {
+  provider        = "prisma-client-js"
+  output          = "../../client-node"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+generator python {
+  provider                    = "prisma-client-py"
+  output                      = "../../client-python/prisma"
+  previewFeatures             = ["prismaSchemaFolder"]
+  enable_experimental_decimal = true
+  recursive_type_depth        = -1
+}

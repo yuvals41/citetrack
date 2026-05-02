@@ -112,11 +112,11 @@ async def test_run_repository_create_list_latest_and_dedup(tmp_path: Path, mock_
         rows = await run_find_many(where=where, order=order)
         return rows[0] if rows else None
 
-    mock_prisma.aivisworkspace.create.side_effect = workspace_create
-    mock_prisma.aivisworkspace.find_unique.side_effect = workspace_find_unique
-    mock_prisma.aivisrun.create.side_effect = run_create
-    mock_prisma.aivisrun.find_many.side_effect = run_find_many
-    mock_prisma.aivisrun.find_first.side_effect = run_find_first
+    mock_prisma.workspace.create.side_effect = workspace_create
+    mock_prisma.workspace.find_unique.side_effect = workspace_find_unique
+    mock_prisma.run.create.side_effect = run_create
+    mock_prisma.run.find_many.side_effect = run_find_many
+    mock_prisma.run.find_first.side_effect = run_find_first
 
     workspace: WorkspaceRecord = {
         "id": "ws_1",
@@ -223,8 +223,8 @@ async def test_mention_repository_bulk_create_and_list_by_run(tmp_path: Path, mo
             for mention in rows
         ]
 
-    mock_prisma.aivismention.create.side_effect = mention_create
-    mock_prisma.aivismention.find_many.side_effect = mention_find_many
+    mock_prisma.mention.create.side_effect = mention_create
+    mock_prisma.mention.find_many.side_effect = mention_find_many
 
     mentions: list[MentionRecord] = [
         {
@@ -312,8 +312,8 @@ async def test_metric_repository_upsert_and_get_latest_by_workspace(tmp_path: Pa
             createdAt=_dt(metric["created_at"]),
         )
 
-    mock_prisma.aivismetricsnapshot.upsert.side_effect = metric_upsert
-    mock_prisma.aivismetricsnapshot.find_first.side_effect = metric_find_first
+    mock_prisma.metricsnapshot.upsert.side_effect = metric_upsert
+    mock_prisma.metricsnapshot.find_first.side_effect = metric_find_first
 
     _ = await metric_repo.upsert_snapshot(
         {

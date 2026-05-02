@@ -1,0 +1,18 @@
+model Mention {
+  id             String         @id @default(uuid())
+  workspaceId    String         @map("workspace_id")
+  runId          String         @map("run_id")
+  brandId        String         @map("brand_id")
+  mentionType    String         @map("mention_type")
+  text           String
+  citationUrl    String?        @map("citation_url")
+  citationDomain String?        @map("citation_domain")
+  citationStatus CitationStatus @default(NO_CITATION) @map("citation_status")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  run       Run       @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([workspaceId])
+  @@map("ai_vis_mentions")
+}

@@ -76,7 +76,7 @@ async def test_list_workspaces_returns_workspace_list(
 ) -> None:
     _ = patch_get_prisma
     _patch_cli_get_prisma(monkeypatch, mock_prisma)
-    mock_prisma.aivisworkspace.find_many.return_value = [
+    mock_prisma.workspace.find_many.return_value = [
         _workspace_model(workspace_id="ws-acme", slug="acme", brand_name="Acme Corp"),
         _workspace_model(workspace_id="ws-beta", slug="beta-brand", brand_name="Beta Brand"),
     ]
@@ -111,8 +111,8 @@ async def test_seed_demo_creates_workspace_records_in_db(
             return beta
         return None
 
-    mock_prisma.aivisworkspace.find_unique.side_effect = find_unique_side_effect
-    mock_prisma.aivisrun.find_many.return_value = [_run_model(run_id="run-1", workspace_id="ws-acme")]
+    mock_prisma.workspace.find_unique.side_effect = find_unique_side_effect
+    mock_prisma.run.find_many.return_value = [_run_model(run_id="run-1", workspace_id="ws-acme")]
 
     result = await cli.seed_demo()
 
@@ -134,13 +134,13 @@ async def test_recommend_latest_returns_recommendations_list(
 ) -> None:
     _ = patch_get_prisma
     _patch_cli_get_prisma(monkeypatch, mock_prisma)
-    mock_prisma.aivisworkspace.find_unique.return_value = _workspace_model(
+    mock_prisma.workspace.find_unique.return_value = _workspace_model(
         workspace_id="ws-acme",
         slug="acme",
         brand_name="Acme Corp",
     )
-    mock_prisma.aivisrun.find_many.return_value = [_run_model(run_id="run-1", workspace_id="ws-acme")]
-    mock_prisma.aivismention.find_many.return_value = []
+    mock_prisma.run.find_many.return_value = [_run_model(run_id="run-1", workspace_id="ws-acme")]
+    mock_prisma.mention.find_many.return_value = []
 
     result = await cli.recommend_latest(workspace="acme")
     assert isinstance(result, dict)
@@ -158,8 +158,8 @@ async def test_recommend_latest_handles_missing_workspace_gracefully(
 ) -> None:
     _ = patch_get_prisma
     _patch_cli_get_prisma(monkeypatch, mock_prisma)
-    mock_prisma.aivisworkspace.find_unique.return_value = None
-    mock_prisma.aivisworkspace.find_many.return_value = [
+    mock_prisma.workspace.find_unique.return_value = None
+    mock_prisma.workspace.find_many.return_value = [
         _workspace_model(workspace_id="ws-existing", slug="existing", brand_name="Existing"),
     ]
 
@@ -177,8 +177,8 @@ async def test_summarize_latest_handles_missing_workspace_gracefully(
 ) -> None:
     _ = patch_get_prisma
     _patch_cli_get_prisma(monkeypatch, mock_prisma)
-    mock_prisma.aivisworkspace.find_unique.return_value = None
-    mock_prisma.aivisworkspace.find_many.return_value = [
+    mock_prisma.workspace.find_unique.return_value = None
+    mock_prisma.workspace.find_many.return_value = [
         _workspace_model(workspace_id="ws-existing", slug="existing", brand_name="Existing"),
     ]
 
@@ -196,7 +196,7 @@ async def test_run_scan_returns_degraded_state_when_provider_fails(
 ) -> None:
     _ = patch_get_prisma
     _patch_cli_get_prisma(monkeypatch, mock_prisma)
-    mock_prisma.aivisworkspace.find_unique.return_value = _workspace_model(
+    mock_prisma.workspace.find_unique.return_value = _workspace_model(
         workspace_id="ws-acme",
         slug="acme",
         brand_name="Acme Corp",
@@ -237,7 +237,7 @@ async def test_recommend_latest_returns_degraded_state_when_storage_errors(
 ) -> None:
     _ = patch_get_prisma
     _patch_cli_get_prisma(monkeypatch, mock_prisma)
-    mock_prisma.aivisworkspace.find_unique.return_value = _workspace_model(
+    mock_prisma.workspace.find_unique.return_value = _workspace_model(
         workspace_id="ws-acme",
         slug="acme",
         brand_name="Acme Corp",
@@ -264,15 +264,15 @@ async def test_command_functions_return_dict_not_string(
 ) -> None:
     _ = patch_get_prisma
     _patch_cli_get_prisma(monkeypatch, mock_prisma)
-    mock_prisma.aivisworkspace.find_many.return_value = [
+    mock_prisma.workspace.find_many.return_value = [
         _workspace_model(workspace_id="ws-acme", slug="acme", brand_name="Acme Corp"),
     ]
-    mock_prisma.aivisworkspace.find_unique.return_value = _workspace_model(
+    mock_prisma.workspace.find_unique.return_value = _workspace_model(
         workspace_id="ws-acme",
         slug="acme",
         brand_name="Acme Corp",
     )
-    mock_prisma.aivisrun.find_many.return_value = []
+    mock_prisma.run.find_many.return_value = []
 
     outputs = [
         cli.doctor(),
@@ -303,8 +303,8 @@ async def test_create_workspace_stores_location_fields(
         region="CA",
         country="US",
     )
-    mock_prisma.aivisworkspace.find_unique.side_effect = [None, created_workspace]
-    mock_prisma.aivisworkspace.create.return_value = created_workspace
+    mock_prisma.workspace.find_unique.side_effect = [None, created_workspace]
+    mock_prisma.workspace.create.return_value = created_workspace
 
     result = await cli.create_workspace(
         brand_name="Acme",
@@ -340,8 +340,8 @@ async def test_create_workspace_cli_accepts_location_flags(
         region="TX",
         country="US",
     )
-    mock_prisma.aivisworkspace.find_unique.side_effect = [None, created_workspace]
-    mock_prisma.aivisworkspace.create.return_value = created_workspace
+    mock_prisma.workspace.find_unique.side_effect = [None, created_workspace]
+    mock_prisma.workspace.create.return_value = created_workspace
 
     payload = await cli.create_workspace(
         brand_name="Acme CLI",

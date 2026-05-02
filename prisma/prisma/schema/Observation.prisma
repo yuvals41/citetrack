@@ -1,0 +1,14 @@
+model Observation {
+  id                String  @id @default(uuid())
+  promptExecutionId String  @map("prompt_execution_id")
+  brandMentioned    Boolean @map("brand_mentioned")
+  brandPosition     Int?    @map("brand_position")
+  responseExcerpt   String  @map("response_excerpt")
+  idempotencyKey    String  @unique @map("idempotency_key")
+  strategyVersion   String  @map("strategy_version")
+
+  promptExecution PromptExecution @relation(fields: [promptExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([promptExecutionId])
+  @@map("ai_vis_observations")
+}

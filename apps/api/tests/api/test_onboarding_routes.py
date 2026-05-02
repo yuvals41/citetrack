@@ -157,13 +157,13 @@ def workspace_store(mock_prisma, clean_user_repo):
             updatedAt=cast(datetime, data.get("createdAt", datetime.now())),
         )
 
-    mock_prisma.aivisworkspace.create.side_effect = create
-    mock_prisma.aivisworkspace.find_unique.side_effect = find_unique
+    mock_prisma.workspace.create.side_effect = create
+    mock_prisma.workspace.find_unique.side_effect = find_unique
     mock_prisma.query_raw.side_effect = query_raw
     mock_prisma.execute_raw.side_effect = execute_raw
-    mock_prisma.aivisbrand.find_many.side_effect = brand_find_many
-    mock_prisma.aivisbrand.create.side_effect = brand_create
-    mock_prisma.aiviscompetitor.create.side_effect = competitor_create
+    mock_prisma.brand.find_many.side_effect = brand_find_many
+    mock_prisma.brand.create.side_effect = brand_create
+    mock_prisma.competitor.create.side_effect = competitor_create
 
     return workspaces
 

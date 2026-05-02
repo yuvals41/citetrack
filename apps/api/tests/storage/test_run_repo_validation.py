@@ -111,11 +111,11 @@ def repos(mock_prisma):
         listed = await run_find_many(where=where, order=order)
         return listed[0] if listed else None
 
-    mock_prisma.aivisworkspace.create.side_effect = workspace_create
-    mock_prisma.aivisworkspace.find_unique.side_effect = workspace_find_unique
-    mock_prisma.aivisrun.create.side_effect = run_create
-    mock_prisma.aivisrun.find_many.side_effect = run_find_many
-    mock_prisma.aivisrun.find_first.side_effect = run_find_first
+    mock_prisma.workspace.create.side_effect = workspace_create
+    mock_prisma.workspace.find_unique.side_effect = workspace_find_unique
+    mock_prisma.run.create.side_effect = run_create
+    mock_prisma.run.find_many.side_effect = run_find_many
+    mock_prisma.run.find_first.side_effect = run_find_first
 
     return WorkspaceRepository(mock_prisma), RunRepository(mock_prisma)
 

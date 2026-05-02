@@ -1,0 +1,15 @@
+model ScanJob {
+  id              String     @id @default(uuid())
+  workspaceSlug   String     @map("workspace_slug")
+  strategyVersion String     @map("strategy_version")
+  promptVersion   String     @map("prompt_version")
+  idempotencyKey  String     @unique @map("idempotency_key")
+  status          ScanStatus
+  scanMode        ScanMode   @map("scan_mode")
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  executions ScanExecution[]
+
+  @@index([workspaceSlug, createdAt(sort: Desc)])
+  @@map("ai_vis_scan_jobs")
+}

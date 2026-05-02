@@ -1,0 +1,15 @@
+model PixelEvent {
+  id                 String   @id
+  workspaceId        String   @map("workspace_id")
+  source             String
+  referrer           String?
+  pageUrl            String?  @map("page_url")
+  sessionId          String?  @map("session_id")
+  eventType          String   @default("visit") @map("event_type")
+  conversionValue    Float?   @map("conversion_value")
+  conversionCurrency String?  @map("conversion_currency")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@index([workspaceId, createdAt], map: "idx_ai_vis_pixel_events_workspace_created")
+  @@map("ai_vis_pixel_events")
+}

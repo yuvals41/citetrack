@@ -33,8 +33,8 @@ async def _create_workspace(mock_prisma: MagicMock, slug: str) -> WorkspaceRecor
         country=workspace["country"],
         createdAt=created_at,
     )
-    mock_prisma.aivisworkspace.create.return_value = workspace_model  # pyright: ignore[reportAny]
-    mock_prisma.aivisworkspace.find_unique.return_value = workspace_model  # pyright: ignore[reportAny]
+    mock_prisma.workspace.create.return_value = workspace_model  # pyright: ignore[reportAny]
+    mock_prisma.workspace.find_unique.return_value = workspace_model  # pyright: ignore[reportAny]
 
     repo = WorkspaceRepository(mock_prisma)
     _ = await repo.create(workspace)
@@ -60,7 +60,7 @@ async def test_scan_lifecycle_status_completed_and_partial(
 ) -> None:
     _ = patch_get_prisma
     workspace = await _create_workspace(mock_prisma, "acme")
-    mock_prisma.aivisrun.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
 
     complete_adapter = StubAdapter(result=_ok_result())
     complete_orchestrator = RunOrchestrator(
@@ -115,7 +115,7 @@ async def test_scan_lifecycle_status_completed_and_partial(
     assert partial.status == "completed_with_partial_failures"
     assert partial.results_count == 2
 
-    mock_prisma.aivisrun.find_many.return_value = [  # pyright: ignore[reportAny]
+    mock_prisma.run.find_many.return_value = [  # pyright: ignore[reportAny]
         MagicMock(
             id="run-completed",
             workspaceId=workspace["id"],
@@ -155,7 +155,7 @@ async def test_scan_dispatches_adapter_with_strategy_config(
 ) -> None:
     _ = patch_get_prisma
     _ = await _create_workspace(mock_prisma, "acme")
-    mock_prisma.aivisrun.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
 
     adapter = StubAdapter(result=_ok_result())
     orchestrator = RunOrchestrator(
@@ -188,7 +188,7 @@ async def test_malformed_adapter_output_rejected(
 ) -> None:
     _ = patch_get_prisma
     _ = await _create_workspace(mock_prisma, "acme")
-    mock_prisma.aivisrun.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
 
     class MalformedAdapter(ScanAdapter):
         @override

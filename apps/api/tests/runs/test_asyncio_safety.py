@@ -44,8 +44,8 @@ async def _create_workspace(mock_prisma: MagicMock, slug: str) -> WorkspaceRecor
         country=workspace["country"],
         createdAt=created_at,
     )
-    mock_prisma.aivisworkspace.create.return_value = workspace_model  # pyright: ignore[reportAny]
-    mock_prisma.aivisworkspace.find_unique.return_value = workspace_model  # pyright: ignore[reportAny]
+    mock_prisma.workspace.create.return_value = workspace_model  # pyright: ignore[reportAny]
+    mock_prisma.workspace.find_unique.return_value = workspace_model  # pyright: ignore[reportAny]
 
     _ = await WorkspaceRepository(mock_prisma).create(workspace)
     return workspace
@@ -72,8 +72,8 @@ def _configure_scan_prisma_models(mock_prisma: MagicMock) -> None:
         createdAt=created_at,
     )
 
-    mock_prisma.aivismetricsnapshot.upsert.return_value = metric_row  # pyright: ignore[reportAny]
-    mock_prisma.aivismetricsnapshot.find_first.return_value = metric_row  # pyright: ignore[reportAny]
+    mock_prisma.metricsnapshot.upsert.return_value = metric_row  # pyright: ignore[reportAny]
+    mock_prisma.metricsnapshot.find_first.return_value = metric_row  # pyright: ignore[reportAny]
 
 
 def test_run_async_works_without_event_loop() -> None:
@@ -114,7 +114,7 @@ async def test_scan_works_from_sync_context(
     _patch_orchestrator_get_prisma(monkeypatch, mock_prisma)
     _configure_scan_prisma_models(mock_prisma)
     _ = await _create_workspace(mock_prisma, "acme")
-    mock_prisma.aivisrun.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
     orchestrator = RunOrchestrator(workspace_slug="acme")
 
     async def fake_execute(
@@ -157,7 +157,7 @@ async def test_scan_works_inside_existing_event_loop(
     _patch_orchestrator_get_prisma(monkeypatch, mock_prisma)
     _configure_scan_prisma_models(mock_prisma)
     _ = await _create_workspace(mock_prisma, "acme")
-    mock_prisma.aivisrun.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
     orchestrator = RunOrchestrator(workspace_slug="acme")
 
     async def fake_execute(

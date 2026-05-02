@@ -22,8 +22,8 @@ async def _seed_workspace_and_run(mock_prisma: MagicMock) -> str:
         country="",
         createdAt=datetime(2026, 3, 13, 10, 0, 0, tzinfo=timezone.utc),
     )
-    mock_prisma.aivisworkspace.create.return_value = workspace_row  # pyright: ignore[reportAny]
-    mock_prisma.aivisworkspace.find_unique.return_value = workspace_row  # pyright: ignore[reportAny]
+    mock_prisma.workspace.create.return_value = workspace_row  # pyright: ignore[reportAny]
+    mock_prisma.workspace.find_unique.return_value = workspace_row  # pyright: ignore[reportAny]
 
     workspace: WorkspaceRecord = {
         "id": "ws_1",
@@ -48,7 +48,7 @@ async def _seed_workspace_and_run(mock_prisma: MagicMock) -> str:
         rawResponse="raw",
         error=None,
     )
-    mock_prisma.aivisrun.find_many.return_value = [run_row]  # pyright: ignore[reportAny]
+    mock_prisma.run.find_many.return_value = [run_row]  # pyright: ignore[reportAny]
 
     run: RunRecord = {
         "id": "run_1",
@@ -104,7 +104,7 @@ async def _create_mentions(
             )
         )
 
-    mock_prisma.aivismention.find_many.return_value = mention_rows  # pyright: ignore[reportAny]
+    mock_prisma.mention.find_many.return_value = mention_rows  # pyright: ignore[reportAny]
     await mention_repo.create_bulk(payload)
 
 

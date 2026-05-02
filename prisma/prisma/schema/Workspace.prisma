@@ -1,0 +1,22 @@
+model Workspace {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  brandName String   @map("brand_name")
+  city      String   @default("")
+  region    String   @default("")
+  country   String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  brands             Brand[]
+  competitors        Competitor[]
+  prompts            Prompt[]
+  runs               Run[]
+  mentions           Mention[]
+  metricSnapshots    MetricSnapshot[]
+  recommendations    Recommendation[]
+  workspaceSchedule  WorkspaceSchedule?
+
+  @@index([slug])
+  @@map("ai_vis_workspaces")
+}

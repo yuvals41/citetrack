@@ -1,0 +1,10 @@
+client-node/
+node_modules/
+*.egg-info/
+build/
+.venv/
+__pycache__/
+
+# Generated client output (kept as scaffolded — but NOT the Prisma-generated artifacts inside)
+client-python/prisma/*
+!client-python/prisma/__init__.py

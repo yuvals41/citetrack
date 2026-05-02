@@ -25,18 +25,18 @@ async def export_workspace_csv(slug: str, user_id: CurrentUserId) -> Response:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace not accessible")
 
     prisma = await get_prisma()
-    scan_jobs = await prisma.aivisscanjob.find_many(where={"workspaceSlug": slug})
+    scan_jobs = await prisma.scanjob.find_many(where={"workspaceSlug": slug})
     job_ids = [j.id for j in scan_jobs]
 
     rows: list[dict[str, str]] = []
     if job_ids:
-        executions = await prisma.aivisscanexecution.find_many(where={"scanJobId": {"in": job_ids}})
+        executions = await prisma.scanexecution.find_many(where={"scanJobId": {"in": job_ids}})
         exec_by_id = {e.id: e for e in executions}
-        prompt_execs = await prisma.aivispromptexecution.find_many(
+        prompt_execs = await prisma.promptexecution.find_many(
             where={"scanExecutionId": {"in": list(exec_by_id.keys())}},
         )
         pe_by_id = {pe.id: pe for pe in prompt_execs}
-        observations = await prisma.aivisobservation.find_many(
+        observations = await prisma.observation.find_many(
             where={"promptExecutionId": {"in": list(pe_by_id.keys())}},
         )
         obs_by_pe_id: dict[str, object] = {o.promptExecutionId: o for o in observations}

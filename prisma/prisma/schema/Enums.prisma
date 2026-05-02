@@ -1,0 +1,25 @@
+enum RunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  COMPLETED_WITH_PARTIAL_FAILURES
+  FAILED
+}
+
+enum CitationStatus {
+  FOUND
+  NO_CITATION
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  COMPLETED_WITH_PARTIAL_FAILURES
+  FAILED
+}
+
+enum ScanMode {
+  ONBOARDING
+  SCHEDULED
+}

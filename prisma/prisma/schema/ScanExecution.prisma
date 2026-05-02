@@ -1,0 +1,16 @@
+model ScanExecution {
+  id             String   @id @default(uuid())
+  scanJobId      String   @map("scan_job_id")
+  provider       String
+  modelName      String   @map("model_name")
+  modelVersion   String   @map("model_version")
+  executedAt     DateTime @map("executed_at")
+  idempotencyKey String   @unique @map("idempotency_key")
+  status         String
+
+  scanJob          ScanJob           @relation(fields: [scanJobId], references: [id], onDelete: Cascade)
+  promptExecutions PromptExecution[]
+
+  @@index([scanJobId])
+  @@map("ai_vis_scan_executions")
+}

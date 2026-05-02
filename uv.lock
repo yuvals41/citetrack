@@ -401,6 +401,7 @@ version = "0.0.0"
 source = { virtual = "apps/api" }
 dependencies = [
     { name = "arq" },
+    { name = "citetrack-prisma-client" },
     { name = "cryptography" },
     { name = "fastapi" },
     { name = "fpdf2" },
@@ -412,7 +413,6 @@ dependencies = [
     { name = "pyjwt" },
     { name = "python-dotenv" },
     { name = "solaraai-llm", extra = ["agent"] },
-    { name = "solaraai-prisma-client" },
     { name = "svix" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -432,6 +432,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "arq", specifier = ">=0.27.0" },
+    { name = "citetrack-prisma-client", editable = "prisma/client-python" },
     { name = "cryptography", specifier = ">=42.0.0" },
     { name = "fastapi", specifier = ">=0.115.6" },
     { name = "fpdf2" },
@@ -443,7 +444,6 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.8.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "solaraai-llm", extras = ["agent"], editable = "../stanley/repos/solaraai-packages/packages/python/solaraai-llm" },
-    { name = "solaraai-prisma-client", editable = "../stanley/repos/prisma/dist/client-python" },
     { name = "svix", specifier = ">=1.40.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.1" },
 ]
@@ -458,6 +458,33 @@ dev = [
     { name = "pytest-playwright" },
     { name = "ruff", specifier = ">=0.8.0" },
     { name = "tomlkit" },
+]
+
+[[package]]
+name = "citetrack-prisma-client"
+version = "0.1.0"
+source = { editable = "prisma/client-python" }
+dependencies = [
+    { name = "click" },
+    { name = "httpx" },
+    { name = "jinja2" },
+    { name = "nodeenv" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "tomlkit" },
+    { name = "typing-extensions" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=7.1.2" },
+    { name = "httpx", specifier = ">=0.19.0" },
+    { name = "jinja2", specifier = ">=2.11.2" },
+    { name = "nodeenv" },
+    { name = "pydantic", specifier = ">=1.10.0,<3" },
+    { name = "python-dotenv", specifier = ">=0.12.0" },
+    { name = "tomlkit" },
+    { name = "typing-extensions", specifier = ">=4.5.0" },
 ]
 
 [[package]]
@@ -1886,6 +1913,15 @@ wheels = [
 ]
 
 [[package]]
+name = "nodeenv"
+version = "1.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/bf/d1bda4f6168e0b2e9e5958945e01910052158313224ada5ce1fb2e1113b8/nodeenv-1.10.0.tar.gz", hash = "sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb", size = 55611, upload-time = "2025-12-20T14:08:54.006Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl", hash = "sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827", size = 23438, upload-time = "2025-12-20T14:08:52.782Z" },
+]
+
+[[package]]
 name = "numpy"
 version = "2.4.4"
 source = { registry = "https://pypi.org/simple" }
@@ -3262,25 +3298,6 @@ dev = [
     { name = "pytest-bdd", specifier = ">=8.1.0" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
-]
-
-[[package]]
-name = "solaraai-prisma-client"
-version = "0.0.13"
-source = { editable = "../stanley/repos/prisma/dist/client-python" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "typing-extensions" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.19.0" },
-    { name = "pydantic", specifier = ">=1.10.0,<3" },
-    { name = "python-dotenv", specifier = ">=0.12.0" },
-    { name = "typing-extensions", specifier = ">=4.5.0" },
 ]
 
 [[package]]

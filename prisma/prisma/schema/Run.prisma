@@ -1,0 +1,19 @@
+model Run {
+  id            String    @id @default(uuid())
+  workspaceId   String    @map("workspace_id")
+  provider      String
+  model         String
+  promptVersion String    @map("prompt_version")
+  parserVersion String    @map("parser_version")
+  status        RunStatus
+  rawResponse   String?   @map("raw_response")
+  error         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  mentions  Mention[]
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@map("ai_vis_runs")
+}

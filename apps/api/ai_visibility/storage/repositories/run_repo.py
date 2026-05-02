@@ -30,11 +30,11 @@ class RunRepository:
         }
 
         _ = conn
-        workspace = await self.prisma.aivisworkspace.find_unique(where={"id": payload["workspace_id"]})
+        workspace = await self.prisma.workspace.find_unique(where={"id": payload["workspace_id"]})
         if workspace is None:
             raise ValueError(f"Workspace not found: {payload['workspace_id']}. Cannot create run.")
 
-        await self.prisma.aivisrun.create(
+        await self.prisma.run.create(
             data={
                 "id": payload["id"],
                 "workspaceId": payload["workspace_id"],
@@ -52,7 +52,7 @@ class RunRepository:
         return True
 
     async def list_by_workspace(self, workspace_id: str) -> list[RunRecord]:
-        rows = await self.prisma.aivisrun.find_many(
+        rows = await self.prisma.run.find_many(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "desc"}, {"id": "desc"}],
         )
@@ -60,7 +60,7 @@ class RunRepository:
         return [_run_from_model(row) for row in rows]
 
     async def get_latest_by_workspace(self, workspace_id: str) -> RunRecord | None:
-        row = await self.prisma.aivisrun.find_first(
+        row = await self.prisma.run.find_first(
             where={"workspaceId": workspace_id},
             order=[{"createdAt": "desc"}, {"id": "desc"}],
         )

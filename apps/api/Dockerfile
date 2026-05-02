@@ -1,6 +1,4 @@
-FROM python:3.12-slim AS builder
-
-ARG CODEARTIFACT_AUTH_TOKEN
+FROM python:3.13-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -10,26 +8,24 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates \
+    && apt-get install --no-install-recommends -y ca-certificates curl libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock ./
+COPY apps/api/pyproject.toml ./apps/api/
+COPY prisma ./prisma
 
-RUN UV_INDEX_SOLARAAI_USERNAME=aws \
-    UV_INDEX_SOLARAAI_PASSWORD="${CODEARTIFACT_AUTH_TOKEN}" \
-    uv sync --frozen --no-dev --no-install-project
+RUN uv sync --all-packages --frozen --no-dev --no-install-project
 
-COPY ai_visibility ./ai_visibility
-COPY rxconfig.py ./
+COPY apps/api/ai_visibility ./apps/api/ai_visibility
 
-RUN UV_INDEX_SOLARAAI_USERNAME=aws \
-    UV_INDEX_SOLARAAI_PASSWORD="${CODEARTIFACT_AUTH_TOKEN}" \
-    uv sync --frozen --no-dev
+RUN bash prisma/scripts/generatepython.sh \
+    && uv pip install -e ./prisma/client-python
 
 
-FROM python:3.12-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -61,8 +57,9 @@ RUN apt-get update \
 
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/pyproject.toml /app/uv.lock ./
-COPY --from=builder /app/ai_visibility ./ai_visibility
-COPY --from=builder /app/rxconfig.py ./
+COPY --from=builder /app/apps/api/pyproject.toml ./apps/api/
+COPY --from=builder /app/apps/api/ai_visibility ./apps/api/ai_visibility
+COPY --from=builder /app/prisma ./prisma
 
 RUN mkdir -p /app/data \
     && chown -R app:app /app

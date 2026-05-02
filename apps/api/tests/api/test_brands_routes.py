@@ -103,10 +103,10 @@ def patched_prisma(monkeypatch: pytest.MonkeyPatch, mock_workspace_record: dict[
         store["brand"] = row
         return row
 
-    mock_prisma.aivisbrand.find_first.side_effect = find_first
-    mock_prisma.aivisbrand.find_many = AsyncMock(return_value=[])
-    mock_prisma.aivisbrand.create.side_effect = create
-    mock_prisma.aivisbrand.update.side_effect = update
+    mock_prisma.brand.find_first.side_effect = find_first
+    mock_prisma.brand.find_many = AsyncMock(return_value=[])
+    mock_prisma.brand.create.side_effect = create
+    mock_prisma.brand.update.side_effect = update
 
     monkeypatch.setattr(
         "ai_visibility.api.brands_routes.get_prisma",

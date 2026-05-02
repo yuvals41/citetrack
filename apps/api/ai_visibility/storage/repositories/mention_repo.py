@@ -20,7 +20,7 @@ class MentionRepository:
 
         _ = conn
         for mention in mentions:
-            await self.prisma.aivismention.create(
+            await self.prisma.mention.create(
                 data={
                     "id": mention["id"],
                     "workspaceId": mention["workspace_id"],
@@ -35,7 +35,7 @@ class MentionRepository:
             )
 
     async def list_by_run(self, run_id: str) -> list[MentionRecord]:
-        rows = await self.prisma.aivismention.find_many(
+        rows = await self.prisma.mention.find_many(
             where={"runId": run_id},
             order={"id": "asc"},
         )

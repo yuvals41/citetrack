@@ -181,7 +181,7 @@ class SnapshotRepository:
 
     async def get_breakdowns(self, workspace: str) -> SnapshotBreakdowns:
         prisma = self._metric_repo.prisma
-        scan_jobs = await prisma.aivisscanjob.find_many(where={"workspaceSlug": workspace})
+        scan_jobs = await prisma.scanjob.find_many(where={"workspaceSlug": workspace})
         if not scan_jobs:
             return SnapshotBreakdowns(
                 workspace=workspace,
@@ -191,7 +191,7 @@ class SnapshotRepository:
             )
 
         job_ids = [j.id for j in scan_jobs]
-        executions = await prisma.aivisscanexecution.find_many(
+        executions = await prisma.scanexecution.find_many(
             where={"scanJobId": {"in": job_ids}},
         )
 
@@ -203,14 +203,14 @@ class SnapshotRepository:
         total_mentioned = 0
         total_responses = 0
         for provider, exec_ids in provider_to_exec_ids.items():
-            prompt_execs = await prisma.aivispromptexecution.find_many(
+            prompt_execs = await prisma.promptexecution.find_many(
                 where={"scanExecutionId": {"in": exec_ids}},
             )
             responses = len(prompt_execs)
             mentions = 0
             if prompt_execs:
                 pe_ids = [pe.id for pe in prompt_execs]
-                observations = await prisma.aivisobservation.find_many(
+                observations = await prisma.observation.find_many(
                     where={"promptExecutionId": {"in": pe_ids}},
                 )
                 mentions = sum(1 for obs in observations if bool(obs.brandMentioned))
@@ -253,19 +253,19 @@ class SnapshotRepository:
         if not scan_job_ids:
             return []
         prisma = self._metric_repo.prisma
-        executions = await prisma.aivisscanexecution.find_many(
+        executions = await prisma.scanexecution.find_many(
             where={"scanJobId": {"in": scan_job_ids}},
         )
         if not executions:
             return []
         exec_ids = [e.id for e in executions]
-        prompt_execs = await prisma.aivispromptexecution.find_many(
+        prompt_execs = await prisma.promptexecution.find_many(
             where={"scanExecutionId": {"in": exec_ids}},
         )
         if not prompt_execs:
             return []
         pe_ids = [pe.id for pe in prompt_execs]
-        citations = await prisma.aivispromptexecutioncitation.find_many(
+        citations = await prisma.promptexecutioncitation.find_many(
             where={"promptExecutionId": {"in": pe_ids}},
         )
         domain_counts: dict[str, int] = {}
@@ -281,22 +281,22 @@ class SnapshotRepository:
         if not scan_job_ids or not workspace_id:
             return []
         prisma = self._metric_repo.prisma
-        brand_rows = await prisma.aivisbrand.find_many(where={"workspaceId": workspace_id})
+        brand_rows = await prisma.brand.find_many(where={"workspaceId": workspace_id})
         if not brand_rows:
             return []
         brand_domain = _extract_domain(str(getattr(brand_rows[0], "domain", "") or ""))
         if not brand_domain:
             return []
 
-        executions = await prisma.aivisscanexecution.find_many(where={"scanJobId": {"in": scan_job_ids}})
+        executions = await prisma.scanexecution.find_many(where={"scanJobId": {"in": scan_job_ids}})
         if not executions:
             return []
-        prompt_execs = await prisma.aivispromptexecution.find_many(
+        prompt_execs = await prisma.promptexecution.find_many(
             where={"scanExecutionId": {"in": [e.id for e in executions]}}
         )
         if not prompt_execs:
             return []
-        citations = await prisma.aivispromptexecutioncitation.find_many(
+        citations = await prisma.promptexecutioncitation.find_many(
             where={"promptExecutionId": {"in": [pe.id for pe in prompt_execs]}}
         )
 
@@ -319,8 +319,8 @@ class SnapshotRepository:
             return []
         prisma = self._metric_repo.prisma
 
-        brand_rows = await prisma.aivisbrand.find_many(where={"workspaceId": workspace_id})
-        competitor_rows = await prisma.aiviscompetitor.find_many(where={"workspaceId": workspace_id})
+        brand_rows = await prisma.brand.find_many(where={"workspaceId": workspace_id})
+        competitor_rows = await prisma.competitor.find_many(where={"workspaceId": workspace_id})
 
         tracked: list[tuple[str, bool]] = []
         for brand in brand_rows:
@@ -336,10 +336,10 @@ class SnapshotRepository:
         if not tracked:
             return []
 
-        executions = await prisma.aivisscanexecution.find_many(where={"scanJobId": {"in": scan_job_ids}})
+        executions = await prisma.scanexecution.find_many(where={"scanJobId": {"in": scan_job_ids}})
         if not executions:
             return []
-        prompt_execs = await prisma.aivispromptexecution.find_many(
+        prompt_execs = await prisma.promptexecution.find_many(
             where={"scanExecutionId": {"in": [e.id for e in executions]}}
         )
         if not prompt_execs:
@@ -385,14 +385,14 @@ class SnapshotRepository:
             job = job_by_id.get(job_id)
             if job is None:
                 continue
-            prompt_execs = await prisma.aivispromptexecution.find_many(
+            prompt_execs = await prisma.promptexecution.find_many(
                 where={"scanExecutionId": {"in": exec_ids}},
             )
             responses = len(prompt_execs)
             mentions = 0
             if prompt_execs:
                 pe_ids = [pe.id for pe in prompt_execs]
-                observations = await prisma.aivisobservation.find_many(
+                observations = await prisma.observation.find_many(
                     where={"promptExecutionId": {"in": pe_ids}},
                 )
                 mentions = sum(1 for obs in observations if bool(obs.brandMentioned))

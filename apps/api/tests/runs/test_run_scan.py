@@ -31,7 +31,7 @@ def _isolated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, patch_get_pris
         country="",
         createdAt=datetime.now(timezone.utc),
     )
-    mock_prisma.aivisworkspace.find_unique.return_value = workspace
+    mock_prisma.workspace.find_unique.return_value = workspace
 
 
 def test_run_orchestrator_instantiation() -> None:

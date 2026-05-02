@@ -91,9 +91,9 @@ def _configure_workspace_store(mock_prisma):
             ]
         return []
 
-    mock_prisma.aivisworkspace.create.side_effect = create_workspace
-    mock_prisma.aivisworkspace.find_unique.side_effect = find_unique
-    mock_prisma.aivisworkspace.find_many.side_effect = find_many
+    mock_prisma.workspace.create.side_effect = create_workspace
+    mock_prisma.workspace.find_unique.side_effect = find_unique
+    mock_prisma.workspace.find_many.side_effect = find_many
     mock_prisma.execute_raw.side_effect = execute_raw
     mock_prisma.query_raw.side_effect = query_raw
 

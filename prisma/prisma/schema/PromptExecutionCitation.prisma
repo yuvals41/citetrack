@@ -1,0 +1,13 @@
+model PromptExecutionCitation {
+  id                String  @id @default(uuid())
+  promptExecutionId String  @map("prompt_execution_id")
+  url               String
+  title             String
+  citedText         String? @map("cited_text")
+  idempotencyKey    String  @unique @map("idempotency_key")
+
+  promptExecution PromptExecution @relation(fields: [promptExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([promptExecutionId])
+  @@map("ai_vis_prompt_execution_citations")
+}

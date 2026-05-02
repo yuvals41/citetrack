@@ -57,7 +57,7 @@ async def test_orchestrator_uses_workspace_brand_name(
     patch_get_prisma: AsyncMock,
 ) -> None:
     _ = patch_get_prisma
-    mock_prisma.aivisworkspace.find_unique.return_value = object()
+    mock_prisma.workspace.find_unique.return_value = object()
     orch = RunOrchestrator(
         workspace_slug="solara-ai",
         provider="openai",
@@ -90,7 +90,7 @@ async def test_orchestrator_falls_back_to_slug_when_no_brand_name(
     patch_get_prisma: AsyncMock,
 ) -> None:
     _ = patch_get_prisma
-    mock_prisma.aivisworkspace.find_unique.return_value = object()
+    mock_prisma.workspace.find_unique.return_value = object()
     orch = RunOrchestrator(
         workspace_slug="solara-ai",
         provider="openai",
@@ -123,7 +123,7 @@ async def test_orchestrator_uses_explicit_brand_names_over_workspace(
     patch_get_prisma: AsyncMock,
 ) -> None:
     _ = patch_get_prisma
-    mock_prisma.aivisworkspace.find_unique.return_value = object()
+    mock_prisma.workspace.find_unique.return_value = object()
     orch = RunOrchestrator(
         workspace_slug="solara-ai",
         provider="openai",

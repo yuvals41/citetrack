@@ -2,7 +2,7 @@
 
 from dotenv import load_dotenv
 
-_ = load_dotenv(override=True)
+_ = load_dotenv(override=False)
 import asyncio
 from importlib import import_module
 import json
