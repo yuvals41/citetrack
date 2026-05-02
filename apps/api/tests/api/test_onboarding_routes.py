@@ -25,7 +25,7 @@ def onboarding_payload() -> dict[str, object]:
             {"name": "Beta", "domain": "beta.com"},
             {"name": "Gamma", "domain": "gamma.com"},
         ],
-        "engines": ["openai", "anthropic"],
+        "engines": ["chatgpt", "claude"],
     }
 
 
@@ -215,8 +215,8 @@ def test_onboarding_idempotent_does_not_schedule_second_scan(
     clean_user_repo,
     onboarding_payload,
 ) -> None:
-    auth_client.post("/api/v1/onboarding/complete", json=onboarding_payload)
-    auth_client.post("/api/v1/onboarding/complete", json=onboarding_payload)
+    _ = auth_client.post("/api/v1/onboarding/complete", json=onboarding_payload)
+    _ = auth_client.post("/api/v1/onboarding/complete", json=onboarding_payload)
     assert clean_user_repo.scheduled_scans == [("acme-corp", "anthropic")]
 
 
@@ -259,6 +259,19 @@ def test_onboarding_no_engines(
     assert response.status_code == 422
 
 
+def test_onboarding_rejects_legacy_engine_aliases(
+    auth_client: TestClient,
+    workspace_store,
+    onboarding_payload,
+) -> None:
+    legacy_payload = dict(onboarding_payload)
+    legacy_payload["engines"] = ["openai", "google", "xai", "anthropic"]
+
+    response = auth_client.post("/api/v1/onboarding/complete", json=legacy_payload)
+
+    assert response.status_code == 422
+
+
 def test_onboarding_associates_user(
     auth_client: TestClient,
     workspace_store,
@@ -282,8 +295,8 @@ async def test_resolve_available_slug_returns_base_when_unused() -> None:
     resolved = await _resolve_available_slug(
         base_slug="acme",
         user_id="u-1",
-        user_repo=cast(UserRepository, user_repo),
-        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+        user_repo=_as_user_repo(user_repo),
+        workspace_repo=_as_workspace_repo(workspace_repo),
     )
 
     assert resolved == "acme"
@@ -299,8 +312,8 @@ async def test_resolve_available_slug_returns_base_when_owned_by_same_user() -> 
     resolved = await _resolve_available_slug(
         base_slug="acme",
         user_id="u-1",
-        user_repo=cast(UserRepository, user_repo),
-        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+        user_repo=_as_user_repo(user_repo),
+        workspace_repo=_as_workspace_repo(workspace_repo),
     )
 
     assert resolved == "acme"
@@ -316,8 +329,8 @@ async def test_resolve_available_slug_suffixes_on_collision_with_other_user() ->
     resolved = await _resolve_available_slug(
         base_slug="acme",
         user_id="u-new",
-        user_repo=cast(UserRepository, user_repo),
-        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+        user_repo=_as_user_repo(user_repo),
+        workspace_repo=_as_workspace_repo(workspace_repo),
     )
 
     assert resolved == "acme-2"
@@ -335,14 +348,16 @@ async def test_resolve_available_slug_skips_multiple_taken_suffixes() -> None:
     resolved = await _resolve_available_slug(
         base_slug="acme",
         user_id="u-new",
-        user_repo=cast(UserRepository, user_repo),
-        workspace_repo=cast(WorkspaceRepository, workspace_repo),
+        user_repo=_as_user_repo(user_repo),
+        workspace_repo=_as_workspace_repo(workspace_repo),
     )
 
     assert resolved == "acme-4"
 
 
 class _FakeUserRepo:
+    _owners: dict[str, str]
+
     def __init__(self, owners: dict[str, str]) -> None:
         self._owners = owners
 
@@ -354,8 +369,18 @@ class _FakeUserRepo:
 
 
 class _FakeWorkspaceRepo:
+    _slugs: set[str]
+
     def __init__(self, slugs: set[str]) -> None:
         self._slugs = slugs
 
-    async def get_by_slug(self, slug: str):
+    async def get_by_slug(self, slug: str) -> SimpleNamespace | None:
         return SimpleNamespace(slug=slug) if slug in self._slugs else None
+
+
+def _as_user_repo(repo: _FakeUserRepo) -> UserRepository:
+    return cast(UserRepository, cast(object, repo))
+
+
+def _as_workspace_repo(repo: _FakeWorkspaceRepo) -> WorkspaceRepository:
+    return cast(WorkspaceRepository, cast(object, repo))

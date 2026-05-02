@@ -1,5 +1,6 @@
+# pyright: reportMissingImports=false
+
 import asyncio
-import concurrent.futures
 import hashlib
 import uuid
 from collections.abc import Coroutine
@@ -10,16 +11,25 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from ai_visibility.contracts.scan_contracts import LifecycleStatus
-from ai_visibility.extraction.pipeline import ExtractionPipeline
 from ai_visibility.extraction.models import CitationResult, MentionResult
-from ai_visibility.providers import LLMConfig, ProviderError, ProviderGateway
-from ai_visibility.providers.adapters.google_ai_overview import GoogleAIOverviewAdapter
-from ai_visibility.providers.gateway import LocationContext
-from ai_visibility.providers.adapters import AdapterResult, GatewayScanAdapter, ScanAdapter
-from ai_visibility.metrics.engine import MetricSnapshot, MetricsEngine
+from ai_visibility.metrics.engine import MetricsEngine, MetricSnapshot
 from ai_visibility.prompts import DEFAULT_PROMPTS
 from ai_visibility.prompts.library import PromptLibrary
-from ai_visibility.prompts.renderer import PromptRenderError, PromptRenderer
+from ai_visibility.prompts.renderer import PromptRenderer
+from ai_visibility.providers import LLMConfig, ProviderGateway
+from ai_visibility.providers.adapters import AdapterResult, GatewayScanAdapter, ScanAdapter
+from ai_visibility.providers.adapters.google_ai_overview import GoogleAIOverviewAdapter
+from ai_visibility.providers.gateway import LocationContext
+from ai_visibility.runs.execution_core import (
+    PipelinePrompt,
+    PromptExecutionFailure,
+    PromptExecutionSuccess,
+    execute_scan_pipeline,
+    normalize_prompts,
+    resolve_provider_key,
+    run_async_in_thread,
+)
+from ai_visibility.runs.scan_strategy import ProviderConfig, ScanMode, ScanStrategy, get_strategy_for_mode
 from ai_visibility.storage.prisma_connection import get_prisma
 from ai_visibility.storage.repositories import (
     MentionRepository,
@@ -39,7 +49,6 @@ from ai_visibility.storage.types import (
     ScanJobRecord,
     WorkspaceRecord,
 )
-from ai_visibility.runs.scan_strategy import ProviderConfig, ScanMode, ScanStrategy, get_strategy_for_mode
 
 T = TypeVar("T")
 REASONING_SEPARATOR = "\n\n[AI_REASONING]\n"
@@ -68,6 +77,7 @@ class ScanResult(BaseModel):
 
 class RunOrchestrator:
     _inflight_scans: dict[tuple[str, str, str | None], asyncio.Task[ScanResult]] = {}
+    _brand_names_resolved: bool
     workspace_slug: str
     provider: str
     model: str | None
@@ -109,13 +119,7 @@ class RunOrchestrator:
         }
 
     def _run_async(self, coro: Coroutine[object, object, T]) -> T:
-        try:
-            _ = asyncio.get_running_loop()
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
-        except RuntimeError:
-            return asyncio.run(coro)
+        return run_async_in_thread(coro)
 
     async def scan(self, dry_run: bool = False) -> ScanResult:
         if dry_run:
@@ -151,7 +155,7 @@ class RunOrchestrator:
         context = await self._prepare_scan_context()
         results = await self._execute_prompts(context)
         evidence = self._build_evidence(results, context)
-        metrics = self._compute_metrics(results)
+        metrics = self._compute_metrics(results, context)
         persisted = await self._persist(context, evidence, metrics, results)
         status = cast(
             Literal[
@@ -201,8 +205,8 @@ class RunOrchestrator:
             raise ValueError(f"No scan adapter registered for provider: {self.provider}")
 
         competitor_names = await self._load_competitor_names(workspace_id)
-        prompts: list[dict[str, object]] = self.prompt_library.list_prompts()
-        prompt_version = str(prompts[0].get("version", "1.0.0")) if prompts else "1.0.0"
+        prompts = normalize_prompts(self.prompt_library.list_prompts())
+        prompt_version = prompts[0].version if prompts else "1.0.0"
         max_prompts = min(3, provider_config.max_prompts)
 
         scan_job_idempotency_key = self._idempotency_key(
@@ -244,229 +248,39 @@ class RunOrchestrator:
             "scan_execution_idempotency_key": scan_execution_idempotency_key,
         }
 
-    async def _execute_prompts(self, context: dict[str, object]) -> list[dict[str, object]]:
+    async def _execute_prompts(
+        self,
+        context: dict[str, object],
+    ) -> list[PromptExecutionSuccess | PromptExecutionFailure]:
         provider_key = cast(str, context["provider_key"])
-        provider_config = cast(ProviderConfig, context["provider_config"])
         adapter = cast(ScanAdapter, context["adapter"])
         location_context = cast(LocationContext, context["location_context"])
         competitor_names = cast(list[str], context["competitor_names"])
-        prompts = cast(list[dict[str, object]], context["prompts"])
+        prompts = cast(list[PipelinePrompt], context["prompts"])
         max_prompts = cast(int, context["max_prompts"])
+
+        pipeline_result = await execute_scan_pipeline(
+            providers=[self.provider],
+            prompts=prompts,
+            max_prompts_per_provider=max_prompts,
+            brand_names=self.brand_names,
+            competitors=competitor_names,
+            location=location_context,
+            strategy=self.strategy,
+            adapters={provider_key: adapter, self.provider: adapter},
+            workspace_slug=self.workspace_slug,
+            prompt_renderer=self.prompt_renderer,
+        )
+        return pipeline_result.results
+
+    def _build_evidence(
+        self,
+        results: list[PromptExecutionSuccess | PromptExecutionFailure],
+        context: dict[str, object],
+    ) -> dict[str, object]:
+        workspace_id = cast(str, context["workspace_id"])
+        run_id = cast(str, context["run_id"])
         scan_execution_id = cast(str, context["scan_execution_id"])
-        workspace_id = cast(str, context["workspace_id"])
-        run_id = cast(str, context["run_id"])
-        prompt_version = cast(str, context["prompt_version"])
-
-        semaphore = asyncio.Semaphore(3)
-        extractor = ExtractionPipeline(brand_names=self.brand_names)
-
-        async def _run_single_prompt(
-            prompt_idx: int,
-            prompt_def: dict[str, object],
-        ) -> tuple[
-            PromptExecutionRecord | None,
-            list[ObservationRecord],
-            list[PromptExecutionCitationRecord],
-            list[MentionResult],
-            list[CitationResult],
-            AdapterResult | None,
-            Exception | None,
-        ]:
-            async with semaphore:
-                try:
-                    competitor_name = (
-                        competitor_names[prompt_idx % len(competitor_names)] if competitor_names else "competitors"
-                    )
-                    rendered = self.prompt_renderer.render(
-                        str(prompt_def["template"]),
-                        brand=self.brand_names[0],
-                        competitor=competitor_name,
-                    )
-                    rendered_with_location = self._inject_location_prompt(
-                        rendered,
-                        provider_key,
-                        location_context,
-                    )
-                    adapter_result = adapter.execute(
-                        rendered_with_location,
-                        self.workspace_slug,
-                        provider_config,
-                        location_context,
-                    )
-                    validated_result = AdapterResult.model_validate(adapter_result)
-
-                    parser_result = extractor.extract(validated_result.raw_response)
-                    mention_results = list(parser_result.mentions)
-                    citation_results = list(parser_result.citations)
-
-                    if parser_result.parser_status == "fallback":
-                        mention_results.append(
-                            MentionResult(
-                                brand_name=self.brand_names[0],
-                                mentioned=False,
-                                position_in_response=None,
-                                context_snippet=None,
-                            )
-                        )
-
-                    prompt_id = str(prompt_def.get("id", f"prompt-{prompt_idx + 1}"))
-                    prompt_execution_key = self._idempotency_key(
-                        "prompt_execution",
-                        scan_execution_id,
-                        prompt_id,
-                        validated_result.provider,
-                        self._content_hash(rendered_with_location),
-                        self._content_hash(validated_result.raw_response),
-                    )
-                    prompt_execution_id = self._stable_id("prompt_execution", prompt_execution_key)
-                    prompt_execution_record: PromptExecutionRecord = {
-                        "id": prompt_execution_id,
-                        "scan_execution_id": scan_execution_id,
-                        "prompt_id": prompt_id,
-                        "prompt_text": rendered_with_location,
-                        "raw_response": self._with_reasoning_blob(
-                            validated_result.raw_response,
-                            validated_result.reasoning,
-                        ),
-                        "executed_at": datetime.now(timezone.utc).isoformat(),
-                        "idempotency_key": prompt_execution_key,
-                        "parser_version": parser_result.parser_version,
-                    }
-
-                    observation_records: list[ObservationRecord] = []
-                    for mention_result in mention_results:
-                        observation_key = self._idempotency_key(
-                            "observation",
-                            prompt_execution_id,
-                            str(mention_result.mentioned),
-                            str(mention_result.position_in_response),
-                            mention_result.context_snippet or "",
-                            validated_result.strategy_version,
-                        )
-                        observation_records.append(
-                            {
-                                "id": self._stable_id("observation", observation_key),
-                                "prompt_execution_id": prompt_execution_id,
-                                "brand_mentioned": mention_result.mentioned,
-                                "brand_position": mention_result.position_in_response,
-                                "response_excerpt": mention_result.context_snippet or "",
-                                "idempotency_key": observation_key,
-                                "strategy_version": validated_result.strategy_version,
-                            }
-                        )
-
-                    citation_records: list[PromptExecutionCitationRecord] = []
-                    normalized_citations = self._build_citation_candidates(validated_result, citation_results)
-                    for citation_payload in normalized_citations:
-                        citation_url = cast(str, citation_payload["url"])
-                        citation_title = cast(str, citation_payload["title"])
-                        citation_text = citation_payload.get("cited_text")
-                        citation_key = self._idempotency_key(
-                            "prompt_execution_citation",
-                            prompt_execution_id,
-                            citation_url,
-                            citation_title,
-                            citation_text or "",
-                        )
-                        citation_record: PromptExecutionCitationRecord = {
-                            "id": self._stable_id("prompt_execution_citation", citation_key),
-                            "prompt_execution_id": prompt_execution_id,
-                            "url": citation_url,
-                            "title": citation_title,
-                            "cited_text": citation_text,
-                            "idempotency_key": citation_key,
-                        }
-                        citation_records.append(citation_record)
-
-                    return (
-                        prompt_execution_record,
-                        observation_records,
-                        citation_records,
-                        mention_results,
-                        citation_results,
-                        validated_result,
-                        None,
-                    )
-                except (ProviderError, ValueError, TypeError, PromptRenderError, Exception) as exc:
-                    return (None, [], [], [], [], None, exc)
-
-        tasks = [_run_single_prompt(idx, prompt_def) for idx, prompt_def in enumerate(prompts[:max_prompts])]
-        raw_results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        normalized_results: list[dict[str, object]] = []
-        for result in raw_results:
-            if isinstance(result, BaseException):
-                normalized_results.append(
-                    {
-                        "ok": False,
-                        "error_message": str(result),
-                        "log_prefix": "Prompt execution task failed",
-                    }
-                )
-                continue
-
-            (
-                prompt_execution_record,
-                observation_records,
-                citation_records,
-                mention_results,
-                citation_results,
-                validated_result,
-                exc,
-            ) = cast(
-                tuple[
-                    PromptExecutionRecord | None,
-                    list[ObservationRecord],
-                    list[PromptExecutionCitationRecord],
-                    list[MentionResult],
-                    list[CitationResult],
-                    AdapterResult | None,
-                    Exception | None,
-                ],
-                result,
-            )
-
-            if exc is not None:
-                normalized_results.append(
-                    {
-                        "ok": False,
-                        "error_message": str(exc),
-                        "log_prefix": "Prompt execution failed",
-                    }
-                )
-                continue
-
-            if prompt_execution_record is None or validated_result is None:
-                normalized_results.append(
-                    {
-                        "ok": False,
-                        "error_message": None,
-                        "log_prefix": None,
-                    }
-                )
-                continue
-
-            normalized_results.append(
-                {
-                    "ok": True,
-                    "prompt_execution_record": prompt_execution_record,
-                    "observation_records": observation_records,
-                    "citation_records": citation_records,
-                    "mention_results": mention_results,
-                    "citation_results": citation_results,
-                    "adapter_result": validated_result,
-                    "workspace_id": workspace_id,
-                    "run_id": run_id,
-                    "prompt_version": prompt_version,
-                    "provider_model_name": provider_config.model_name,
-                }
-            )
-
-        return normalized_results
-
-    def _build_evidence(self, results: list[dict[str, object]], context: dict[str, object]) -> dict[str, object]:
-        workspace_id = cast(str, context["workspace_id"])
-        run_id = cast(str, context["run_id"])
 
         results_count = 0
         failed_prompts = 0
@@ -480,29 +294,83 @@ class RunOrchestrator:
         ] = []
 
         for result in results:
-            if not cast(bool, result.get("ok", False)):
+            if isinstance(result, PromptExecutionFailure):
                 failed_prompts += 1
-                log_prefix = result.get("log_prefix")
-                error_message = result.get("error_message")
-                if isinstance(log_prefix, str) and isinstance(error_message, str):
-                    logger.warning(f"{log_prefix}: {error_message}")
-                if isinstance(error_message, str):
-                    last_error_message = error_message
+                last_error_message = result.error_message
+                logger.warning(f"Prompt execution failed: {result.error_type}: {result.error_message}")
                 continue
 
             results_count += 1
-            prompt_execution_record = cast(PromptExecutionRecord, result["prompt_execution_record"])
-            observation_records = cast(list[ObservationRecord], result["observation_records"])
-            citation_records = cast(list[PromptExecutionCitationRecord], result["citation_records"])
-            mention_results = cast(list[MentionResult], result["mention_results"])
-            citation_results = cast(list[CitationResult], result["citation_results"])
-            validated_result = cast(AdapterResult, result["adapter_result"])
+            adapter_results.append(result.adapter_result)
+            all_mention_results.extend(result.mention_results)
+            all_citation_results.extend(result.citation_results)
 
-            adapter_results.append(validated_result)
-            all_mention_results.extend(mention_results)
-            all_citation_results.extend(citation_results)
+            prompt_execution_key = self._idempotency_key(
+                "prompt_execution",
+                scan_execution_id,
+                result.prompt_id,
+                result.adapter_result.provider,
+                self._content_hash(result.prompt_text),
+                self._content_hash(result.adapter_result.raw_response),
+            )
+            prompt_execution_id = self._stable_id("prompt_execution", prompt_execution_key)
+            prompt_execution_record: PromptExecutionRecord = {
+                "id": prompt_execution_id,
+                "scan_execution_id": scan_execution_id,
+                "prompt_id": result.prompt_id,
+                "prompt_text": result.prompt_text,
+                "raw_response": self._with_reasoning_blob(
+                    result.adapter_result.raw_response,
+                    result.adapter_result.reasoning,
+                ),
+                "executed_at": datetime.now(timezone.utc).isoformat(),
+                "idempotency_key": prompt_execution_key,
+                "parser_version": result.parser_version,
+            }
 
-            for mention_result in mention_results:
+            observation_records: list[ObservationRecord] = []
+            for mention_result in result.mention_results:
+                observation_key = self._idempotency_key(
+                    "observation",
+                    prompt_execution_id,
+                    str(mention_result.mentioned),
+                    str(mention_result.position_in_response),
+                    mention_result.context_snippet or "",
+                    result.adapter_result.strategy_version,
+                )
+                observation_records.append(
+                    {
+                        "id": self._stable_id("observation", observation_key),
+                        "prompt_execution_id": prompt_execution_id,
+                        "brand_mentioned": mention_result.mentioned,
+                        "brand_position": mention_result.position_in_response,
+                        "response_excerpt": mention_result.context_snippet or "",
+                        "idempotency_key": observation_key,
+                        "strategy_version": result.adapter_result.strategy_version,
+                    }
+                )
+
+            citation_records: list[PromptExecutionCitationRecord] = []
+            for citation_payload in result.normalized_citations:
+                citation_key = self._idempotency_key(
+                    "prompt_execution_citation",
+                    prompt_execution_id,
+                    citation_payload.url,
+                    citation_payload.title,
+                    citation_payload.cited_text or "",
+                )
+                citation_records.append(
+                    {
+                        "id": self._stable_id("prompt_execution_citation", citation_key),
+                        "prompt_execution_id": prompt_execution_id,
+                        "url": citation_payload.url,
+                        "title": citation_payload.title,
+                        "cited_text": citation_payload.cited_text,
+                        "idempotency_key": citation_key,
+                    }
+                )
+
+            for mention_result in result.mention_results:
                 mention_record: MentionRecord = {
                     "id": str(uuid.uuid4()),
                     "workspace_id": workspace_id,
@@ -518,16 +386,15 @@ class RunOrchestrator:
                 }
                 all_mentions.append(mention_record)
 
-            normalized_citations = self._build_citation_candidates(validated_result, citation_results)
-            for citation_payload in normalized_citations:
-                citation_url = cast(str, citation_payload["url"])
+            for citation_payload in result.normalized_citations:
+                citation_url = citation_payload.url
                 citation_record_legacy: MentionRecord = {
                     "id": str(uuid.uuid4()),
                     "workspace_id": workspace_id,
                     "run_id": run_id,
                     "brand_id": self.brand_names[0],
                     "mention_type": "citation",
-                    "text": f"Citation from {citation_payload['title']}",
+                    "text": f"Citation from {citation_payload.title}",
                     "citation": {
                         "url": citation_url,
                         "domain": self._domain_from_url(citation_url),
@@ -549,22 +416,25 @@ class RunOrchestrator:
             "prompt_execution_payloads": prompt_execution_payloads,
         }
 
-    def _compute_metrics(self, results: list[dict[str, object]]) -> MetricSnapshotRecord | None:
-        successful_results = [result for result in results if cast(bool, result.get("ok", False))]
+    def _compute_metrics(
+        self,
+        results: list[PromptExecutionSuccess | PromptExecutionFailure],
+        context: dict[str, object],
+    ) -> MetricSnapshotRecord | None:
+        successful_results = [result for result in results if isinstance(result, PromptExecutionSuccess)]
         if not successful_results:
             return None
 
-        first_result = successful_results[0]
-        workspace_id = cast(str, first_result["workspace_id"])
-        run_id = cast(str, first_result["run_id"])
-        prompt_version = cast(str, first_result["prompt_version"])
-        provider_model_name = cast(str, first_result["provider_model_name"])
+        workspace_id = cast(str, context["workspace_id"])
+        run_id = cast(str, context["run_id"])
+        prompt_version = cast(str, context["prompt_version"])
+        provider_model_name = successful_results[0].adapter_result.model_name
 
         all_mention_results: list[MentionResult] = []
         all_citation_results: list[CitationResult] = []
         for result in successful_results:
-            all_mention_results.extend(cast(list[MentionResult], result["mention_results"]))
-            all_citation_results.extend(cast(list[CitationResult], result["citation_results"]))
+            all_mention_results.extend(result.mention_results)
+            all_citation_results.extend(result.citation_results)
 
         metric_snapshot: MetricSnapshot
         try:
@@ -606,7 +476,7 @@ class RunOrchestrator:
         context: dict[str, object],
         evidence: dict[str, object],
         metrics: MetricSnapshotRecord | None,
-        results: list[dict[str, object]],
+        results: list[PromptExecutionSuccess | PromptExecutionFailure],
     ) -> dict[str, object]:
         _ = results
 
@@ -739,10 +609,7 @@ class RunOrchestrator:
 
     @staticmethod
     def _resolve_strategy_provider(provider: str) -> str:
-        aliases = {
-            "openai": "chatgpt",
-        }
-        return aliases.get(provider, provider)
+        return resolve_provider_key(provider)
 
     @staticmethod
     def _idempotency_key(*parts: str) -> str:
@@ -776,12 +643,6 @@ class RunOrchestrator:
         )
 
     @staticmethod
-    def _inject_location_prompt(prompt_text: str, provider_key: str, location: LocationContext) -> str:
-        if provider_key not in {"gemini", "grok", "google_ai_overview"} or not location.is_set:
-            return prompt_text
-        return f"{prompt_text}{location.to_prompt_suffix()}"
-
-    @staticmethod
     def _domain_from_url(url: str) -> str | None:
         stripped = url.strip()
         if not stripped:
@@ -789,56 +650,6 @@ class RunOrchestrator:
         without_scheme = stripped.split("://", 1)[1] if "://" in stripped else stripped
         domain = without_scheme.split("/", 1)[0].strip().lower()
         return domain or None
-
-    @staticmethod
-    def _build_citation_candidates(
-        adapter_result: AdapterResult,
-        extracted_citations: list[CitationResult],
-    ) -> list[dict[str, str | None]]:
-        candidates: list[dict[str, str | None]] = []
-        for citation in adapter_result.citations:
-            url_value = citation.get("url")
-            if not isinstance(url_value, str) or not url_value.strip():
-                continue
-            url = url_value.strip()
-            title_value = citation.get("title") or citation.get("text")
-            title = str(title_value).strip() if title_value is not None else url
-            cited_text_value = citation.get("text")
-            cited_text = (
-                str(cited_text_value).strip()
-                if isinstance(cited_text_value, str) and cited_text_value.strip()
-                else None
-            )
-            candidates.append(
-                {
-                    "url": url,
-                    "title": title or url,
-                    "cited_text": cited_text,
-                }
-            )
-
-        for citation in extracted_citations:
-            if citation.url is None or not citation.url.strip():
-                continue
-            url = citation.url.strip()
-            title = (citation.domain or url).strip()
-            candidates.append(
-                {
-                    "url": url,
-                    "title": title,
-                    "cited_text": None,
-                }
-            )
-
-        deduped: dict[tuple[str, str, str | None], dict[str, str | None]] = {}
-        for candidate in candidates:
-            key = (
-                cast(str, candidate["url"]),
-                cast(str, candidate["title"]),
-                candidate.get("cited_text"),
-            )
-            deduped[key] = candidate
-        return list(deduped.values())
 
     @staticmethod
     def _with_reasoning_blob(raw_response: str, reasoning: str) -> str:

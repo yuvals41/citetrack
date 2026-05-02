@@ -15,7 +15,7 @@
   Local:     /home/yuval/Documents/solaraai/citetrack
   Brand:     Citetrack AI — citetrack.ai (monochrome black/white logo)
   Owner:     Yuval Strutti (solo founder, side project separate from Solara AI)
-  Status:    Week 1 scaffold — most patterns below are TARGET, not yet implemented
+  Status:    Auth + dashboard + onboarding complete — see "Current State vs Target State" below
 ```
 
 **Commands that work RIGHT NOW:**
@@ -61,32 +61,37 @@ This repo is new. Most patterns in this doc describe **target state**, not curre
 **Currently EXISTS and WORKS:**
 
 - ✅ NX + Bun workspaces configured (6 projects discovered)
-- ✅ `apps/web/` — TanStack Start scaffold (index + about routes only)
+- ✅ `apps/web/` — TanStack Start SPA with auth, onboarding, and dashboard (not scaffold-only)
 - ✅ `apps/api/` — Full FastAPI backend migrated from ai-visibility (248+ tests)
-- ✅ `packages/ui/` — just `cn()` utility (no components yet)
-- ✅ `packages/types/` — domain types (`Workspace`, `ScanRun`, etc.)
+- ✅ `packages/ui/` — 61 Shadcn-based components (`Button`, `Dialog`, `Input`, `Sidebar`, etc.)
+- ✅ `packages/types/` — domain types (`Workspace`, `ScanRun`, `Citation`, `VisibilityScore`, etc.)
 - ✅ `packages/config/` — constants (`APP_NAME`, `AI_PROVIDERS`)
 - ✅ `packages/api-client/` — typed fetch wrappers for FastAPI endpoints
 - ✅ Brand assets in `brand/official/` (SVG + PNG + favicon)
-- ✅ Python env — 146 packages installed via `uv sync`
-- ✅ Node env — 876 packages installed via `bun install`
+- ✅ Python env — installed via `uv sync`
+- ✅ Node env — installed via `bun install`
 - ✅ Pushed to GitHub (yuvals41/citetrack)
+- ✅ Clerk auth — end-to-end (ClerkProvider + auth routes + FastAPI JWT verifier)
+- ✅ Auth pages — `/sign-in/$`, `/sign-up/$`, `/forgot-password`
+- ✅ `apps/web/src/features/` — `dashboard/` and `onboarding/` feature folders with components, lib, pages
+- ✅ `QueryClientProvider` in `src/routes/__root.tsx`
+- ✅ Onboarding wizard — 4-step flow with Zod validation
+- ✅ Dashboard shell — sidebar + page header
+- ✅ Dashboard page — KPI cards, trend chart, findings, actions (real API wiring)
+- ✅ `docs/AUTH_DASHBOARD_ONBOARDING_COMPLETE.md` — completion record for auth+dashboard workstream
 
 **Does NOT exist yet (labeled TARGET in this doc where relevant):**
 
-- ❌ Clerk auth wired into `apps/web`
-- ❌ Shadcn components in `@citetrack/ui` (no `Button`, `Dialog`, `Input`, etc.)
-- ❌ `apps/web/src/features/` folder structure
-- ❌ Router context with `queryClient` / `auth`
 - ❌ Citetrack-specific Prisma schema (uses Solara's local-path client via stanley repo)
 - ❌ Lemon Squeezy payment integration
 - ❌ Sentry / Plausible analytics
 - ❌ Git hooks (no lefthook, no pre-commit)
 - ❌ CI/CD pipeline (no GitHub Actions)
 - ❌ Public landing page (citetrack.ai has no content yet)
-- ❌ Dashboard pages in `apps/web`
+- ❌ Registered sub-routes for `/dashboard/brands`, `/dashboard/competitors`, etc. (sidebar nav items use `<a href>` because the routes don't exist yet)
+- ❌ Clerk dashboard setup (keys not yet created — see `docs/CLERK_SETUP.md`)
 
-> **When this doc says something like `import { Button } from "@citetrack/ui/button"`, that is TARGET PATTERN.** It will error today. Each such section is labeled.
+> **When this doc says something like `import { Button } from "@citetrack/ui/button"`, that pattern now works.** The `@citetrack/ui` package has 61 components with per-file exports. Sections still labeled TARGET PATTERN refer to router context with `queryClient` and auth guards via `beforeLoad`.
 
 ---
 
@@ -381,13 +386,13 @@ The frontend at `apps/web` is a **TanStack Start SPA** that consumes the shared 
 
 #### Router Context
 
-> 🎯 **TARGET PATTERN** — not yet implemented. The current `src/router.tsx` is scaffold-only.
+> 🎯 **TARGET PATTERN** — not yet implemented. The current `src/routes/__root.tsx` uses a module-level `QueryClient` singleton, not `createRootRouteWithContext`.
 
 The root route should use `createRootRouteWithContext<{ queryClient: QueryClient }>()`. The query client will be available to every route loader via `context.queryClient`, so loaders can prefetch queries before the component renders.
 
 #### TanStack Query Standards
 
-> 🎯 **TARGET PATTERN** — no `features/` folder exists yet. Apply this when building the first real feature.
+> 🎯 **TARGET PATTERN** — `src/features/` exists with `dashboard/` and `onboarding/`. Apply this pattern when building new features.
 
 **Query keys — factory pattern, always.** Never inline raw arrays in `useQuery`. Put query keys and options in a `queries.ts` file next to the feature code:
 
@@ -468,7 +473,7 @@ Then `useSuspenseQuery(workspaceQueries.detail(slug))` reads from cache — no l
   });
   ```
   `loaderDeps` tells the router which search params the loader depends on.
-- **Auth guards via `beforeLoad`**, not inside components (TARGET — Clerk not wired yet):
+- **Auth guards via `beforeLoad`**, not inside components (TARGET — currently handled inside components, not yet via `beforeLoad`):
   ```ts
   // TARGET PATTERN — requires router context to include auth state
   beforeLoad: ({ context, location }) => {
@@ -522,7 +527,7 @@ Then `useSuspenseQuery(workspaceQueries.detail(slug))` reads from cache — no l
 
 #### Clean Code & File Splitting
 
-> 🎯 **TARGET PATTERN** — `src/features/` doesn't exist yet. Apply when building first real feature.
+> 🎯 **TARGET PATTERN** — `src/features/` exists with `dashboard/` and `onboarding/`. Apply this layout when building new features.
 
 **The 400-line rule is a hard cap, not a target.** If a file approaches 300 lines, start thinking about splitting.
 
@@ -609,31 +614,25 @@ export const Route = createFileRoute("/workspaces")({
 
 #### `@citetrack/ui` Library
 
-**Current state (Week 1):**
-- Only exports `cn()` — merges Tailwind classes via `clsx` + `twMerge`
-- Import: `import { cn } from "@citetrack/ui"`
-- Zero actual components yet
-
-**🎯 TARGET PATTERN (when we add Shadcn primitives):**
-- Shadcn-based primitives (copied from [ui.shadcn.com](https://ui.shadcn.com), adapted for Citetrack tokens)
+**Current state:**
+- 61 Shadcn-based components in `packages/ui/src/components/` (`button`, `dialog`, `input`, `sidebar`, `card`, `chart`, and more)
 - Per-file exports via package.json `exports` map
 - Per-file imports: `import { Button } from "@citetrack/ui/button"` (NOT barrel)
-- One component per file, `kebab-case.tsx` filenames
-- New shared components go in `packages/ui/src/components/` as `kebab-case.tsx`
+- `cn()` utility also exported from `"@citetrack/ui"`
 
-**When adding a component for the first time:**
+**When adding a new component:**
 
-1. Copy from Shadcn docs to `packages/ui/src/components/button.tsx`
+1. Copy from Shadcn docs to `packages/ui/src/components/<name>.tsx`
 2. Adapt to Citetrack tokens (black/white, no gray defaults)
 3. Add entry to `packages/ui/package.json` `exports`:
    ```json
    "exports": {
      ".": "./src/index.ts",
      "./lib/utils": "./src/lib/utils.ts",
-     "./button": "./src/components/button.tsx"
+     "./<name>": "./src/components/<name>.tsx"
    }
    ```
-4. Verify: `import { Button } from "@citetrack/ui/button"` works in `apps/web`
+4. Verify: `import { ComponentName } from "@citetrack/ui/<name>"` works in `apps/web`
 
 ---
 
@@ -1049,13 +1048,15 @@ This `AGENTS.md` describes many patterns as if they exist. Progress tracker:
 
 **Done (as of auth+dashboard+onboarding workstream):**
 - ✅ `src/features/` folder in `apps/web` (dashboard + onboarding)
-- ✅ Shadcn primitives in `@citetrack/ui` (57 primitives: 48 ported + 9 added)
-- ✅ Clerk integration — end-to-end (frontend ClerkProvider + auth routes + FastAPI JWT verifier + 43 backend + 69 frontend + 6 E2E tests)
+- ✅ Shadcn primitives in `@citetrack/ui` (61 components)
+- ✅ Clerk integration — end-to-end (frontend ClerkProvider + auth routes + FastAPI JWT verifier)
 - ✅ `QueryClientProvider` in `src/routes/__root.tsx` (module-level singleton, not `createRootRouteWithContext`)
 - ✅ Auth pages: `/sign-in/$`, `/sign-up/$`, `/forgot-password` (with Clerk-less fallback)
-- ✅ Onboarding wizard: 4-step flow with Zod + react-hook-form
-- ✅ Dashboard shell: Multica-style sidebar + 48px page header
-- ✅ Dashboard page: 4 KPI cards + trend chart + findings + actions (real API wiring)
+- ✅ Onboarding wizard: 4-step flow with Zod validation
+- ✅ Dashboard shell: sidebar + 48px page header
+- ✅ Dashboard page: KPI cards + trend chart + findings + actions (real API wiring)
+- ✅ `apps/web/src/lib/` — `clerk-appearance.ts`, `require-auth.ts`, `logger.ts`
+- ✅ `docs/AUTH_DASHBOARD_ONBOARDING_COMPLETE.md` — completion record
 
 **Still pending:**
 - ❌ Lemon Squeezy integration
@@ -1064,6 +1065,8 @@ This `AGENTS.md` describes many patterns as if they exist. Progress tracker:
 - ❌ lefthook / pre-commit
 - ❌ Registered sub-routes for `/dashboard/brands`, `/dashboard/competitors`, etc. (sidebar nav items currently use `<a href>` because the routes don't exist yet)
 - ❌ Clerk dashboard setup (keys not yet created — see `docs/CLERK_SETUP.md`)
+- ❌ Router context with `queryClient` via `createRootRouteWithContext` (currently module-level singleton)
+- ❌ Auth guards via `beforeLoad` (currently handled inside components)
 
 All pending items labeled as TARGET PATTERN in the sections where they appear. Don't trust examples without first checking the file.
 

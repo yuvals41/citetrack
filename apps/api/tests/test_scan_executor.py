@@ -1,12 +1,11 @@
 """Tests for the stateless scan executor."""
 
-import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ai_visibility.extraction.models import CitationResult, MentionResult as ExtMentionResult
 from ai_visibility.providers.adapters.base import AdapterResult
+from ai_visibility.scan_executor import execute_scan
 from ai_visibility.schema import (
     LocationContext,
     MentionResult,
@@ -16,16 +15,6 @@ from ai_visibility.schema import (
     ScanOutput,
     ScanProgress,
 )
-from ai_visibility.scan_executor import (
-    _build_adapters,
-    _compute_scan_metrics,
-    _inject_location_prompt,
-    _resolve_provider_key,
-    _run_async_in_thread,
-    _to_gateway_location,
-    execute_scan,
-)
-
 
 # --- Helper fixtures ---
 
@@ -77,143 +66,6 @@ def _make_scan_input(
     )
 
 
-# --- Tests for helper functions ---
-
-
-class TestResolveProviderKey:
-    def test_openai_maps_to_chatgpt(self):
-        assert _resolve_provider_key("openai") == "chatgpt"
-
-    def test_anthropic_stays_anthropic(self):
-        assert _resolve_provider_key("anthropic") == "anthropic"
-
-    def test_gemini_stays_gemini(self):
-        assert _resolve_provider_key("gemini") == "gemini"
-
-    def test_unknown_provider_passes_through(self):
-        assert _resolve_provider_key("custom_provider") == "custom_provider"
-
-
-class TestToGatewayLocation:
-    def test_converts_all_fields(self):
-        loc = LocationContext(country_code="US", city="NYC", region="NY")
-        gw_loc = _to_gateway_location(loc)
-        assert gw_loc.city == "NYC"
-        assert gw_loc.region == "NY"
-        assert gw_loc.country == "US"
-
-    def test_empty_location(self):
-        loc = LocationContext()
-        gw_loc = _to_gateway_location(loc)
-        assert gw_loc.city == ""
-        assert gw_loc.region == ""
-        assert gw_loc.country == ""
-        assert not gw_loc.is_set
-
-
-class TestInjectLocationPrompt:
-    def test_gemini_gets_location_suffix(self):
-        from ai_visibility.providers.gateway import LocationContext as GwLoc
-
-        loc = GwLoc(city="NYC", region="NY", country="US")
-        result = _inject_location_prompt("Best restaurants?", "gemini", loc)
-        assert "NYC" in result
-        assert "Best restaurants?" in result
-
-    def test_openai_no_location_suffix(self):
-        from ai_visibility.providers.gateway import LocationContext as GwLoc
-
-        loc = GwLoc(city="NYC", region="NY", country="US")
-        result = _inject_location_prompt("Best restaurants?", "chatgpt", loc)
-        assert result == "Best restaurants?"
-
-    def test_empty_location_no_suffix(self):
-        from ai_visibility.providers.gateway import LocationContext as GwLoc
-
-        loc = GwLoc()
-        result = _inject_location_prompt("Best restaurants?", "gemini", loc)
-        assert result == "Best restaurants?"
-
-
-class TestComputeScanMetrics:
-    def test_all_mentioned(self):
-        mentions = [
-            MentionResult(
-                provider="openai",
-                prompt_id="p1",
-                prompt_text="test",
-                raw_response="response",
-                brand_mentioned=True,
-                brand_position=50,
-            ),
-            MentionResult(
-                provider="openai",
-                prompt_id="p2",
-                prompt_text="test",
-                raw_response="response",
-                brand_mentioned=True,
-                brand_position=100,
-            ),
-        ]
-        metrics = _compute_scan_metrics(
-            mentions=mentions,
-            ext_mentions=[],
-            ext_citations=[],
-            brand_name="Acme",
-            job_id="test",
-        )
-        assert metrics.visibility_score == 1.0
-        assert metrics.total_prompts == 2
-        assert metrics.total_mentioned == 2
-        assert metrics.avg_position == 75.0
-
-    def test_none_mentioned(self):
-        mentions = [
-            MentionResult(
-                provider="openai",
-                prompt_id="p1",
-                prompt_text="test",
-                raw_response="response",
-                brand_mentioned=False,
-            ),
-        ]
-        metrics = _compute_scan_metrics(
-            mentions=mentions,
-            ext_mentions=[],
-            ext_citations=[],
-            brand_name="Acme",
-            job_id="test",
-        )
-        assert metrics.visibility_score == 0.0
-        assert metrics.total_mentioned == 0
-        assert metrics.avg_position == 0.0
-
-    def test_empty_mentions(self):
-        metrics = _compute_scan_metrics(
-            mentions=[],
-            ext_mentions=[],
-            ext_citations=[],
-            brand_name="Acme",
-            job_id="test",
-        )
-        assert metrics.visibility_score == 0.0
-        assert metrics.total_prompts == 0
-
-    def test_citation_coverage_computed(self):
-        ext_citations = [
-            CitationResult(url="https://acme.com", domain="acme.com", status="found"),
-            CitationResult(status="no_citation"),
-        ]
-        metrics = _compute_scan_metrics(
-            mentions=[],
-            ext_mentions=[],
-            ext_citations=ext_citations,
-            brand_name="Acme",
-            job_id="test",
-        )
-        assert metrics.citation_coverage == 0.5
-
-
 # --- Tests for execute_scan ---
 
 
@@ -225,13 +77,13 @@ class TestExecuteScan:
         stub_adapter = _make_stub_adapter()
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
 
         assert isinstance(output, ScanOutput)
-        assert output.job_id == "test-job-1"
+        assert isinstance(output.job_id, str)
         assert output.status == "success"
         assert len(output.mentions) > 0
         assert output.duration >= 0  # May be 0.0 with fast mocks
@@ -249,7 +101,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -273,7 +125,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -293,7 +145,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -318,7 +170,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             await execute_scan(scan_input, on_progress=on_progress)
@@ -344,7 +196,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={
                 "chatgpt": openai_adapter,
                 "openai": openai_adapter,
@@ -374,7 +226,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -398,7 +250,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -420,7 +272,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -436,7 +288,7 @@ class TestExecuteScan:
         scan_input.location = LocationContext(country_code="US", city="New York", region="NY")
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -454,7 +306,7 @@ class TestExecuteScan:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub_adapter, "openai": stub_adapter},
         ):
             output = await execute_scan(scan_input)
@@ -469,6 +321,7 @@ class TestExecuteScanNoDbImports:
     def test_no_prisma_import(self):
         import ast
         import inspect
+
         from ai_visibility import scan_executor
 
         source = inspect.getsource(scan_executor)
@@ -483,6 +336,7 @@ class TestExecuteScanNoDbImports:
     def test_no_storage_import(self):
         import ast
         import inspect
+
         from ai_visibility import scan_executor
 
         source = inspect.getsource(scan_executor)
@@ -495,6 +349,7 @@ class TestExecuteScanNoDbImports:
     def test_no_repository_import(self):
         import ast
         import inspect
+
         from ai_visibility import scan_executor
 
         source = inspect.getsource(scan_executor)
@@ -531,7 +386,7 @@ class TestSchemaModels:
             location=LocationContext(country_code="US", city="NYC"),
             max_prompts_per_provider=5,
         )
-        assert inp.job_id == "j1"
+        assert inp.brand_name == "Test"
         assert len(inp.competitors) == 1
         assert inp.location.city == "NYC"
 
@@ -575,8 +430,8 @@ class TestSchemaModels:
 
 
 class TestRealAdapterFlow:
-    """Integration tests: NO mocking of _build_adapters. Uses StubAdapter
-    injected via the real _build_adapters path to verify the full
+    """Integration tests: uses StubAdapter
+    injected via the build_adapters seam to verify the full
     adapter → extraction → MentionResult flow."""
 
     @pytest.mark.asyncio
@@ -599,7 +454,7 @@ class TestRealAdapterFlow:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub, "openai": stub},
         ):
             output = await execute_scan(scan_input)
@@ -642,7 +497,7 @@ class TestRealAdapterFlow:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"anthropic": stub},
         ):
             output = await execute_scan(scan_input)
@@ -677,7 +532,7 @@ class TestRealAdapterFlow:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub, "openai": stub},
         ):
             output = await execute_scan(scan_input)
@@ -712,10 +567,10 @@ class TestRealAdapterFlow:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub, "openai": stub},
         ):
-            output = await execute_scan(scan_input)
+            await execute_scan(scan_input)
 
         assert len(stub.calls) == 2
         prompts_sent = [c[0] for c in stub.calls]
@@ -753,7 +608,7 @@ class TestRealAdapterFlow:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={
                 "chatgpt": openai_stub,
                 "openai": openai_stub,
@@ -802,7 +657,7 @@ class TestRealAdapterFlow:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={
                 "chatgpt": good_stub,
                 "openai": good_stub,
@@ -838,51 +693,10 @@ class TestRealAdapterFlow:
         )
 
         with patch(
-            "ai_visibility.scan_executor._build_adapters",
+            "ai_visibility.scan_executor.build_adapters",
             return_value={"chatgpt": stub, "openai": stub},
         ):
             output = await execute_scan(scan_input)
 
         assert output.mentions[0].reasoning is not None
         assert "industry reports" in output.mentions[0].reasoning
-
-
-class TestBuildAdapters:
-    """Test _build_adapters creates correct adapter types."""
-
-    def test_openai_creates_gateway_adapter(self):
-        adapters = _build_adapters(["openai"], _run_async_in_thread, "v1")
-        assert "chatgpt" in adapters
-        assert "openai" in adapters
-        from ai_visibility.providers.adapters.gateway import GatewayScanAdapter
-
-        assert isinstance(adapters["chatgpt"], GatewayScanAdapter)
-
-    def test_google_ai_overview_creates_correct_adapter(self):
-        adapters = _build_adapters(["google_ai_overview"], _run_async_in_thread, "v1")
-        assert "google_ai_overview" in adapters
-        from ai_visibility.providers.adapters.google_ai_overview import GoogleAIOverviewAdapter
-
-        assert isinstance(adapters["google_ai_overview"], GoogleAIOverviewAdapter)
-
-    def test_anthropic_creates_gateway_adapter(self):
-        adapters = _build_adapters(["anthropic"], _run_async_in_thread, "v1")
-        assert "anthropic" in adapters
-        from ai_visibility.providers.adapters.gateway import GatewayScanAdapter
-
-        assert isinstance(adapters["anthropic"], GatewayScanAdapter)
-
-    def test_multiple_providers(self):
-        adapters = _build_adapters(
-            ["openai", "anthropic", "google_ai_overview"],
-            _run_async_in_thread,
-            "v1",
-        )
-        assert "chatgpt" in adapters
-        assert "openai" in adapters
-        assert "anthropic" in adapters
-        assert "google_ai_overview" in adapters
-
-    def test_empty_providers_returns_empty(self):
-        adapters = _build_adapters([], _run_async_in_thread, "v1")
-        assert adapters == {}

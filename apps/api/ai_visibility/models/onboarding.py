@@ -16,11 +16,11 @@ def _normalize_domain(value: str) -> str:
 
 
 class OnboardingEngine(str, Enum):
-    OPENAI = "openai"
-    ANTHROPIC = "anthropic"
+    CHATGPT = "chatgpt"
+    CLAUDE = "claude"
     PERPLEXITY = "perplexity"
-    GOOGLE = "google"
-    XAI = "xai"
+    GEMINI = "gemini"
+    GROK = "grok"
     GOOGLE_AI_OVERVIEW = "google_ai_overview"
 
 

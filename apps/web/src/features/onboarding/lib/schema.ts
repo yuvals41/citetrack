@@ -1,4 +1,7 @@
+import { AI_PROVIDERS } from "@citetrack/config";
 import * as z from "zod";
+
+const onboardingEngineSchema = z.enum(AI_PROVIDERS);
 
 export const onboardingSchema = z.object({
   brand: z.object({
@@ -21,16 +24,7 @@ export const onboardingSchema = z.object({
     )
     .max(5, "Up to 5 competitors"),
   engines: z
-    .array(
-      z.enum([
-        "openai",
-        "anthropic",
-        "perplexity",
-        "google",
-        "xai",
-        "google_ai_overview",
-      ]),
-    )
+    .array(onboardingEngineSchema)
     .min(1, "Pick at least one"),
   site_content: z.string().optional(),
 });

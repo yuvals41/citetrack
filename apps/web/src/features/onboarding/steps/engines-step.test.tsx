@@ -63,9 +63,9 @@ describe("EnginesStep", () => {
 
     await waitFor(() => {
       expect(onNext).toHaveBeenCalledWith([
-        "openai",
+        "chatgpt",
         "perplexity",
-        "xai",
+        "grok",
         "google_ai_overview",
       ]);
     });

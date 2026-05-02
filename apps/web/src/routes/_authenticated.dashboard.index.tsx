@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DashboardPage } from "#/features/dashboard/pages/dashboard-page";
-import { ExportCsvButton } from "#/features/dashboard/components/export-csv-button";
-import { PageHeader } from "#/features/dashboard/components/page-header";
-import { RunScanButton } from "#/features/dashboard/components/run-scan-button";
+import { PageHeader } from "#/components/dashboard-shell/page-header";
+import { DashboardPage } from "#/features/dashboard/dashboard-page";
+import { ExportCsvButton } from "#/features/dashboard/export-csv-button";
+import { RunScanButton } from "#/features/scans/run-scan-button";
 
 export const Route = createFileRoute("/_authenticated/dashboard/")({ component: Page });
 

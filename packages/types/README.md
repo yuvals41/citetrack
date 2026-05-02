@@ -14,14 +14,19 @@ function Dashboard({ runs }: { runs: ScanRun[] }) {
 
 ## Exports
 
-| Type | Description |
+| Category | Exports |
 |---|---|
-| `Workspace` | A tracked brand (id, slug, domain, brandName, createdAt) |
-| `ScanRun` | A single scan execution (id, workspaceId, status, timestamps, providers) |
-| `VisibilityScore` | Per-provider score (score, mentions, citations) |
-| `Citation` | URL citation in an AI response (url, domain, provider, context) |
-| `DiagnosticFinding` | Issue detected during scan (reasonCode, severity, provider, message, fix) |
-| `AIProvider` | Union of provider IDs (re-exported from `@citetrack/config`) |
+| Domain models | `Workspace`, `VisibilityScore`, `ScanRun`, `Citation`, `DiagnosticFinding`, `AIProvider` |
+| Degraded responses | `DegradedInfo`, `DegradedResponse` |
+| Snapshot | `OverviewSnapshot`, `TrendPoint`, `TrendSeries`, `TrendResponse`, `Finding`, `FindingsSummary`, `ActionItem`, `ActionQueue`, `ProviderBreakdownItem`, `MentionTypeItem`, `SourceAttributionItem`, `HistoricalRunItem`, `TopPageItem`, `CompetitorComparisonItem`, `SnapshotBreakdowns`, `OverviewSnapshotResult`, `TrendResult`, `FindingsResult`, `ActionsResult`, `BreakdownsResult` |
+| Runs | `PerProviderScanResult`, `RunScanResult`, `RunRecord`, `RunsResult` |
+| AI responses | `ResponseMentionType`, `AIResponseCitation`, `AIResponseItem`, `AIResponsesList` |
+| Analyzers | `ContentAnalysisDimension`, `ExtractabilityInput`, `CrawlerSimInput`, `QueryFanoutInput`, `EntityAnalysisInput`, `ShoppingAnalysisInput`, `ExtractabilityResult`, `CrawlerBotAccessResult`, `CrawlerSimResult`, `QueryFanoutItem`, `QueryFanoutResult`, `PresenceResult`, `EntityResult`, `GoogleShoppingResult`, `AIShoppingResult`, `ChatGPTShoppingResult`, `ShoppingResult` |
+| Pixel | `PixelStats` |
+| Workspace | `WorkspaceApiResponse`, `WorkspaceSettings`, `WorkspaceSettingsUpdate`, `ScanScheduleValue` |
+| Competitor | `CompetitorRecord`, `CompetitorsList`, `CompetitorCreateInput` |
+| Brand | `BrandDetail`, `BrandUpsertInput` |
+| Prompt | `PromptRecord`, `PromptsResult` |
 
 ## Conventions
 
@@ -29,6 +34,7 @@ function Dashboard({ runs }: { runs: ScanRun[] }) {
 - **IDs** are strings (UUIDs)
 - **Enums** are string union types, not TypeScript `enum` (tree-shakable)
 - **Status values** match backend exactly (don't invent new ones)
+- **API contracts live here** — `@citetrack/api-client` re-exports them for backward compatibility
 
 ## Adding a Type
 

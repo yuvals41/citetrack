@@ -12,7 +12,7 @@ const validPayload = {
       domain: "rival.com",
     },
   ],
-  engines: ["openai", "google"] as const,
+  engines: ["chatgpt", "gemini"] as const,
 };
 
 describe("onboardingSchema", () => {
@@ -122,7 +122,7 @@ describe("onboardingSchema", () => {
     expect(
       onboardingSchema.safeParse({
         ...validPayload,
-        engines: ["openai"],
+        engines: ["chatgpt"],
       }).success,
     ).toBe(true);
   });
@@ -131,7 +131,7 @@ describe("onboardingSchema", () => {
     expect(
       onboardingSchema.safeParse({
         ...validPayload,
-        engines: ["openai", "anthropic", "perplexity", "google", "xai", "google_ai_overview"],
+        engines: ["chatgpt", "claude", "perplexity", "gemini", "grok", "google_ai_overview"],
       }).success,
     ).toBe(true);
   });
@@ -140,6 +140,15 @@ describe("onboardingSchema", () => {
     const result = onboardingSchema.safeParse({
       ...validPayload,
       engines: ["chatgpt-plus"],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects legacy engine aliases", () => {
+    const result = onboardingSchema.safeParse({
+      ...validPayload,
+      engines: ["openai", "anthropic", "google", "xai"],
     });
 
     expect(result.success).toBe(false);

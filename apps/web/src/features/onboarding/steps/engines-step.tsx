@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AI_PROVIDERS } from "@citetrack/config";
 import { Button } from "@citetrack/ui/button";
 import { cn } from "@citetrack/ui/cn";
 import { ArrowLeft } from "lucide-react";
@@ -12,14 +13,7 @@ const enginesStepSchema = z.object({
 type EnginesStepValues = z.infer<typeof enginesStepSchema>;
 type Engine = EnginesStepValues["engines"][number];
 
-const ALL_ENGINES: Engine[] = [
-  "openai",
-  "anthropic",
-  "perplexity",
-  "google",
-  "xai",
-  "google_ai_overview",
-];
+const ALL_ENGINES: Engine[] = [...AI_PROVIDERS];
 
 const ENGINE_OPTIONS: {
   value: Engine;
@@ -29,16 +23,26 @@ const ENGINE_OPTIONS: {
   iconClassName?: string;
 }[] = [
   {
-    value: "openai",
+    value: "chatgpt",
     label: "ChatGPT",
     provider: "OpenAI",
     icon: "/engines/openai.svg",
     iconClassName: "h-7 w-7",
   },
-  { value: "anthropic", label: "Claude", provider: "Anthropic", icon: "/engines/anthropic.svg" },
+  {
+    value: "claude",
+    label: "Claude",
+    provider: "Anthropic",
+    icon: "/engines/anthropic.svg",
+  },
   { value: "perplexity", label: "Perplexity", provider: "Perplexity AI", icon: "/engines/perplexity.svg" },
-  { value: "google", label: "Gemini", provider: "Google", icon: "/engines/google.svg" },
-  { value: "xai", label: "Grok", provider: "xAI", icon: "/engines/xai.svg" },
+  {
+    value: "gemini",
+    label: "Google Gemini",
+    provider: "Google",
+    icon: "/engines/google.svg",
+  },
+  { value: "grok", label: "xAI Grok", provider: "xAI", icon: "/engines/xai.svg" },
   {
     value: "google_ai_overview",
     label: "AI Overviews",

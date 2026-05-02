@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader } from "#/components/dashboard-shell/page-header";
 import { OnboardingPage } from "#/features/onboarding/pages/onboarding-page";
-import { PageHeader } from "#/features/dashboard/components/page-header";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Page,
