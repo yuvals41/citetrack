@@ -1,6 +1,12 @@
-import type { BreakdownsResult, OverviewSnapshotResult, TrendResult } from "@citetrack/api-client";
+import type {
+  BreakdownsResult,
+  OverviewSnapshotResult,
+  RunRecord,
+  TrendResult,
+} from "@citetrack/api-client";
 import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
+import { useRuns } from "#/features/scans/queries";
 import { buildClient } from "#/lib/api-client";
 import { logger, newRequestId } from "#/lib/logger";
 
@@ -88,4 +94,42 @@ export function useSnapshotBreakdowns(workspace: string | null) {
     staleTime: 30_000,
     enabled: workspace !== null,
   });
+}
+
+export type DashboardState =
+  | { kind: "loading" }
+  | { kind: "scan-running"; run: RunRecord }
+  | { kind: "scan-failed"; run: RunRecord }
+  | { kind: "empty" }
+  | { kind: "ready" };
+
+export function useDashboardState(workspaceSlug: string | null): DashboardState {
+  const runs = useRuns(workspaceSlug ?? "default");
+
+  if (workspaceSlug === null || runs.isPending) {
+    return { kind: "loading" };
+  }
+
+  const items = runs.data?.items ?? [];
+
+  const runningRun = items.find((r) => r.status === "running" || r.status === "pending");
+  if (runningRun) {
+    return { kind: "scan-running", run: runningRun };
+  }
+
+  if (items.length === 0) {
+    return { kind: "empty" };
+  }
+
+  const hasCompleted = items.some(
+    (r) => r.status === "completed" || r.status === "completed_with_partial_failures",
+  );
+  if (!hasCompleted) {
+    const mostRecent = [...items].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+    if (mostRecent && mostRecent.status === "failed") {
+      return { kind: "scan-failed", run: mostRecent };
+    }
+  }
+
+  return { kind: "ready" };
 }

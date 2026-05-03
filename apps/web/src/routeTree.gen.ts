@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
+import { Route as AuthenticatedDashboardPreviewRouteImport } from './routes/_authenticated.dashboard-preview'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated.dashboard.index'
 import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_authenticated.dashboard.settings'
@@ -56,6 +57,12 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDashboardPreviewRoute =
+  AuthenticatedDashboardPreviewRouteImport.update({
+    id: '/dashboard-preview',
+    path: '/dashboard-preview',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/dashboard-preview': typeof AuthenticatedDashboardPreviewRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -143,6 +151,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/dashboard-preview': typeof AuthenticatedDashboardPreviewRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -163,6 +172,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/_authenticated/dashboard-preview': typeof AuthenticatedDashboardPreviewRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/dashboard'
+    | '/dashboard-preview'
     | '/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/forgot-password'
+    | '/dashboard-preview'
     | '/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -219,6 +231,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/forgot-password'
     | '/_authenticated/dashboard'
+    | '/_authenticated/dashboard-preview'
     | '/_authenticated/onboarding'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -284,6 +297,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard-preview': {
+      id: '/_authenticated/dashboard-preview'
+      path: '/dashboard-preview'
+      fullPath: '/dashboard-preview'
+      preLoaderRoute: typeof AuthenticatedDashboardPreviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -402,11 +422,13 @@ const AuthenticatedDashboardRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRouteWithChildren
+  AuthenticatedDashboardPreviewRoute: typeof AuthenticatedDashboardPreviewRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRouteWithChildren,
+  AuthenticatedDashboardPreviewRoute: AuthenticatedDashboardPreviewRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
 }
 

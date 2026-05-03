@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# pyright: reportMissingImports=false, reportUnknownVariableType=false, reportUnknownMemberType=false, reportUnusedCallResult=false
+
 import re
 from datetime import datetime, timezone
 from typing import Annotated, cast
@@ -11,12 +13,16 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from ai_visibility.api.auth import get_current_user_id
+from ai_visibility.contracts.scan_contracts import LifecycleStatus
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
 from ai_visibility.models.onboarding import OnboardingCompleteResponse, OnboardingPayload
+from ai_visibility.runs.execution_core import resolve_provider_key
 from ai_visibility.runs.orchestrator import RunOrchestrator
+from ai_visibility.runs.scan_strategy import ScanMode, get_strategy_for_mode
 from ai_visibility.storage.prisma_connection import get_prisma
 from ai_visibility.storage.repositories.brand_repo import BrandRepository
 from ai_visibility.storage.repositories.competitor_repo import CompetitorRepository
+from ai_visibility.storage.repositories.run_repo import RunRepository
 from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 from ai_visibility.storage.types import WorkspaceRecord
@@ -25,6 +31,7 @@ router = APIRouter(tags=["onboarding"])
 CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 
 _FIRST_SCAN_PROVIDER = "anthropic"
+_FAILED_FIRST_SCAN_ERROR_MAX_LEN = 500
 
 
 class WorkspaceOnboardingMetadata(TypedDict):
@@ -37,6 +44,10 @@ _workspace_metadata: dict[str, WorkspaceOnboardingMetadata] = {}
 
 
 async def _fire_first_scan(workspace_slug: str, provider: str) -> None:
+    # RunOrchestrator.scan() already persists failed rows for pipeline-level failures.
+    # This recovery path is for exceptions raised before that persistence happens
+    # (for example workspace lookup / setup failures) so onboarding doesn't leave a
+    # workspace stuck in an indistinguishable "no runs" state.
     try:
         orchestrator = RunOrchestrator(workspace_slug=workspace_slug, provider=provider)
         result = await orchestrator.scan()
@@ -47,8 +58,70 @@ async def _fire_first_scan(workspace_slug: str, provider: str) -> None:
             result.status,
             result.results_count,
         )
-    except Exception:
-        logger.exception("onboarding.first_scan.failed slug={} provider={}", workspace_slug, provider)
+    except Exception as exc:
+        logger.exception(
+            "onboarding.first_scan.failed slug={} provider={} error_class={} error_message={}",
+            workspace_slug,
+            provider,
+            type(exc).__name__,
+            str(exc),
+        )
+        await _persist_failed_first_scan(workspace_slug, provider, error_message=str(exc))
+
+
+async def _persist_failed_first_scan(workspace_slug: str, provider: str, error_message: str) -> None:
+    try:
+        prisma = cast(object, await get_prisma())
+        workspace_repo = WorkspaceRepository(prisma)
+        workspace = await workspace_repo.get_by_slug(workspace_slug)
+        if workspace is None:
+            logger.warning(
+                "onboarding.first_scan.failure_not_persisted slug={} provider={} reason=workspace_not_found",
+                workspace_slug,
+                provider,
+            )
+            return
+
+        now = datetime.now(timezone.utc).isoformat()
+        model_name = _first_scan_model_name(provider)
+        truncated_error = error_message[:_FAILED_FIRST_SCAN_ERROR_MAX_LEN]
+        _ = await RunRepository(prisma).create(
+            {
+                "id": str(uuid4()),
+                "workspace_id": workspace["id"],
+                "provider": provider,
+                "model": model_name,
+                "prompt_version": "1.0.0",
+                "parser_version": "parser_v1",
+                "status": LifecycleStatus.FAILED.value,
+                "created_at": now,
+                "raw_response": None,
+                "error": truncated_error,
+            }
+        )
+        logger.info(
+            "onboarding.first_scan.failure_persisted slug={} provider={} status={} model={}",
+            workspace_slug,
+            provider,
+            LifecycleStatus.FAILED.value,
+            model_name,
+        )
+    except Exception as persistence_exc:
+        logger.exception(
+            "onboarding.first_scan.failure_persist_failed slug={} provider={} error_class={} error_message={}",
+            workspace_slug,
+            provider,
+            type(persistence_exc).__name__,
+            str(persistence_exc),
+        )
+
+
+def _first_scan_model_name(provider: str) -> str:
+    provider_key = resolve_provider_key(provider)
+    provider_config = get_strategy_for_mode(ScanMode.SCHEDULED).providers.get(provider_key)
+    if provider_config is None:
+        return provider
+    return provider_config.model_name
 
 
 @router.post("/onboarding/complete", response_model=OnboardingCompleteResponse)
@@ -66,6 +139,7 @@ async def complete_onboarding(
         len(payload.competitors),
         [e.value for e in payload.engines],
     )
+    workspace_slug = base_slug
 
     if user_repo.user_owns_workspace(user_id, base_slug):
         logger.info("onboarding.idempotent slug={} — already owned by user", base_slug)
@@ -102,7 +176,7 @@ async def complete_onboarding(
         created = await workspace_repo.create(workspace_record)
         user_repo.add_workspace_to_user(user_id, workspace_slug)
 
-        await BrandRepository(prisma).upsert_primary(
+        _ = await BrandRepository(prisma).upsert_primary(
             created["id"],
             name=payload.brand.name,
             domain=payload.brand.domain,
@@ -112,7 +186,7 @@ async def complete_onboarding(
         competitor_repo = CompetitorRepository(prisma)
         for competitor in payload.competitors:
             try:
-                await competitor_repo.create(
+                _ = await competitor_repo.create(
                     created["id"],
                     competitor.name,
                     competitor.domain,

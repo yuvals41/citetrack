@@ -10,11 +10,15 @@ import { useCurrentWorkspace } from "#/features/workspaces/queries";
 import { HistoricalMentionsChart } from "./historical-mentions-chart";
 import { MentionTypeDonut } from "./mention-type-donut";
 import { ProviderBreakdownChart } from "./provider-breakdown-chart";
-import { useSnapshotBreakdowns, useSnapshotOverview, useSnapshotTrend } from "./queries";
+import { useDashboardState, useSnapshotBreakdowns, useSnapshotOverview, useSnapshotTrend } from "./queries";
 import { SourceAttributionChart } from "./source-attribution-chart";
 import { TopPagesChart } from "./top-pages-chart";
 import { TrendIndicator } from "./trend-indicator";
 import { VisibilityTrendChart } from "./visibility-trend-chart";
+import { BlurredDashboardBackground } from "./blurred-dashboard-background";
+import { DashboardEmptyState } from "./dashboard-empty-state";
+import { DashboardScanFailed } from "./dashboard-scan-failed";
+import { DashboardScanInProgress } from "./dashboard-scan-in-progress";
 
 function KPISkeleton() {
   return (
@@ -38,6 +42,39 @@ export function DashboardPage() {
   const { workspace } = useCurrentWorkspace();
   const workspaceSlug = workspace?.slug ?? null;
 
+  const dashboardState = useDashboardState(workspaceSlug);
+
+  if (dashboardState.kind === "scan-running") {
+    return (
+      <main className="relative flex-1 overflow-hidden">
+        <BlurredDashboardBackground />
+        <DashboardScanInProgress run={dashboardState.run} />
+      </main>
+    );
+  }
+
+  if (dashboardState.kind === "scan-failed") {
+    return (
+      <main className="relative flex-1 overflow-hidden">
+        <BlurredDashboardBackground />
+        <DashboardScanFailed run={dashboardState.run} workspaceSlug={workspaceSlug} />
+      </main>
+    );
+  }
+
+  if (dashboardState.kind === "empty") {
+    return (
+      <main className="relative flex-1 overflow-hidden">
+        <BlurredDashboardBackground />
+        <DashboardEmptyState workspaceSlug={workspaceSlug} />
+      </main>
+    );
+  }
+
+  return <DashboardPopulated workspaceSlug={workspaceSlug} />;
+}
+
+function DashboardPopulated({ workspaceSlug }: { workspaceSlug: string | null }) {
   const overview = useSnapshotOverview(workspaceSlug);
   const trend = useSnapshotTrend(workspaceSlug);
   const findings = useSnapshotFindings(workspaceSlug);
@@ -70,276 +107,276 @@ export function DashboardPage() {
 
   return (
     <main data-testid="dashboard-page" className="flex-1 overflow-auto p-6 space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {overview.isPending ? (
-          <>
-            <KPISkeleton />
-            <KPISkeleton />
-            <KPISkeleton />
-            <KPISkeleton />
-          </>
-        ) : overview.error ? (
-          <div className="col-span-4">
-            <ErrorCard label="overview" message={overview.error.message} />
-          </div>
-        ) : overviewDegraded ? (
-          <div className="col-span-4">
-            <p className="text-sm text-muted-foreground">
-              {overviewDegraded.reason}: {overviewDegraded.message}
-            </p>
-          </div>
-        ) : overviewData ? (
-          <>
-            <KPICard data-testid="dashboard-kpi-visibility-score">
-              <KPICardLabel>Visibility Score</KPICardLabel>
-              <KPICardValue>{(overviewData.visibility_score * 100).toFixed(1)}</KPICardValue>
-              <KPICardChange
-                value={Math.round(Math.abs(trendDelta) * 100)}
-                direction={trendDirection}
-                label="vs prev"
-              />
-            </KPICard>
-            <KPICard data-testid="dashboard-kpi-citation-coverage">
-              <KPICardLabel>Citation Coverage</KPICardLabel>
-              <KPICardValue>{(overviewData.citation_coverage * 100).toFixed(1)}%</KPICardValue>
-              <KPICardChange value={0} direction="flat" />
-            </KPICard>
-            <KPICard data-testid="dashboard-kpi-competitor-wins">
-              <KPICardLabel>Competitor Wins</KPICardLabel>
-              <KPICardValue>{overviewData.competitor_wins}</KPICardValue>
-              <KPICardChange value={0} direction="flat" />
-            </KPICard>
-            <KPICard data-testid="dashboard-kpi-total-prompts">
-              <KPICardLabel>Total Prompts</KPICardLabel>
-              <KPICardValue>{overviewData.total_prompts}</KPICardValue>
-              <KPICardChange value={0} direction="flat" />
-            </KPICard>
-          </>
-        ) : null}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card data-testid="dashboard-visibility-trend" className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Visibility trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {trend.isPending ? (
-              <Skeleton className="h-48 w-full" />
-            ) : trend.error ? (
-              <ErrorCard label="trend" message={trend.error.message} />
-            ) : trendDegraded ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {trendDegraded.reason}: {trendDegraded.message}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {overview.isPending ? (
+            <>
+              <KPISkeleton />
+              <KPISkeleton />
+              <KPISkeleton />
+              <KPISkeleton />
+            </>
+          ) : overview.error ? (
+            <div className="col-span-4">
+              <ErrorCard label="overview" message={overview.error.message} />
+            </div>
+          ) : overviewDegraded ? (
+            <div className="col-span-4">
+              <p className="text-sm text-muted-foreground">
+                {overviewDegraded.reason}: {overviewDegraded.message}
               </p>
-            ) : (
-              <VisibilityTrendChart points={allTrendPoints} />
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          ) : overviewData ? (
+            <>
+              <KPICard data-testid="dashboard-kpi-visibility-score">
+                <KPICardLabel>Visibility Score</KPICardLabel>
+                <KPICardValue>{(overviewData.visibility_score * 100).toFixed(1)}</KPICardValue>
+                <KPICardChange
+                  value={Math.round(Math.abs(trendDelta) * 100)}
+                  direction={trendDirection}
+                  label="vs prev"
+                />
+              </KPICard>
+              <KPICard data-testid="dashboard-kpi-citation-coverage">
+                <KPICardLabel>Citation Coverage</KPICardLabel>
+                <KPICardValue>{(overviewData.citation_coverage * 100).toFixed(1)}%</KPICardValue>
+                <KPICardChange value={0} direction="flat" />
+              </KPICard>
+              <KPICard data-testid="dashboard-kpi-competitor-wins">
+                <KPICardLabel>Competitor Wins</KPICardLabel>
+                <KPICardValue>{overviewData.competitor_wins}</KPICardValue>
+                <KPICardChange value={0} direction="flat" />
+              </KPICard>
+              <KPICard data-testid="dashboard-kpi-total-prompts">
+                <KPICardLabel>Total Prompts</KPICardLabel>
+                <KPICardValue>{overviewData.total_prompts}</KPICardValue>
+                <KPICardChange value={0} direction="flat" />
+              </KPICard>
+            </>
+          ) : null}
+        </div>
 
-        <div data-testid="dashboard-actions-queue">
-          {actions.isPending ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card data-testid="dashboard-visibility-trend" className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Visibility trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trend.isPending ? (
+                <Skeleton className="h-48 w-full" />
+              ) : trend.error ? (
+                <ErrorCard label="trend" message={trend.error.message} />
+              ) : trendDegraded ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  {trendDegraded.reason}: {trendDegraded.message}
+                </p>
+              ) : (
+                <VisibilityTrendChart points={allTrendPoints} />
+              )}
+            </CardContent>
+          </Card>
+
+          <div data-testid="dashboard-actions-queue">
+            {actions.isPending ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </CardContent>
+              </Card>
+            ) : actions.error ? (
+              <ErrorCard label="actions" message={actions.error.message} />
+            ) : actionsDegraded ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground py-2">
+                    {actionsDegraded.reason}: {actionsDegraded.message}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : actionsData ? (
+              <ActionsQueue actions={actionsData.items} />
+            ) : null}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card data-testid="dashboard-provider-breakdown" className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Visibility by AI engine</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {breakdowns.isPending ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : breakdowns.error ? (
+                <ErrorCard label="breakdowns" message={breakdowns.error.message} />
+              ) : breakdownsDegraded ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+                </p>
+              ) : breakdownsData ? (
+                <ProviderBreakdownChart items={breakdownsData.provider_breakdown} />
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card data-testid="dashboard-brand-presence">
+            <CardHeader>
+              <CardTitle>Brand presence</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {breakdowns.isPending ? (
+                <Skeleton className="h-40 w-40 mx-auto rounded-full" />
+              ) : breakdowns.error ? (
+                <ErrorCard label="mention types" message={breakdowns.error.message} />
+              ) : breakdownsDegraded ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+                </p>
+              ) : breakdownsData ? (
+                <MentionTypeDonut
+                  items={breakdownsData.mention_types}
+                  totalResponses={breakdownsData.total_responses}
+                />
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card data-testid="dashboard-historical-mentions" className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Mentions over time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {breakdowns.isPending ? (
+                <Skeleton className="h-48 w-full" />
+              ) : breakdowns.error ? (
+                <ErrorCard label="historical mentions" message={breakdowns.error.message} />
+              ) : breakdownsDegraded ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+                </p>
+              ) : breakdownsData ? (
+                <HistoricalMentionsChart items={breakdownsData.historical_mentions ?? []} />
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card data-testid="dashboard-top-sources">
+            <CardHeader>
+              <CardTitle>Top citation sources</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {breakdowns.isPending ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                </div>
+              ) : breakdowns.error ? (
+                <ErrorCard label="source attribution" message={breakdowns.error.message} />
+              ) : breakdownsDegraded ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+                </p>
+              ) : breakdownsData ? (
+                <SourceAttributionChart items={breakdownsData.source_attribution ?? []} />
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card data-testid="dashboard-competitor-comparison">
+            <CardHeader>
+              <CardTitle>Competitor comparison</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {breakdowns.isPending ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : breakdowns.error ? (
+                <ErrorCard label="competitor comparison" message={breakdowns.error.message} />
+              ) : breakdownsDegraded ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+                </p>
+              ) : breakdownsData ? (
+                <CompetitorComparisonChart items={breakdownsData.competitor_comparison ?? []} />
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card data-testid="dashboard-top-pages">
+            <CardHeader>
+              <CardTitle>Top cited pages</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {breakdowns.isPending ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : breakdowns.error ? (
+                <ErrorCard label="top pages" message={breakdowns.error.message} />
+              ) : breakdownsDegraded ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  {breakdownsDegraded.reason}: {breakdownsDegraded.message}
+                </p>
+              ) : breakdownsData ? (
+                <TopPagesChart items={breakdownsData.top_pages ?? []} />
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+
+        {overviewData && overviewData.run_count > 0 ? (
+          <TrendIndicator delta={overviewData.trend_delta ?? 0} />
+        ) : null}
+
+        <div data-testid="dashboard-findings-list">
+          {findings.isPending ? (
             <Card>
               <CardHeader>
-                <CardTitle>Top actions</CardTitle>
+                <CardTitle>Findings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
               </CardContent>
             </Card>
-          ) : actions.error ? (
-            <ErrorCard label="actions" message={actions.error.message} />
-          ) : actionsDegraded ? (
+          ) : findings.error ? (
+            <ErrorCard label="findings" message={findings.error.message} />
+          ) : findingsDegraded ? (
             <Card>
               <CardHeader>
-                <CardTitle>Top actions</CardTitle>
+                <CardTitle>Findings</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground py-2">
-                  {actionsDegraded.reason}: {actionsDegraded.message}
+                  {findingsDegraded.reason}: {findingsDegraded.message}
                 </p>
               </CardContent>
             </Card>
-          ) : actionsData ? (
-            <ActionsQueue actions={actionsData.items} />
+          ) : findingsData ? (
+            <FindingsList findings={findingsData.items} />
           ) : null}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card data-testid="dashboard-provider-breakdown" className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Visibility by AI engine</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {breakdowns.isPending ? (
-              <div className="space-y-3">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-            ) : breakdowns.error ? (
-              <ErrorCard label="breakdowns" message={breakdowns.error.message} />
-            ) : breakdownsDegraded ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
-              </p>
-            ) : breakdownsData ? (
-              <ProviderBreakdownChart items={breakdownsData.provider_breakdown} />
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card data-testid="dashboard-brand-presence">
-          <CardHeader>
-            <CardTitle>Brand presence</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {breakdowns.isPending ? (
-              <Skeleton className="h-40 w-40 mx-auto rounded-full" />
-            ) : breakdowns.error ? (
-              <ErrorCard label="mention types" message={breakdowns.error.message} />
-            ) : breakdownsDegraded ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
-              </p>
-            ) : breakdownsData ? (
-              <MentionTypeDonut
-                items={breakdownsData.mention_types}
-                totalResponses={breakdownsData.total_responses}
-              />
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card data-testid="dashboard-historical-mentions" className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Mentions over time</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {breakdowns.isPending ? (
-              <Skeleton className="h-48 w-full" />
-            ) : breakdowns.error ? (
-              <ErrorCard label="historical mentions" message={breakdowns.error.message} />
-            ) : breakdownsDegraded ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
-              </p>
-            ) : breakdownsData ? (
-              <HistoricalMentionsChart items={breakdownsData.historical_mentions ?? []} />
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card data-testid="dashboard-top-sources">
-          <CardHeader>
-            <CardTitle>Top citation sources</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {breakdowns.isPending ? (
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-full" />
-              </div>
-            ) : breakdowns.error ? (
-              <ErrorCard label="source attribution" message={breakdowns.error.message} />
-            ) : breakdownsDegraded ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
-              </p>
-            ) : breakdownsData ? (
-              <SourceAttributionChart items={breakdownsData.source_attribution ?? []} />
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card data-testid="dashboard-competitor-comparison">
-          <CardHeader>
-            <CardTitle>Competitor comparison</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {breakdowns.isPending ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-            ) : breakdowns.error ? (
-              <ErrorCard label="competitor comparison" message={breakdowns.error.message} />
-            ) : breakdownsDegraded ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
-              </p>
-            ) : breakdownsData ? (
-              <CompetitorComparisonChart items={breakdownsData.competitor_comparison ?? []} />
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card data-testid="dashboard-top-pages">
-          <CardHeader>
-            <CardTitle>Top cited pages</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {breakdowns.isPending ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-            ) : breakdowns.error ? (
-              <ErrorCard label="top pages" message={breakdowns.error.message} />
-            ) : breakdownsDegraded ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {breakdownsDegraded.reason}: {breakdownsDegraded.message}
-              </p>
-            ) : breakdownsData ? (
-              <TopPagesChart items={breakdownsData.top_pages ?? []} />
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
-
-      {overviewData && overviewData.run_count > 0 ? (
-        <TrendIndicator delta={overviewData.trend_delta ?? 0} />
-      ) : null}
-
-      <div data-testid="dashboard-findings-list">
-        {findings.isPending ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Findings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-            </CardContent>
-          </Card>
-        ) : findings.error ? (
-          <ErrorCard label="findings" message={findings.error.message} />
-        ) : findingsDegraded ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Findings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground py-2">
-                {findingsDegraded.reason}: {findingsDegraded.message}
-              </p>
-            </CardContent>
-          </Card>
-        ) : findingsData ? (
-          <FindingsList findings={findingsData.items} />
-        ) : null}
-      </div>
-    </main>
+      </main>
   );
 }

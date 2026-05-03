@@ -384,3 +384,122 @@ def _as_user_repo(repo: _FakeUserRepo) -> UserRepository:
 
 def _as_workspace_repo(repo: _FakeWorkspaceRepo) -> WorkspaceRepository:
     return cast(WorkspaceRepository, cast(object, repo))
+
+
+@pytest.mark.asyncio
+async def test_fire_first_scan_missing_workspace_noops_without_creating_failed_run(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_prisma,
+) -> None:
+    from ai_visibility.api import onboarding_routes
+
+    class FailingOrchestrator:
+        def __init__(self, workspace_slug: str, provider: str) -> None:
+            _ = workspace_slug
+            _ = provider
+
+        async def scan(self):
+            raise RuntimeError("scan exploded")
+
+    async def _fake_get_prisma():
+        return mock_prisma
+
+    monkeypatch.setattr(onboarding_routes, "RunOrchestrator", FailingOrchestrator)
+    monkeypatch.setattr(onboarding_routes, "get_prisma", _fake_get_prisma)
+    mock_prisma.workspace.find_unique.return_value = None
+
+    await onboarding_routes._fire_first_scan("missing-workspace", "anthropic")
+
+    mock_prisma.run.create.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fire_first_scan_persists_failed_run_when_scan_crashes(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_prisma,
+) -> None:
+    from ai_visibility.api import onboarding_routes
+
+    created_at = datetime.now()
+    workspace_row = _workspace_row(
+        workspace_id="ws-123",
+        slug="acme",
+        brand_name="Acme",
+        created_at=created_at,
+    )
+
+    class FailingOrchestrator:
+        def __init__(self, workspace_slug: str, provider: str) -> None:
+            _ = workspace_slug
+            _ = provider
+
+        async def scan(self):
+            raise ValueError("provider crashed during onboarding")
+
+    async def _fake_get_prisma():
+        return mock_prisma
+
+    async def _find_workspace(*, where: dict[str, object]):
+        if where.get("slug") == "acme":
+            return workspace_row
+        if where.get("id") == "ws-123":
+            return workspace_row
+        return None
+
+    monkeypatch.setattr(onboarding_routes, "RunOrchestrator", FailingOrchestrator)
+    monkeypatch.setattr(onboarding_routes, "get_prisma", _fake_get_prisma)
+    mock_prisma.workspace.find_unique.side_effect = _find_workspace
+
+    await onboarding_routes._fire_first_scan("acme", "anthropic")
+
+    mock_prisma.run.create.assert_awaited_once()
+    payload = mock_prisma.run.create.await_args.kwargs["data"]
+    assert payload["workspaceId"] == "ws-123"
+    assert payload["provider"] == "anthropic"
+    assert payload["model"] == "claude-sonnet-4-6"
+    assert payload["status"] == "FAILED"
+    assert payload["error"] == "provider crashed during onboarding"
+    assert payload["rawResponse"] is None
+
+
+@pytest.mark.asyncio
+async def test_fire_first_scan_swallows_persistence_failures(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_prisma,
+) -> None:
+    from ai_visibility.api import onboarding_routes
+
+    created_at = datetime.now()
+    workspace_row = _workspace_row(
+        workspace_id="ws-456",
+        slug="acme",
+        brand_name="Acme",
+        created_at=created_at,
+    )
+
+    class FailingOrchestrator:
+        def __init__(self, workspace_slug: str, provider: str) -> None:
+            _ = workspace_slug
+            _ = provider
+
+        async def scan(self):
+            raise RuntimeError("primary scan failure")
+
+    async def _fake_get_prisma():
+        return mock_prisma
+
+    async def _find_workspace(*, where: dict[str, object]):
+        if where.get("slug") == "acme":
+            return workspace_row
+        if where.get("id") == "ws-456":
+            return workspace_row
+        return None
+
+    monkeypatch.setattr(onboarding_routes, "RunOrchestrator", FailingOrchestrator)
+    monkeypatch.setattr(onboarding_routes, "get_prisma", _fake_get_prisma)
+    mock_prisma.workspace.find_unique.side_effect = _find_workspace
+    mock_prisma.run.create.side_effect = RuntimeError("database write failed")
+
+    await onboarding_routes._fire_first_scan("acme", "anthropic")
+
+    mock_prisma.run.create.assert_awaited_once()

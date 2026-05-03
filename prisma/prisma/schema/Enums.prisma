@@ -4,11 +4,15 @@ enum RunStatus {
   COMPLETED
   COMPLETED_WITH_PARTIAL_FAILURES
   FAILED
+
+  @@map("AiVisRunStatus")
 }
 
 enum CitationStatus {
   FOUND
   NO_CITATION
+
+  @@map("AiVisCitationStatus")
 }
 
 enum ScanStatus {
@@ -17,9 +21,13 @@ enum ScanStatus {
   COMPLETED
   COMPLETED_WITH_PARTIAL_FAILURES
   FAILED
+
+  @@map("AiVisScanStatus")
 }
 
 enum ScanMode {
   ONBOARDING
   SCHEDULED
+
+  @@map("AiVisScanMode")
 }

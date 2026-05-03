@@ -91,6 +91,25 @@ function setDashboardQueries(
       isPending: false,
       error: null,
     })
+    .mockReturnValueOnce({
+      data: {
+        workspace: "default",
+        items: [
+          {
+            id: "run-1",
+            workspace_id: "ws-1",
+            provider: "chatgpt",
+            model: "gpt-4.1",
+            prompt_version: "v1",
+            parser_version: "v1",
+            status: "completed",
+            created_at: "2024-01-01T00:00:00Z",
+          },
+        ],
+      },
+      isPending: false,
+      error: null,
+    })
     .mockReturnValueOnce({ data: createOverview(), isPending: false, error: null })
     .mockReturnValueOnce({ data: createTrend(), isPending: false, error: null })
     .mockReturnValueOnce({
