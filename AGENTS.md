@@ -888,7 +888,7 @@ bun install
 uv sync --all-packages
 
 # Development
-bunx nx dev @citetrack/web            # → http://localhost:3000
+bunx nx dev @citetrack/web            # → http://localhost:3002 (canonical; auto-fallback to :3003 if taken)
 bunx nx dev @citetrack/api            # → http://localhost:8000
 bunx nx run-many -t dev --parallel   # Both in parallel
 
@@ -1083,7 +1083,7 @@ This skips the ~20 tests that require real API keys (OPENAI_API_KEY, ANTHROPIC_A
 
 As of 2026-05-03, the raw `uv run pytest -m "not slow"` baseline is dominated by non-key-related test debt:
 
-- browser E2E files that require `apps/web` running on `http://localhost:3000`
+- browser E2E files that require `apps/web` running on `http://localhost:3002`
 - legacy E2E files still written against removed SQLite-style repository constructors / sync CLI helpers
 - a small number of stale contract tests (`tests/test_pixel.py`, `tests/test_platform_integration.py`)
 

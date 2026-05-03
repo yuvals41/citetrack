@@ -16,7 +16,7 @@ export default defineConfig({
     }),
     react(),
   ],
-  server: { port: 3002, host: "0.0.0.0" },
-  preview: { port: 3002, host: "0.0.0.0" },
+  server: { port: 3002, host: "0.0.0.0", strictPort: true },
+  preview: { port: 3002, host: "0.0.0.0", strictPort: true },
   build: { outDir: "dist" },
 });
