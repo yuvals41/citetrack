@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false
+
 import uuid
 from datetime import datetime, timezone
 from typing import cast, override
@@ -178,6 +180,69 @@ async def test_scan_dispatches_adapter_with_strategy_config(
     assert "acme" in prompt_text.lower()
     assert workspace_slug == "acme"
     assert strategy_config.provider == "chatgpt"
+
+
+@pytest.mark.asyncio
+async def test_scan_triggers_recommendation_generation(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_prisma: MagicMock,
+    patch_get_prisma: MagicMock,
+) -> None:
+    _ = patch_get_prisma
+    _ = await _create_workspace(mock_prisma, "acme")
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+
+    called: list[str] = []
+
+    async def _fake_generate(self: RunOrchestrator, run_id: str) -> None:
+        called.append(run_id)
+
+    monkeypatch.setattr(RunOrchestrator, "_generate_recommendations", _fake_generate)
+
+    orchestrator = RunOrchestrator(
+        workspace_slug="acme",
+        provider="openai",
+        adapters={"chatgpt": StubAdapter(result=_ok_result())},
+    )
+    monkeypatch.setattr(
+        orchestrator.prompt_library, "list_prompts", lambda: [{"template": "find {brand}", "version": "1.0.0"}]
+    )
+
+    result = await orchestrator.scan()
+
+    assert result.status == "completed"
+    assert called == [result.run_id]
+
+
+@pytest.mark.asyncio
+async def test_scan_does_not_fail_when_recommendations_fail(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_prisma: MagicMock,
+    patch_get_prisma: MagicMock,
+) -> None:
+    _ = patch_get_prisma
+    _ = await _create_workspace(mock_prisma, "acme")
+    mock_prisma.run.create.return_value = MagicMock()  # pyright: ignore[reportAny]
+
+    async def _failing_generate(self: RunOrchestrator, run_id: str) -> None:
+        _ = run_id
+        raise RuntimeError("claude unavailable")
+
+    monkeypatch.setattr(RunOrchestrator, "_generate_recommendations", _failing_generate)
+
+    orchestrator = RunOrchestrator(
+        workspace_slug="acme",
+        provider="openai",
+        adapters={"chatgpt": StubAdapter(result=_ok_result())},
+    )
+    monkeypatch.setattr(
+        orchestrator.prompt_library, "list_prompts", lambda: [{"template": "find {brand}", "version": "1.0.0"}]
+    )
+
+    result = await orchestrator.scan()
+
+    assert result.status == "completed"
+    assert result.error_message is None
 
 
 @pytest.mark.asyncio

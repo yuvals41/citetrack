@@ -16,13 +16,14 @@ from ai_visibility.api.research_routes import router as research_router
 from ai_visibility.api.scans_routes import router as scans_router
 from ai_visibility.api.settings_routes import router as settings_router
 from ai_visibility.api.user_routes import router as user_router
-from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.degraded import DegradedReason, DegradedState, is_degraded
-from ai_visibility.metrics.snapshot import SnapshotRepository
+from ai_visibility.metrics.snapshot import ActionQueue, SnapshotRepository
 from ai_visibility.pixel.router import router as pixel_router
 from ai_visibility.prompts import DEFAULT_PROMPTS, PromptLibrary
 from ai_visibility.storage.prisma_connection import get_prisma
+from ai_visibility.storage.repositories.recommendation_repo import RecommendationRepository
 from ai_visibility.storage.repositories.run_repo import RunRepository
+from ai_visibility.storage.repositories.user_repo import UserRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 
 ApiPayload: TypeAlias = dict[str, object]
@@ -165,8 +166,26 @@ async def _snapshot_findings_payload(workspace: str = "default") -> ApiPayload:
 
 async def _snapshot_actions_payload(workspace: str = "default") -> ApiPayload:
     try:
-        repo = await _snapshot_repository()
-        actions = await repo.get_action_queue(workspace)
+        prisma = await get_prisma()
+        workspace_repo = WorkspaceRepository(prisma)
+        recommendation_repo = RecommendationRepository(prisma)
+        workspace_row = await workspace_repo.get_by_slug(workspace)
+        if workspace_row is None:
+            actions = ActionQueue(workspace=workspace, total_actions=0, items=[])
+            return actions.model_dump()
+
+        recommendation_rows = await recommendation_repo.get_latest_for_workspace(workspace_row["id"])
+        items = [
+            {
+                "action_id": row["action_id"],
+                "recommendation_code": row["recommendation_code"],
+                "priority": row["priority"],
+                "title": row["title"],
+                "description": row["description"],
+            }
+            for row in recommendation_rows
+        ]
+        actions = ActionQueue(workspace=workspace, total_actions=len(items), items=items)
         return actions.model_dump()
     except Exception as exc:
         return _degraded_response(

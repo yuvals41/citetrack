@@ -1,5 +1,10 @@
 """Tests for FastAPI routes."""
 
+# pyright: reportMissingImports=false
+
+from datetime import datetime, timezone
+from types import SimpleNamespace
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -102,6 +107,66 @@ class TestPrompts:
         response = unauth_client.get("/api/v1/prompts")
 
         assert response.status_code in {401, 403}
+
+
+class TestSnapshotActions:
+    def test_snapshot_actions_returns_persisted_recommendations(
+        self,
+        auth_client: TestClient,
+        mock_prisma,
+    ) -> None:
+        created_at = datetime.now(timezone.utc)
+        mock_prisma.workspace.find_unique.return_value = SimpleNamespace(
+            id="ws-1",
+            slug="solara-ai",
+            brandName="Solara AI",
+            city="",
+            region="",
+            country="",
+            createdAt=created_at,
+        )
+        mock_prisma.recommendation.find_first.return_value = SimpleNamespace(
+            id="rec-2",
+            workspaceId="ws-1",
+            brandId="brand-1",
+            title="Expand FAQ coverage",
+            description="Only 40% of prompts mention the brand.",
+            priority="high",
+            ruleTriggersJson='{"recommendation_code": "expand_faq_coverage"}',
+            createdAt=created_at,
+        )
+        mock_prisma.recommendation.find_many.return_value = [
+            SimpleNamespace(
+                id="rec-1",
+                workspaceId="ws-1",
+                brandId="brand-1",
+                title="Expand FAQ coverage",
+                description="Only 40% of prompts mention the brand.",
+                priority="high",
+                ruleTriggersJson='{"recommendation_code": "expand_faq_coverage"}',
+                createdAt=created_at,
+            ),
+            SimpleNamespace(
+                id="rec-2",
+                workspaceId="ws-1",
+                brandId="brand-1",
+                title="Add review source coverage",
+                description="AI cites G2 and Reddit, but not your owned content.",
+                priority="medium",
+                ruleTriggersJson='{"recommendation_code": "add_review_sources"}',
+                createdAt=created_at,
+            ),
+        ]
+
+        response = auth_client.get("/api/v1/snapshot/actions?workspace=solara-ai")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["workspace"] == "solara-ai"
+        assert payload["total_actions"] == 2
+        assert payload["items"][0]["recommendation_code"] == "expand_faq_coverage"
+        assert payload["items"][0]["title"] == "Expand FAQ coverage"
+        assert payload["items"][0]["description"] == "Only 40% of prompts mention the brand."
 
 
 class TestPixelRoutes:

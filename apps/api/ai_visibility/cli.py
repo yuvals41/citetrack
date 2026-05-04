@@ -19,6 +19,7 @@ from pydantic import TypeAdapter, ValidationError
 from ai_visibility.config import get_settings
 from ai_visibility.degraded import DegradedReason, DegradedState as SharedDegradedState, is_degraded
 from ai_visibility.extraction import ExtractionPipeline
+from ai_visibility.metrics.snapshot import SnapshotRepository
 from ai_visibility.providers import ProviderError
 from ai_visibility.metrics import MetricSnapshot as MetricsMetricSnapshot
 from ai_visibility.models import (
@@ -44,9 +45,11 @@ from ai_visibility.models import (
 )
 from ai_visibility.prompts import DEFAULT_PROMPTS, PromptLibrary
 from ai_visibility.recommendations import RecommendationsEngine
+from ai_visibility.recommendations.service import RecommendationsService
 from ai_visibility.runs import RunOrchestrator
 from ai_visibility.storage.prisma_connection import get_prisma
-from ai_visibility.storage.repositories import MentionRepository, MetricRepository, RunRepository
+from ai_visibility.storage.repositories import MentionRepository, MetricRepository, RecommendationRepository, RunRepository
+from ai_visibility.storage.repositories.brand_repo import BrandRepository
 from ai_visibility.storage.repositories.workspace_repo import WorkspaceRepository
 from ai_visibility.storage.types import WorkspaceRecord, RunRecord, MentionRecord
 
@@ -126,6 +129,12 @@ class SeedDemoResult(TypedDict):
     workspaces_skipped: int
     runs_created: int
     mentions_created: int
+
+
+class RegenerateRecommendationsResult(TypedDict):
+    workspace: str
+    run_id: str
+    persisted_count: int
 
 
 class DegradedDetails(TypedDict):
@@ -926,6 +935,71 @@ async def seed_demo(_format_arg: str = "json") -> SeedDemoResult:
     }
 
 
+async def regenerate_recommendations(
+    workspace: str = "default",
+    _format_arg: str = "json",
+) -> RegenerateRecommendationsResult | DegradedResponse:
+    _ = _format_arg
+    prisma = await get_prisma()
+    workspace_repo = WorkspaceRepository(prisma)
+    run_repo = RunRepository(prisma)
+    brand_repo = BrandRepository(prisma)
+    snapshot_repo = SnapshotRepository(prisma=prisma)
+    recommendation_repo = RecommendationRepository(prisma)
+
+    try:
+        workspace_record, degraded = await _workspace_lookup(workspace, workspace_repo)
+        if degraded is not None:
+            return degraded
+        if workspace_record is None:
+            return _degraded_response(
+                _build_degraded_state(
+                    DegradedReason.WORKSPACE_NOT_FOUND,
+                    f"Workspace not found: {workspace}",
+                    context={"workspace": workspace},
+                )
+            )
+
+        completed_run = next(
+            (
+                run
+                for run in await run_repo.list_by_workspace(workspace_record["id"])
+                if run["status"] in {"completed", "completed_with_partial_failures"}
+            ),
+            None,
+        )
+        if completed_run is None:
+            return _degraded_response(
+                _build_degraded_state(
+                    DegradedReason.EMPTY_HISTORY,
+                    f"No completed scan found for workspace: {workspace}",
+                    context={"workspace": workspace},
+                )
+            )
+
+        service = RecommendationsService(
+            prisma=prisma,
+            snapshot_repo=snapshot_repo,
+            workspace_repo=workspace_repo,
+            brand_repo=brand_repo,
+            rec_repo=recommendation_repo,
+        )
+        persisted_count = await service.generate_and_persist(workspace, run_id=completed_run["id"])
+        return {
+            "workspace": workspace,
+            "run_id": completed_run["id"],
+            "persisted_count": persisted_count,
+        }
+    except Exception as exc:
+        return _degraded_response(
+            _build_degraded_state(
+                DegradedReason.PROVIDER_FAILURE,
+                f"Unable to regenerate recommendations for workspace {workspace}: {exc}",
+                context={"workspace": workspace},
+            )
+        )
+
+
 def main() -> None:
     """Main CLI entry point."""
     if len(sys.argv) < 2:
@@ -1148,6 +1222,14 @@ def main() -> None:
             print(json.dumps(seed_result, indent=2))
         else:
             print(json.dumps(seed_result, indent=2))
+    elif command == "regenerate-recommendations":
+        regenerate_result = asyncio.run(
+            regenerate_recommendations(
+                workspace=workspace_arg,
+                _format_arg=format_arg,
+            )
+        )
+        print(json.dumps(regenerate_result, indent=2))
     else:
         logger.error(f"[cli] Unknown command: {command}")
         sys.exit(1)

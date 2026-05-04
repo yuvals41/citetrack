@@ -56,6 +56,17 @@ class MetricSnapshotRecord(TypedDict):
     created_at: str
 
 
+class RecommendationRecord(TypedDict):
+    id: str
+    workspace_id: str
+    brand_id: str
+    title: str
+    description: str
+    priority: str
+    rule_triggers_json: str | None
+    created_at: str
+
+
 class ScanJobRecord(TypedDict):
     id: str
     workspace_slug: str

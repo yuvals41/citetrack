@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# pyright: reportMissingImports=false
+# pyright: reportMissingImports=false, reportArgumentType=false
 
 from types import SimpleNamespace
 from typing import cast
@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 from ai_visibility.api import routes as routes_module
 from ai_visibility.metrics.engine import TrendPoint, TrendSeries
 from ai_visibility.metrics.snapshot import (
-    ActionQueue,
     FindingsSummary,
     HistoricalRunItem,
     MentionTypeItem,
@@ -121,23 +120,33 @@ class _SnapshotRepoStub:
             ],
         )
 
-    async def get_action_queue(self, workspace: str) -> ActionQueue:
-        return ActionQueue(
-            workspace=workspace,
-            total_actions=1,
-            items=[
-                {
-                    "action_id": "add_schema_markup",
-                    "recommendation_code": "add_schema_markup",
-                    "reason": "No schema markup detected",
-                    "impact": "Missing schema reduces AI citation probability",
-                    "next_step": "Add FAQ schema",
-                    "confidence": 0.9,
-                    "rules_version": "v1",
-                    "applicability": "all",
-                }
-            ],
-        )
+class _WorkspaceRepoStub:
+    def __init__(self, *_args: object, **_kwargs: object) -> None:
+        pass
+
+    async def get_by_slug(self, workspace: str) -> dict[str, str]:
+        return {"id": "ws-1", "slug": workspace, "brand_name": workspace}
+
+
+class _RecommendationRepoStub:
+    def __init__(self, *_args: object, **_kwargs: object) -> None:
+        pass
+
+    async def get_latest_for_workspace(self, workspace_id: str) -> list[dict[str, object]]:
+        return [
+            {
+                "id": "rec-1",
+                "workspace_id": workspace_id,
+                "brand_id": "brand-1",
+                "action_id": "add_schema_markup",
+                "recommendation_code": "add_schema_markup",
+                "title": "Add FAQ schema",
+                "description": "No schema markup detected",
+                "priority": "high",
+                "created_at": "2026-05-01T00:00:00+00:00",
+                "rule_triggers_json": None,
+            }
+        ]
 
 
 def test_snapshot_routes_return_precomputed_models(
@@ -156,7 +165,8 @@ def test_snapshot_routes_return_precomputed_models(
 
     monkeypatch.setattr(routes_module, "_snapshot_repository", _stub_repo)
     monkeypatch.setattr(routes_module, "RunRepository", _ForbiddenRepository)
-    monkeypatch.setattr(routes_module, "WorkspaceRepository", _ForbiddenRepository)
+    monkeypatch.setattr(routes_module, "WorkspaceRepository", _WorkspaceRepoStub)
+    monkeypatch.setattr(routes_module, "RecommendationRepository", _RecommendationRepoStub)
     monkeypatch.setattr(routes_module, "UserRepository", lambda: _AlwaysOwnsUserRepo())
 
     overview = auth_client.get("/api/v1/snapshot/overview?workspace=default")

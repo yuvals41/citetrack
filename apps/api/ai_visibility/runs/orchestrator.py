@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from ai_visibility.contracts.scan_contracts import LifecycleStatus
 from ai_visibility.extraction.models import CitationResult, MentionResult
 from ai_visibility.metrics.engine import MetricsEngine, MetricSnapshot
+from ai_visibility.metrics.snapshot import SnapshotRepository
 from ai_visibility.prompts import DEFAULT_PROMPTS
 from ai_visibility.prompts.library import PromptLibrary
 from ai_visibility.prompts.renderer import PromptRenderer
@@ -20,6 +21,7 @@ from ai_visibility.providers import LLMConfig, ProviderGateway
 from ai_visibility.providers.adapters import AdapterResult, GatewayScanAdapter, ScanAdapter
 from ai_visibility.providers.adapters.google_ai_overview import GoogleAIOverviewAdapter
 from ai_visibility.providers.gateway import LocationContext
+from ai_visibility.recommendations.service import RecommendationsService
 from ai_visibility.runs.execution_core import (
     PipelinePrompt,
     PromptExecutionFailure,
@@ -34,10 +36,12 @@ from ai_visibility.storage.prisma_connection import get_prisma
 from ai_visibility.storage.repositories import (
     MentionRepository,
     MetricRepository,
+    RecommendationRepository,
     RunRepository,
     ScanEvidenceRepository,
     WorkspaceRepository,
 )
+from ai_visibility.storage.repositories.brand_repo import BrandRepository
 from ai_visibility.storage.types import (
     MentionRecord,
     MetricSnapshotRecord,
@@ -168,7 +172,7 @@ class RunOrchestrator:
             ],
             persisted["status"],
         )
-        return ScanResult(
+        result = ScanResult(
             run_id=cast(str, context["run_id"]),
             workspace_slug=self.workspace_slug,
             status=status,
@@ -180,6 +184,28 @@ class RunOrchestrator:
             failed_providers=cast(list[str], persisted["failed_providers"]),
             error_message=cast(str | None, persisted["last_error_message"]),
         )
+        if result.status in {"completed", "completed_with_partial_failures"}:
+            try:
+                await self._generate_recommendations(run_id=result.run_id)
+            except Exception:
+                logger.exception("orchestrator.recommendations.failed slug={}", self.workspace_slug)
+        return result
+
+    async def _generate_recommendations(self, run_id: str) -> None:
+        prisma = await get_prisma()
+        workspace_repo = WorkspaceRepository(prisma)
+        brand_repo = BrandRepository(prisma)
+        snapshot_repo = SnapshotRepository(prisma=prisma)
+        recommendation_repo = RecommendationRepository(prisma)
+        service = RecommendationsService(
+            prisma=prisma,
+            snapshot_repo=snapshot_repo,
+            workspace_repo=workspace_repo,
+            brand_repo=brand_repo,
+            rec_repo=recommendation_repo,
+        )
+        count = await service.generate_and_persist(self.workspace_slug, run_id=run_id)
+        logger.info("orchestrator.recommendations.persisted slug={} count={}", self.workspace_slug, count)
 
     async def _prepare_scan_context(self) -> dict[str, object]:
         run_id = str(uuid.uuid4())
